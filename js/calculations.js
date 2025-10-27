@@ -1,4 +1,5 @@
 // Calculations Module - Handles all fault current calculations
+// Modified: 2025-10-27 - Added Phase 1 Analytics Integration with Voltage Drop Analysis
 
 /**
  * Trace path from bus to source
@@ -40,6 +41,7 @@ function traceBusPath(busId) {
 
 /**
  * Calculate fault current at a specific bus
+ * Modified: Added detailed results storage for analytics
  */
 function calculateBus(busId) {
     const calculationDateStamp = getCalculationTimestamp();
@@ -64,12 +66,46 @@ function calculateBus(busId) {
         bus.xrRatio = result.xrRatio;
         bus.totalZ = result.totalZ;
         
+        // === PHASE 1 INTEGRATION: Store detailed results for analytics ===
+        bus.results = {
+            faultCurrents: {
+                threePhaseSym: result.faultCurrentKA,
+                threePhaseAsym: result.asymFaultCurrentKA,
+                // Approximate other fault types based on symmetrical components
+                lineToGround: result.faultCurrentKA * 0.85,  // Approximate L-G fault
+                lineToLine: result.faultCurrentKA * 0.866    // L-L fault (sqrt(3)/2)
+            },
+            totalImpedance: {
+                magnitude: result.totalZ,
+                resistance: result.totalR,
+                reactance: result.totalX,
+                angle: Math.atan2(result.totalX, result.totalR) * (180 / Math.PI)
+            },
+            xrRatio: result.xrRatio,
+            path: result.path,
+            method: result.method,
+            calculationDate: calculationDateStamp
+        };
+        
+        // Store path components for voltage drop analysis
+        bus.pathComponents = path.map((segment, index) => ({
+            sequence: index,
+            bus: segment.bus,
+            component: segment.component
+        }));
+        
         updateBusTree();
         updateBusesContent();
         
         selectedBusId = busId;
         displayBusResults(bus, result, calculationDateStamp);
         switchTab(null, 'results');
+        
+        // Auto-run analytics if multiple buses are calculated
+        const calculatedBuses = buses.filter(b => b.results);
+        if (calculatedBuses.length > 1) {
+            console.log(`📊 ${calculatedBuses.length} buses calculated. Run analytics with calculateAllBusesWithAnalytics() for comprehensive report.`);
+        }
         
         scheduleAutoSave();
     } catch (error) {
@@ -788,12 +824,12 @@ function calculatePathImpedancePerUnit(path) {
     steps += `ASYMMETRICAL (PEAK) FAULT CURRENT:\n`;
     steps += `Asymmetry Factor = √(1 + 2e^(-4×${totalRpu.toFixed(6)}/${totalXpu.toFixed(6)})) = ${multiplier.toFixed(4)}\n`;
     steps += `I_asym = ${faultCurrent.toFixed(2)} × ${multiplier.toFixed(4)} = ${asymFaultCurrent.toFixed(2)} A = ${asymFaultCurrentKA.toFixed(3)} kA\n\n`;
-    steps += `═══════════════════════════════════════════════════════════════════════════════\n`;
+    steps += `════════════════════════════════════════════════════════════════════════════════\n`;
     steps += `✓ S_base = ${baseKVA} kVA CONSTANT for ALL voltage levels\n`;
     steps += `✓ V_base, Z_base, I_base CHANGED at each voltage transformation\n`;
     steps += `✓ Transformer impedance SAME in pu on both sides\n`;
     steps += `✓ All impedances used appropriate Z_base for their voltage level\n`;
-    steps += `═══════════════════════════════════════════════════════════════════════════════\n`;
+    steps += `════════════════════════════════════════════════════════════════════════════════\n\n`;
     
     return {
         totalR: totalRohm,
@@ -816,3 +852,74 @@ function calculatePathImpedancePerUnit(path) {
         baseCurrent: I_base_final
     };
 }
+
+// ============================================================================
+// PHASE 1 ANALYTICS INTEGRATION - NEW FUNCTIONS
+// Added: 2025-10-27 by bfforex
+// ============================================================================
+
+/**
+ * Run comprehensive analytics on all calculated buses
+ * Requires: reportAnalytics.js and thresholds.js to be loaded
+ */
+function runSystemAnalytics() {
+    try {
+        // Check if analytics module is loaded
+        if (typeof ReportAnalytics === 'undefined') {
+            console.error('❌ ReportAnalytics module not loaded. Please include reportAnalytics.js');
+            return null;
+        }
+        
+        if (typeof IndustryStandards === 'undefined') {
+            console.error('❌ IndustryStandards module not loaded. Please include thresholds.js');
+            return null;
+        }
+        
+        // Check if any buses have been calculated
+        const calculatedBuses = buses.filter(b => b.results);
+        
+        if (calculatedBuses.length === 0) {
+            console.warn('⚠️  No calculated buses found. Please run calculations first.');
+            alert('No buses have been calculated yet.\n\nPlease calculate at least one bus before running analytics.');
+            return null;
+        }
+        
+        console.log(`\n${'='.repeat(80)}`);
+        console.log('🔬 RUNNING SYSTEM ANALYTICS - PHASE 1');
+        console.log(`${'='.repeat(80)}\n`);
+        
+        // Initialize analytics
+        const analytics = new ReportAnalytics();
+        analytics.initialize(calculatedBuses);
+        
+        // Get comprehensive summary
+        const summary = analytics.getSummary();
+        console.log('📊 SYSTEM ANALYTICS SUMMARY');
+        console.log(`${'─'.repeat(80)}`);
+        console.log(`Total Buses Analyzed: ${summary.totalBuses}`);
+        console.log(`Analysis Timestamp: ${summary.timestamp}`);
+        
+        console.log('\n🔝 EXTREME VALUES DETECTED:');
+        console.log(`  ⚡ Highest Fault Current: ${summary.extremeValues.highestFaultCurrent.value.toFixed(2)} kA at ${summary.extremeValues.highestFaultCurrent.busName}`);
+        console.log(`  ⚡ Lowest Fault Current: ${summary.extremeValues.lowestFaultCurrent.value.toFixed(2)} kA at ${summary.extremeValues.lowestFaultCurrent.busName}`);
+        console.log(`  🔧 Highest Impedance: ${summary.extremeValues.highestImpedance.value.toFixed(4)} Ω at ${summary.extremeValues.highestImpedance.busName}`);
+        console.log(`  🔧 Lowest Impedance: ${summary.extremeValues.lowestImpedance.value.toFixed(4)} Ω at ${summary.extremeValues.lowestImpedance.busName}`);
+        console.log(`  📐 Highest X/R Ratio: ${summary.extremeValues.highestXRRatio.value.toFixed(2)} at ${summary.extremeValues.highestXRRatio.busName}`);
+        
+        // Get voltage drop report
+        const voltageDropReport = analytics.getVoltageDropReport();
+        console.log('\n⚡ VOLTAGE DROP ANALYSIS');
+        console.log(`${'─'.repeat(80)}`);
+        console.log(`Critical Buses (High/Critical Voltage Drop): ${voltageDropReport.criticalBuses.length}`);
+        
+        if (voltageDropReport.criticalBuses.length > 0) {
+            console.log('\n  ⚠️  Critical Voltage Drops Detected:');
+            voltageDropReport.criticalBuses.forEach(vd => {
+                console.log(`     • ${vd.busName}: ${vd.dropPercent.toFixed(2)}% [${vd.severity}]`);
+            });
+        } else {
+            console.log('  ✅ No critical voltage drops detected');
+        }
+        
+        if (voltageDropReport.extremes.highest.value > 0) {
+            console.log(`\n  📈 Highest Voltage Drop: ${voltageDropReport.extremes.highest.value.toFixed(2)}% at ${voltageDropReport.extremes.highest
