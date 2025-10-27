@@ -1,7 +1,11 @@
 // Bus Manager Module - Handles all bus-related operations
+// Modified: 2025-10-27 16:26:23 UTC by bfforex
+// Added: Load current specification for dynamic load calculation
 
 /**
  * Open add bus modal
+ * Modified: 2025-10-27 16:26:23 UTC by bfforex
+ * Added: Load current input field
  */
 function openAddBusModal() {
     const parentSelect = document.getElementById('newBusParent');
@@ -22,6 +26,11 @@ function closeAddBusModal() {
     document.getElementById('newBusVoltage').value = '';
     document.getElementById('newBusType').value = 'distribution';
     document.getElementById('newBusParent').value = '';
+    
+    // Clear load current if field exists
+    const loadField = document.getElementById('newBusLoad');
+    if (loadField) loadField.value = '';
+    
     document.getElementById('newBusUtilityFault').value = '';
     document.getElementById('newBusUtilityMVA').value = '';
     document.getElementById('newBusUtilityXR').value = '3';
@@ -80,6 +89,8 @@ function toggleEditUtilityInputMode() {
 
 /**
  * Save new bus
+ * Modified: 2025-10-27 16:26:23 UTC by bfforex
+ * Added: Store load current for dynamic load calculation
  */
 function saveBus() {
     const name = document.getElementById('newBusName').value.trim();
@@ -109,6 +120,20 @@ function saveBus() {
         totalZ: null,
         created: new Date().toISOString()
     };
+    
+    // ═══════════════════════════════════════════════════════════
+    // 🔥 NEW: STORE LOAD CURRENT IF SPECIFIED
+    // Added: 2025-10-27 16:26:23 UTC by bfforex
+    // ═══════════════════════════════════════════════════════════
+    const loadField = document.getElementById('newBusLoad');
+    if (loadField) {
+        const loadCurrent = parseFloat(loadField.value);
+        if (loadCurrent && loadCurrent > 0) {
+            bus.loadCurrent = loadCurrent;
+            console.log(`✅ Bus ${name}: Load current set to ${loadCurrent} A`);
+        }
+    }
+    // ═══════════════════════════════════════════════════════════
     
     if (type === 'source') {
         const utilityMode = document.getElementById('utilityMode').value;
@@ -190,6 +215,7 @@ function renderBusTree(bus, level) {
                     <span class="bus-name">${getBusIcon(bus.type)} ${bus.name}</span>
                     <span class="bus-voltage">${bus.voltage}V</span>
                     ${bus.type === 'source' ? '<span class="badge badge-info">SOURCE</span>' : ''}
+                    ${bus.loadCurrent ? `<span class="badge badge-success">${bus.loadCurrent.toFixed(1)}A</span>` : ''}
                 </div>
                 ${bus.faultCurrent !== null ? `<span class="bus-fault ${faultClass}">${bus.faultCurrent.toFixed(2)} kA</span>` : ''}
             </div>
@@ -227,6 +253,8 @@ function selectBus(busId) {
 
 /**
  * Edit bus
+ * Modified: 2025-10-27 16:26:23 UTC by bfforex
+ * Added: Load current editing
  */
 function editBus(busId) {
     editingBusId = busId;
@@ -283,6 +311,15 @@ function editBus(busId) {
             </select>
             <div class="small-muted">Bus type cannot be changed after creation</div>
         </div>
+        <div class="form-group">
+            <label>Bus Load Current (A) - Optional:
+                <span class="tooltip">ℹ️
+                    <span class="tooltiptext">Specify direct load on this bus. Leave blank to calculate from downstream loads automatically.</span>
+                </span>
+            </label>
+            <input type="number" id="editBusLoad" value="${bus.loadCurrent || ''}" step="0.1" min="0" placeholder="Auto-calculated if blank">
+            <div class="small-muted">If blank, load will be calculated from motors, transformers, and cables downstream</div>
+        </div>
         ${utilityFieldsHTML}
     `;
     
@@ -299,6 +336,8 @@ function closeEditBusModal() {
 
 /**
  * Save bus edits
+ * Modified: 2025-10-27 16:26:23 UTC by bfforex
+ * Added: Save load current
  */
 function saveBusEdits() {
     if (!editingBusId) return;
@@ -308,6 +347,24 @@ function saveBusEdits() {
     
     bus.name = document.getElementById('editBusName').value.trim();
     bus.voltage = parseFloat(document.getElementById('editBusVoltage').value);
+    
+    // ═══════════════════════════════════════════════════════════
+    // 🔥 NEW: SAVE LOAD CURRENT
+    // Added: 2025-10-27 16:26:23 UTC by bfforex
+    // ═══════════════════════════════════════════════════════════
+    const editLoadField = document.getElementById('editBusLoad');
+    if (editLoadField) {
+        const loadCurrent = parseFloat(editLoadField.value);
+        if (loadCurrent && loadCurrent > 0) {
+            bus.loadCurrent = loadCurrent;
+            console.log(`✅ Bus ${bus.name}: Load current updated to ${loadCurrent} A`);
+        } else {
+            // Remove load current if cleared
+            delete bus.loadCurrent;
+            console.log(`🔄 Bus ${bus.name}: Load current cleared (will auto-calculate)`);
+        }
+    }
+    // ═══════════════════════════════════════════════════════════
     
     if (bus.type === 'source') {
         const editUtilityMode = document.getElementById('editUtilityMode');
@@ -411,12 +468,14 @@ function updateBusesContent() {
             <div class="result-item">
                 <strong>${getBusIcon(bus.type)} ${bus.name}</strong>
                 ${bus.type === 'source' ? '<span class="badge badge-info">SOURCE</span>' : ''}
+                ${bus.loadCurrent ? `<span class="badge badge-success">${bus.loadCurrent.toFixed(1)}A Load</span>` : ''}
                 <br>
                 <span style="color: var(--text-muted);">
                     Voltage: ${bus.voltage}V | 
                     Type: ${bus.type} | 
                     Children: ${children.length} | 
                     Components: ${componentsFrom.length + componentsTo.length}
+                    ${bus.loadCurrent ? ` | Load: ${bus.loadCurrent.toFixed(1)}A` : ''}
                 </span>
                 ${bus.faultCurrent !== null ? `
                     <br><br>
