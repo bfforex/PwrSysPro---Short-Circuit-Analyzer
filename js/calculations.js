@@ -43,7 +43,8 @@ function traceBusPath(busId) {
 
 /**
  * Calculate fault current at a specific bus
- * Modified: Added detailed results storage for analytics and voltage drop
+ * Modified: 2025-10-27 12:35:03 UTC by bfforex
+ * Added: Recommendation engine integration
  */
 function calculateBus(busId) {
     const calculationDateStamp = getCalculationTimestamp();
@@ -68,7 +69,7 @@ function calculateBus(busId) {
         bus.xrRatio = result.xrRatio;
         bus.totalZ = result.totalZ;
         
-        // === PHASE 1 INTEGRATION: Store detailed results for analytics ===
+        // Store detailed results for analytics
         bus.results = {
             faultCurrents: {
                 threePhaseSym: result.faultCurrentKA,
@@ -86,11 +87,10 @@ function calculateBus(busId) {
             path: result.path,
             method: result.method,
             calculationDate: calculationDateStamp,
-            // NEW: Voltage drop data from calculations
             voltageDrop: result.voltageDrop || null
         };
         
-        // Store path components for voltage drop analysis
+        // Store path components for analysis
         bus.pathComponents = path.map((segment, index) => ({
             sequence: index,
             bus: segment.bus,
@@ -101,7 +101,21 @@ function calculateBus(busId) {
         updateBusesContent();
         
         selectedBusId = busId;
-        displayBusResults(bus, result, calculationDateStamp);
+        
+        // ═══════════════════════════════════════════════════════════
+        // 🔥 NEW: RECOMMENDATION ENGINE INTEGRATION
+        // ═══════════════════════════════════════════════════════════
+        
+        // Generate recommendations for this bus
+        const busRecommendations = recommendationEngine.analyzeBus(bus);
+        
+        console.log(`📊 Bus ${bus.name}: ${busRecommendations.length} recommendations generated`);
+        
+        // Display results with recommendations
+        displayBusResults(bus, result, calculationDateStamp, busRecommendations);
+        
+        // ═══════════════════════════════════════════════════════════
+        
         switchTab(null, 'results');
         
         // Auto-run analytics if multiple buses are calculated

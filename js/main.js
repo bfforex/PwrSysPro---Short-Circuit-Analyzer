@@ -100,3 +100,13 @@ window.exportBusReport = exportBusReport;
 window.exportAllBusesSummary = exportAllBusesSummary;
 window.saveProject = saveProject;
 window.loadProject = loadProject;
+
+// ═══════════════════════════════════════════════════════════
+// RECOMMENDATION SYSTEM EXPORTS
+// Added: 2025-10-27 12:35:03 UTC by bfforex
+// ═══════════════════════════════════════════════════════════
+window.runSystemAnalytics = runSystemAnalytics;
+window.viewCalculationSteps = viewCalculationSteps;
+window.exportBusRecommendations = exportBusRecommendations;
+
+console.log('✅ Recommendation system initialized');
