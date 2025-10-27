@@ -320,6 +320,15 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="newBusLoad">Bus Load Current (A) - Optional:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Specify direct load on this bus. Leave blank to calculate from downstream motors, transformers, and cables automatically.</span>
+                     </label>
+                     <input type="number" id="newBusLoad" placeholder="Auto-calculated if blank" step="0.1" min="0" aria-label="Bus load current in amperes">
+                     <div class="small-muted">If blank, load will be automatically calculated from downstream equipment</div>
+                </div>
+
+                <div class="form-group">
                     <label for="newBusParent">Parent Bus:</label>
                     <select id="newBusParent" aria-label="Select parent bus">
                         <option value="">None (Root Bus)</option>
@@ -415,6 +424,7 @@
     <script src="js/utils.js"></script>
     <script src="js/busManager.js"></script>
     <script src="js/componentManager.js"></script>
+    <script src="js/loadCalculations.js"></script>
     <script src="js/calculations.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/exportReport.js"></script>
