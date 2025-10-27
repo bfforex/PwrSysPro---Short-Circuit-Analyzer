@@ -212,6 +212,12 @@ function addComponent() {
 function updateComponentsList() {
     const list = document.getElementById('componentsList');
     
+    // ✅ FIXED: Check 'list' not 'container'
+    if (!list) {
+        console.error('❌ componentsList element not found in DOM');
+        return;
+    }
+    
     if (components.length === 0) {
         list.innerHTML = '<div class="alert alert-info">No components added yet. Add components to connect your buses.</div>';
         return;

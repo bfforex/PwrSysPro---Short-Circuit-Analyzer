@@ -124,13 +124,17 @@ function loadAutoSavedProject() {
     if (autoSaved && confirm('Found auto-saved project. Would you like to restore it?')) {
         try {
             const projectData = JSON.parse(autoSaved);
+            
+            // Restore form values
             document.getElementById('projectName').value = projectData.projectName || '';
             document.getElementById('projectNumber').value = projectData.projectNumber || '';
             document.getElementById('engineer').value = projectData.engineer || 'Engr. B. P. Faraon';
+            
             if (projectData.method) {
                 const el = document.querySelector(`input[name="method"][value="${projectData.method}"]`);
                 if (el) el.checked = true;
             }
+            
             if (projectData.projectLoadCurrent !== undefined) 
                 document.getElementById('loadCurrent').value = projectData.projectLoadCurrent;
             if (projectData.projectPF !== undefined) 
@@ -139,14 +143,41 @@ function loadAutoSavedProject() {
                 document.getElementById('voltageDropLimit').value = projectData.voltageDropLimit;
             if (projectData.temperature !== undefined) 
                 document.getElementById('temperature').value = projectData.temperature;
+            
+            // Restore data
             buses = projectData.buses || [];
             components = projectData.components || [];
-            updateBusTree();
-            updateBusDropdowns();
-            updateComponentsList();
-            updateBusesContent();
+            
+            // Update UI - wrapped in safety checks
+            try {
+                updateBusTree();
+            } catch (e) {
+                console.error('❌ Error updating bus tree:', e);
+            }
+            
+            try {
+                updateBusDropdowns();
+            } catch (e) {
+                console.error('❌ Error updating bus dropdowns:', e);
+            }
+            
+            try {
+                updateComponentsList();
+            } catch (e) {
+                console.error('❌ Error updating components list:', e);
+            }
+            
+            try {
+                updateBusesContent();
+            } catch (e) {
+                console.error('❌ Error updating buses content:', e);
+            }
+            
+            console.log('✅ Auto-saved project restored successfully');
         } catch (error) {
-            console.error('Error restoring auto-saved project:', error);
+            console.error('❌ Error restoring auto-saved project:', error);
+            alert('Error loading auto-saved project. Starting fresh.');
+            localStorage.removeItem('multiBusProject');
         }
     }
 }
