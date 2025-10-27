@@ -3,8 +3,8 @@
  * Handles display and interaction of recommendations
  * 
  * @author bfforex
- * @date 2025-10-27 12:20:21 UTC
- * @user bfforex
+ * @date 2025-10-27
+ * @version 1.0.0
  */
 
 class RecommendationUI {
@@ -12,6 +12,8 @@ class RecommendationUI {
         this.currentFilter = 'all';
         this.currentSort = 'priority';
         this.expandedRecommendations = new Set();
+        
+        console.log('✅ Recommendation UI initialized');
     }
 
     /**
@@ -22,11 +24,13 @@ class RecommendationUI {
     displayBusRecommendations(busId, containerId = 'busRecommendations') {
         const container = document.getElementById(containerId);
         if (!container) {
-            console.error(`Container ${containerId} not found`);
+            console.error(`❌ Container ${containerId} not found in DOM`);
             return;
         }
 
         const recommendations = recommendationEngine.filterByBus(busId);
+        
+        console.log(`📊 Displaying ${recommendations.length} recommendations for bus ${busId}`);
         
         if (recommendations.length === 0) {
             container.innerHTML = `
@@ -51,7 +55,7 @@ class RecommendationUI {
     displaySystemRecommendations(systemReport, containerId = 'systemRecommendations') {
         const container = document.getElementById(containerId);
         if (!container) {
-            console.error(`Container ${containerId} not found`);
+            console.error(`❌ Container ${containerId} not found`);
             return;
         }
 
@@ -281,7 +285,7 @@ class RecommendationUI {
                             <div class="rec-details-grid">
                                 <div class="rec-detail-item">
                                     <strong>💰 Cost Impact:</strong>
-                                    <span class="cost-badge cost-${rec.cost.toLowerCase()}">${rec.cost}</span>
+                                    <span class="cost-badge cost-${rec.cost.toLowerCase().replace(/ /g, '-')}">${rec.cost}</span>
                                 </div>
                                 <div class="rec-detail-item">
                                     <strong>⏱️ Implementation:</strong>
@@ -495,7 +499,7 @@ class RecommendationUI {
         actionPlan.push(actionItem);
         localStorage.setItem('actionPlan', JSON.stringify(actionPlan));
 
-        alert(`✅ Added to Action Plan:\n\n${rec.name}\n\nView your action plan in the Reports tab.`);
+        alert(`✅ Added to Action Plan:\n\n${rec.name}\n\nView your action plan in the Export tab.`);
     }
 
     /**
@@ -506,7 +510,22 @@ class RecommendationUI {
         const bus = buses.find(b => b.id === busId);
         if (bus && bus.results) {
             selectedBusId = busId;
-            displayBusResults(bus, bus.results, getCalculationTimestamp());
+            const result = {
+                faultCurrentKA: bus.results.faultCurrents.threePhaseSym,
+                asymFaultCurrentKA: bus.results.faultCurrents.threePhaseAsym,
+                xrRatio: bus.results.xrRatio,
+                totalZ: bus.results.totalImpedance.magnitude,
+                totalR: bus.results.totalImpedance.resistance || 0,
+                totalX: bus.results.totalImpedance.reactance || 0,
+                method: bus.results.method,
+                voltageDrop: bus.results.voltageDrop,
+                steps: bus.results.steps || 'No detailed steps available'
+            };
+            
+            const timestamp = bus.results.calculationDate || getCalculationTimestamp();
+            const recommendations = recommendationEngine.filterByBus(busId);
+            
+            displayBusResults(bus, result, timestamp, recommendations);
             switchTab(null, 'results');
         }
     }
@@ -515,97 +534,11 @@ class RecommendationUI {
      * Export recommendations to file
      */
     exportRecommendations() {
-        const report = recommendationEngine.analyzeSystem(buses);
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `Recommendations_${document.getElementById('projectName').value || 'Project'}_${timestamp}.txt`;
-
-        let content = this._generateTextReport(report);
-
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    /**
-     * Generate text format report
-     * @private
-     */
-    _generateTextReport(report) {
-        let content = `
-${'='.repeat(100)}
-POWER SYSTEM RECOMMENDATIONS REPORT
-${'='.repeat(100)}
-
-Project: ${document.getElementById('projectName').value || 'Untitled'}
-Project Number: ${document.getElementById('projectNumber').value || 'N/A'}
-Engineer: ${document.getElementById('engineer').value || 'Unknown'}
-Generated: ${new Date(report.timestamp).toLocaleString()}
-Software: PwrSys Pro - Short Circuit Analyzer v${VERSION}
-
-SUMMARY
-${'-'.repeat(100)}
-Total Buses Analyzed: ${report.analyzedBuses} / ${report.totalBuses}
-Total Recommendations: ${report.totalRecommendations}
-  - Critical: ${report.critical}
-  - High: ${report.high}
-  - Medium: ${report.medium}
-  - Low: ${report.low || 0}
-
-`;
-
-        if (report.priorityActions.length > 0) {
-            content += `
-PRIORITY ACTIONS
-${'-'.repeat(100)}
-${report.priorityActions.map((rec, i) => `
-${i + 1}. ${rec.name} [${rec.severity}]
-   Bus: ${rec.busName} (${rec.busVoltage}V)
-   Finding: ${rec.recommendation}
-   Action: ${rec.action}
-   Impact: ${rec.impact}
-   Cost: ${rec.cost} | Effort: ${rec.effort}
-   Standard: ${rec.standard}
-`).join('\n')}
-`;
+        if (typeof exportRecommendationsCSV === 'function') {
+            exportRecommendationsCSV();
+        } else {
+            alert('Export function not available. Please ensure exportReport.js is loaded.');
         }
-
-        content += `
-ALL RECOMMENDATIONS BY BUS
-${'-'.repeat(100)}
-`;
-
-        for (const busId in report.byBus) {
-            const busRecs = report.byBus[busId];
-            if (busRecs.length > 0) {
-                const bus = buses.find(b => b.id === busId);
-                content += `\nBUS: ${bus.name} (${bus.voltage}V)\n`;
-                content += `${'.'.repeat(100)}\n`;
-                
-                busRecs.forEach((rec, i) => {
-                    content += `
-${i + 1}. [${rec.severity}] ${rec.name}
-   Category: ${rec.category}
-   Finding: ${rec.recommendation}
-   Action: ${rec.action}
-   Impact: ${rec.impact}
-   Cost: ${rec.cost} | Effort: ${rec.effort}
-   Standard: ${rec.standard}
-`;
-                });
-            }
-        }
-
-        content += `
-${'='.repeat(100)}
-END OF REPORT
-${'='.repeat(100)}
-`;
-
-        return content;
     }
 
     /**
@@ -619,134 +552,10 @@ ${'='.repeat(100)}
 }
 
 // Create global instance
-const recUI = new RecommendationUI();
-
-/**
- * Display action plan
- * NEW FUNCTION: Added 2025-10-27 13:07:42 UTC by bfforex
- */
-displayActionPlan() {
-    const actionPlan = JSON.parse(localStorage.getItem('actionPlan') || '[]');
-    
-    if (actionPlan.length === 0) {
-        return `
-            <div class="alert alert-info">
-                <strong>📋 Action Plan Empty</strong>
-                <p>Add recommendations to your action plan to track implementation progress.</p>
-            </div>
-        `;
-    }
-    
-    const pending = actionPlan.filter(a => a.status === 'pending');
-    const completed = actionPlan.filter(a => a.status === 'completed');
-    
-    let html = `
-        <div class="action-plan-section">
-            <div class="action-plan-header">
-                <h3>📋 Action Plan</h3>
-                <div class="action-plan-stats">
-                    <span class="stat-badge">Total: ${actionPlan.length}</span>
-                    <span class="stat-badge stat-pending">Pending: ${pending.length}</span>
-                    <span class="stat-badge stat-completed">Completed: ${completed.length}</span>
-                </div>
-            </div>
-            
-            <div class="action-plan-controls">
-                <button class="btn btn-primary btn-small" onclick="recUI.exportActionPlan()">
-                    📥 Export Action Plan
-                </button>
-                <button class="btn btn-danger btn-small" onclick="recUI.clearActionPlan()">
-                    🗑️ Clear All
-                </button>
-            </div>
-            
-            <div class="action-plan-items">
-                ${actionPlan.map((item, index) => `
-                    <div class="action-plan-item ${item.status}" data-item-id="${item.id}">
-                        <div class="action-item-header">
-                            <input type="checkbox" 
-                                   ${item.status === 'completed' ? 'checked' : ''}
-                                   onchange="recUI.toggleActionStatus('${item.id}')"
-                                   class="action-checkbox">
-                            <span class="action-bus-name">${item.busName}</span>
-                            <span class="severity-badge badge-${item.severity.toLowerCase()}">${item.severity}</span>
-                        </div>
-                        <div class="action-item-body">
-                            <div class="action-recommendation">${item.recommendation}</div>
-                            <div class="action-required">${item.action}</div>
-                            <div class="action-meta">
-                                <span>Cost: ${item.cost}</span>
-                                <span>Effort: ${item.effort}</span>
-                                <span>Added: ${new Date(item.addedDate).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                        <div class="action-item-controls">
-                            <button class="btn btn-danger btn-small" onclick="recUI.removeFromActionPlan('${item.id}')">
-                                Remove
-                            </button>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-    
-    return html;
-}
-
-/**
- * Toggle action item status
- */
-toggleActionStatus(itemId) {
-    const actionPlan = JSON.parse(localStorage.getItem('actionPlan') || '[]');
-    const item = actionPlan.find(a => a.id === itemId);
-    
-    if (item) {
-        item.status = item.status === 'pending' ? 'completed' : 'pending';
-        if (item.status === 'completed') {
-            item.completedDate = new Date().toISOString();
-        } else {
-            delete item.completedDate;
-        }
-        
-        localStorage.setItem('actionPlan', JSON.stringify(actionPlan));
-        
-        // Refresh display
-        const container = document.querySelector('.action-plan-section');
-        if (container) {
-            container.outerHTML = this.displayActionPlan();
-        }
-    }
-}
-
-/**
- * Remove item from action plan
- */
-removeFromActionPlan(itemId) {
-    if (confirm('Remove this item from action plan?')) {
-        let actionPlan = JSON.parse(localStorage.getItem('actionPlan') || '[]');
-        actionPlan = actionPlan.filter(a => a.id !== itemId);
-        localStorage.setItem('actionPlan', JSON.stringify(actionPlan));
-        
-        // Refresh display
-        const container = document.querySelector('.action-plan-section');
-        if (container) {
-            container.outerHTML = this.displayActionPlan();
-        }
-    }
-}
-
-/**
- * Clear entire action plan
- */
-clearActionPlan() {
-    if (confirm('Clear entire action plan? This cannot be undone.')) {
-        localStorage.removeItem('actionPlan');
-        
-        // Refresh display
-        const container = document.querySelector('.action-plan-section');
-        if (container) {
-            container.outerHTML = this.displayActionPlan();
-        }
-    }
+try {
+    const recUI = new RecommendationUI();
+    window.recUI = recUI;
+    console.log('✅ Recommendation UI ready');
+} catch (error) {
+    console.error('❌ Failed to initialize Recommendation UI:', error);
 }
