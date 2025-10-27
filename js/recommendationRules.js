@@ -4,6 +4,7 @@
  * 
  * @author bfforex
  * @date 2025-10-27
+ * @version 1.0.0
  */
 
 const RecommendationRules = {
@@ -156,7 +157,6 @@ const RecommendationRules = {
             id: 'LI-003',
             name: 'Low Cable Impedance Path',
             condition: (bus, standards) => {
-                // Check if path contains very large cables (>750 kcmil) with short runs
                 const hasBigCables = bus.pathComponents?.some(pc => 
                     pc.component?.type === 'cable' && 
                     parseInt(pc.component?.size) > 750 &&
@@ -254,7 +254,6 @@ const RecommendationRules = {
             id: 'TF-001',
             name: 'Transformer Mechanical Withstand Critical',
             condition: (bus, standards) => {
-                // Check if transformer in path and fault current high
                 const hasTransformer = bus.pathComponents?.some(pc => 
                     pc.component?.type === 'transformer'
                 );
@@ -312,7 +311,6 @@ const RecommendationRules = {
             id: 'TF-004',
             name: 'Parallel Transformers Unbalanced',
             condition: (bus, standards) => {
-                // Check if multiple transformers feed same bus with different ratings
                 const transformers = bus.pathComponents?.filter(pc => 
                     pc.component?.type === 'transformer'
                 );
@@ -405,7 +403,7 @@ const RecommendationRules = {
             condition: (bus, standards) => {
                 const smallCable = bus.pathComponents?.find(pc => 
                     pc.component?.type === 'cable' && 
-                    parseInt(pc.component?.size) < 4  // Smaller than 4 AWG
+                    parseInt(pc.component?.size) < 4
                 );
                 return smallCable && bus.results?.faultCurrents?.threePhaseSym > 10;
             },
@@ -425,3 +423,5 @@ const RecommendationRules = {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = RecommendationRules;
 }
+
+console.log('✅ RecommendationRules loaded successfully');
