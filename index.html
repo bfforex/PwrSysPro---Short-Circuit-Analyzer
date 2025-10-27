@@ -86,7 +86,7 @@
                 <div class="section">
                     <h3>➕ Add Component</h3>
                     <div class="form-group">
-                        <label>From Bus:</label>
+                        <label for="fromBus">From Bus:</label>
                         <select id="fromBus">
                             <option value="">Select source bus</option>
                         </select>
@@ -186,7 +186,7 @@
                 </div>
                 <div class="form-group">
                     <label>Bus Type:</label>
-                    <select id="newBusType" onchange="toggleUtilityFields()">
+                    <select id="newBusType" onchange="toggleUtilityFields()" aria-label="Bus Type">
                         <option value="distribution">Distribution</option>
                         <option value="branch">Branch/Panel</option>
                         <option value="source">Source (Utility/Generator)</option>
@@ -194,7 +194,7 @@
                 </div>
                 <div class="form-group">
                     <label>Parent Bus:</label>
-                    <select id="newBusParent">
+                    <select id="newBusParent" aria-label="Parent Bus">
                         <option value="">None (Root Bus)</option>
                     </select>
                 </div>
@@ -202,7 +202,7 @@
                 <div id="utilityModeGroup" style="display: none;">
                     <div class="form-group">
                         <label>Utility Source Data Mode:</label>
-                        <select id="utilityMode" onchange="toggleUtilityInputMode()">
+                        <select id="utilityMode" onchange="toggleUtilityInputMode()" aria-label="Utility Source Data Mode">
                             <option value="kA">Fault Current (kA)</option>
                             <option value="MVA">Fault MVA</option>
                         </select>
@@ -275,7 +275,8 @@
         </div>
     </div>
     
-    <input type="file" id="fileInput" style="display: none;" accept=".json">
+    <label for="fileInput" style="display: none;">Load Project File</label>
+    <input type="file" id="fileInput" style="display: none;" accept=".json" aria-label="Load project file (.json)">
     
     <!-- Load JavaScript modules -->
     <script src="js/constants.js"></script>
@@ -288,5 +289,9 @@
     <script src="js/exportReport.js"></script>
     <script src="js/projectManager.js"></script>
     <script src="js/main.js"></script>
+
+    <!-- Analytics and Standards -->
+    <script src="js/thresholds.js"></script>
+    <script src="js/reportAnalytics.js"></script>
 </body>
 </html>
