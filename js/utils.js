@@ -90,26 +90,54 @@ function scheduleAutoSave() {
 function autoSave() {
     if (!document.getElementById('autoSave').checked) return;
     
-    const projectData = {
-        version: VERSION,
-        author: AUTHOR,
-        projectName: document.getElementById('projectName').value,
-        projectNumber: document.getElementById('projectNumber').value,
-        engineer: document.getElementById('engineer').value,
-        method: document.querySelector('input[name="method"]:checked').value,
-        buses: buses,
-        components: components,
-        results: calculationResults,
-        projectLoadCurrent: parseFloat(document.getElementById('loadCurrent').value) || 0,
-        projectPF: parseFloat(document.getElementById('powerFactor').value) || 0.9,
-        voltageDropLimit: parseFloat(document.getElementById('voltageDropLimit').value) || 3,
-        temperature: parseFloat(document.getElementById('temperature').value) || 75,
-        timestamp: new Date().toISOString()
-    };
-    
-    localStorage.setItem('multiBusProject', JSON.stringify(projectData));
-    
-    const indicator = document.getElementById('autoSaveIndicator');
-    indicator.classList.add('show');
-    setTimeout(() => indicator.classList.remove('show'), 2000);
+    try {
+        // Create a deep copy of buses without circular references
+        const busesForSave = buses.map(bus => {
+            const busCopy = { ...bus };
+            
+            // Remove circular references from results
+            if (busCopy.results && busCopy.results.path) {
+                busCopy.results.path = busCopy.results.path.map(segment => ({
+                    busId: segment.bus?.id,
+                    busName: segment.bus?.name,
+                    busVoltage: segment.bus?.voltage,
+                    componentType: segment.component?.type,
+                    componentId: segment.component?.id
+                }));
+            }
+            
+            // Remove pathComponents to avoid duplication
+            delete busCopy.pathComponents;
+            
+            return busCopy;
+        });
+        
+        const projectData = {
+            version: VERSION,
+            author: AUTHOR,
+            projectName: document.getElementById('projectName').value,
+            projectNumber: document.getElementById('projectNumber').value,
+            engineer: document.getElementById('engineer').value,
+            method: document.querySelector('input[name="method"]:checked').value,
+            buses: busesForSave,
+            components: components,
+            projectLoadCurrent: parseFloat(document.getElementById('loadCurrent').value) || 0,
+            projectPF: parseFloat(document.getElementById('powerFactor').value) || 0.9,
+            voltageDropLimit: parseFloat(document.getElementById('voltageDropLimit').value) || 3,
+            temperature: parseFloat(document.getElementById('temperature').value) || 75,
+            timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('multiBusProject', JSON.stringify(projectData));
+        
+        const indicator = document.getElementById('autoSaveIndicator');
+        if (indicator) {
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 2000);
+        }
+        
+        console.log('✅ Auto-saved successfully at', new Date().toISOString());
+    } catch (error) {
+        console.error('❌ Auto-save failed:', error);
+    }
 }

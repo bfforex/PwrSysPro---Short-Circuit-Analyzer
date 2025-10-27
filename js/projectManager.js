@@ -4,33 +4,60 @@
  * Save project to file
  */
 function saveProject() {
-    const projectData = {
-        version: VERSION,
-        author: AUTHOR,
-        projectName: document.getElementById('projectName').value,
-        projectNumber: document.getElementById('projectNumber').value,
-        engineer: document.getElementById('engineer').value,
-        method: document.querySelector('input[name="method"]:checked').value,
-        buses: buses,
-        components: components,
-        projectLoadCurrent: parseFloat(document.getElementById('loadCurrent').value) || 0,
-        projectPF: parseFloat(document.getElementById('powerFactor').value) || 0.9,
-        voltageDropLimit: parseFloat(document.getElementById('voltageDropLimit').value) || 3,
-        temperature: parseFloat(document.getElementById('temperature').value) || 75,
-        timestamp: new Date().toISOString()
-    };
-    
-    const json = JSON.stringify(projectData, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const fileName = projectData.projectName || 'project';
-    a.download = `${fileName.replace(/\s+/g, '_')}_MultiBus_v${VERSION}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    alert('Project saved successfully!');
+    try {
+        // Create a deep copy of buses without circular references
+        const busesForSave = buses.map(bus => {
+            const busCopy = { ...bus };
+            
+            // Remove circular references from results
+            if (busCopy.results && busCopy.results.path) {
+                busCopy.results.path = busCopy.results.path.map(segment => ({
+                    busId: segment.bus?.id,
+                    busName: segment.bus?.name,
+                    busVoltage: segment.bus?.voltage,
+                    componentType: segment.component?.type,
+                    componentId: segment.component?.id
+                }));
+            }
+            
+            // Remove pathComponents to avoid duplication
+            delete busCopy.pathComponents;
+            
+            return busCopy;
+        });
+        
+        const projectData = {
+            version: VERSION,
+            author: AUTHOR,
+            projectName: document.getElementById('projectName').value,
+            projectNumber: document.getElementById('projectNumber').value,
+            engineer: document.getElementById('engineer').value,
+            method: document.querySelector('input[name="method"]:checked').value,
+            buses: busesForSave,
+            components: components,
+            projectLoadCurrent: parseFloat(document.getElementById('loadCurrent').value) || 0,
+            projectPF: parseFloat(document.getElementById('powerFactor').value) || 0.9,
+            voltageDropLimit: parseFloat(document.getElementById('voltageDropLimit').value) || 3,
+            temperature: parseFloat(document.getElementById('temperature').value) || 75,
+            timestamp: new Date().toISOString()
+        };
+        
+        const json = JSON.stringify(projectData, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const fileName = projectData.projectName || 'project';
+        a.download = `${fileName.replace(/\s+/g, '_')}_MultiBus_v${VERSION}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        alert('Project saved successfully!');
+        console.log('✅ Project saved successfully');
+    } catch (error) {
+        console.error('❌ Save failed:', error);
+        alert('Error saving project:\n\n' + error.message);
+    }
 }
 
 /**
