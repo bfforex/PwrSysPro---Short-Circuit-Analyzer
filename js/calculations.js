@@ -1,5 +1,6 @@
 // Calculations Module - Handles all fault current calculations
-// Modified: 2025-10-27 - Added Phase 1 Analytics Integration with Voltage Drop Analysis
+// Modified: 2025-10-27 02:57:33 UTC by bfforex
+// Added: Phase 1 - Voltage Drop Calculations Integrated into Path Traversal (Option 1)
 
 /**
  * Trace path from bus to source
@@ -41,7 +42,7 @@ function traceBusPath(busId) {
 
 /**
  * Calculate fault current at a specific bus
- * Modified: Added detailed results storage for analytics
+ * Modified: Added detailed results storage for analytics and voltage drop
  */
 function calculateBus(busId) {
     const calculationDateStamp = getCalculationTimestamp();
@@ -71,9 +72,8 @@ function calculateBus(busId) {
             faultCurrents: {
                 threePhaseSym: result.faultCurrentKA,
                 threePhaseAsym: result.asymFaultCurrentKA,
-                // Approximate other fault types based on symmetrical components
-                lineToGround: result.faultCurrentKA * 0.85,  // Approximate L-G fault
-                lineToLine: result.faultCurrentKA * 0.866    // L-L fault (sqrt(3)/2)
+                lineToGround: result.faultCurrentKA * 0.85,
+                lineToLine: result.faultCurrentKA * 0.866
             },
             totalImpedance: {
                 magnitude: result.totalZ,
@@ -84,7 +84,9 @@ function calculateBus(busId) {
             xrRatio: result.xrRatio,
             path: result.path,
             method: result.method,
-            calculationDate: calculationDateStamp
+            calculationDate: calculationDateStamp,
+            // NEW: Voltage drop data from calculations
+            voltageDrop: result.voltageDrop || null
         };
         
         // Store path components for voltage drop analysis
@@ -104,7 +106,7 @@ function calculateBus(busId) {
         // Auto-run analytics if multiple buses are calculated
         const calculatedBuses = buses.filter(b => b.results);
         if (calculatedBuses.length > 1) {
-            console.log(`📊 ${calculatedBuses.length} buses calculated. Run analytics with calculateAllBusesWithAnalytics() for comprehensive report.`);
+            console.log(`📊 ${calculatedBuses.length} buses calculated. Analytics available with runSystemAnalytics()`);
         }
         
         scheduleAutoSave();
@@ -112,6 +114,83 @@ function calculateBus(busId) {
         console.error('Error calculating bus:', error);
         alert('Error calculating bus:\n\n' + error.message);
     }
+}
+
+/**
+ * Get load current for voltage drop calculation
+ * @param {Object} bus - Bus object
+ * @param {Number} defaultCurrent - Default current if not specified (A)
+ * @returns {Number} Load current in Amperes
+ */
+function getLoadCurrent(bus, defaultCurrent = 100) {
+    // Priority 1: Explicit load current
+    if (bus.loadCurrent) {
+        return parseFloat(bus.loadCurrent);
+    }
+    
+    // Priority 2: Calculate from load power
+    if (bus.load && bus.load.power && bus.voltage) {
+        const power = parseFloat(bus.load.power); // kW
+        const powerFactor = parseFloat(bus.load.powerFactor) || 0.85;
+        const voltage = parseFloat(bus.voltage) / 1000; // Convert to kV
+        return (power / (Math.sqrt(3) * voltage * powerFactor)) * 1000; // Convert to A
+    }
+    
+    // Priority 3: Use fault current as maximum possible load (conservative 40%)
+    if (bus.faultCurrent) {
+        return bus.faultCurrent * 1000 * 0.40; // 40% of fault current
+    }
+    
+    // Priority 4: Default value
+    return defaultCurrent;
+}
+
+/**
+ * Calculate voltage drop for a component
+ * @param {Object} component - Component object
+ * @param {Number} current - Load current in Amperes
+ * @param {Number} voltage - System voltage in Volts
+ * @param {Number} R - Resistance in Ohms
+ * @param {Number} X - Reactance in Ohms
+ * @param {Number} powerFactor - Power factor (default 0.85)
+ * @returns {Object} Voltage drop data
+ */
+function calculateComponentVoltageDrop(component, current, voltage, R, X, powerFactor = 0.85) {
+    if (current <= 0 || voltage <= 0) {
+        return {
+            dropVolts: 0,
+            dropPercent: 0,
+            severity: 'N/A',
+            current: 0
+        };
+    }
+    
+    // Calculate voltage drop using: ΔV = √3 × I × (R×cosφ + X×sinφ)
+    const sinPhi = Math.sqrt(1 - powerFactor * powerFactor);
+    const dropVolts = Math.sqrt(3) * current * (R * powerFactor + X * sinPhi);
+    const dropPercent = (dropVolts / voltage) * 100;
+    
+    // Determine severity based on IEEE 141 standards
+    let severity = 'OK';
+    if (component && component.type === 'cable') {
+        // Feeder circuits: 3% max
+        if (dropPercent > 5) severity = 'CRITICAL';
+        else if (dropPercent > 3) severity = 'HIGH';
+        else if (dropPercent > 2) severity = 'MEDIUM';
+    } else {
+        // Branch circuits: 5% max
+        if (dropPercent > 7) severity = 'CRITICAL';
+        else if (dropPercent > 5) severity = 'HIGH';
+        else if (dropPercent > 3) severity = 'MEDIUM';
+    }
+    
+    return {
+        dropVolts: dropVolts,
+        dropPercent: dropPercent,
+        severity: severity,
+        current: current,
+        powerFactor: powerFactor
+    };
 }
 
 /**
@@ -126,7 +205,8 @@ function calculatePathImpedance(path, method = 'point-to-point') {
 }
 
 /**
- * Point-to-Point Method Calculation
+ * Point-to-Point Method Calculation with Integrated Voltage Drop
+ * Modified: 2025-10-27 - Added voltage drop calculations
  */
 function calculatePathImpedancePointToPoint(path) {
     const calculationTimestamp = getCalculationTimestamp();
@@ -136,18 +216,41 @@ function calculatePathImpedancePointToPoint(path) {
     let totalX = 0;
     let currentVoltageLevel = null;
     
-    let steps = 'POINT-TO-POINT METHOD - FAULT CURRENT CALCULATION\n';
+    // === VOLTAGE DROP TRACKING ===
+    let voltageDropData = {
+        components: [],
+        cumulativeDropVolts: 0,
+        cumulativeDropPercent: 0,
+        maxDropPercent: 0,
+        criticalComponents: []
+    };
+    
+    let steps = 'POINT-TO-POINT METHOD - FAULT CURRENT & VOLTAGE DROP CALCULATION\n';
     steps += '='.repeat(80) + '\n\n';
     steps += `Date/Time: ${calculationTimestamp}\n`;
     steps += `User: ${engineerName}\n`;
     steps += `Temperature: ${temperature}°C\n`;
-    steps += `Calculation Method: Point-to-Point (Pure Ohmic - No Per-Unit)\n\n`;
+    steps += `Calculation Method: Point-to-Point (Pure Ohmic - No Per-Unit)\n`;
+    steps += `Voltage Drop Analysis: Integrated (IEEE 141 Standards)\n\n`;
     steps += `NOTE: Point-to-Point method uses ONLY ohmic values (Ω).\n`;
     steps += `      No base values or per-unit conversions are used.\n`;
-    steps += `      Impedances are referred across transformers using turns ratio.\n\n`;
+    steps += `      Impedances are referred across transformers using turns ratio.\n`;
+    steps += `      Voltage drops calculated using: ΔV = √3 × I × (R×cosφ + X×sinφ)\n\n`;
     
     const sourceBus = path[0].bus;
     currentVoltageLevel = sourceBus.voltage;
+    
+    // Get load current for voltage drop calculations
+    const targetBus = path[path.length - 1].bus;
+    const loadCurrent = getLoadCurrent(targetBus, 100);
+    const powerFactor = 0.85; // Standard power factor
+    
+    steps += `LOAD PARAMETERS FOR VOLTAGE DROP ANALYSIS:\n`;
+    steps += '-'.repeat(80) + '\n';
+    steps += `Target Bus: ${targetBus.name}\n`;
+    steps += `Load Current: ${loadCurrent.toFixed(2)} A\n`;
+    steps += `Power Factor: ${powerFactor}\n`;
+    steps += `IEEE 141 Limits: Feeder ≤3%, Branch ≤5%, Combined ≤7%\n\n`;
     
     if (sourceBus.type === 'source' && sourceBus.utilityFaultCurrent) {
         const utilityZ = sourceBus.voltage / (SQRT3 * sourceBus.utilityFaultCurrent * 1000);
@@ -182,8 +285,35 @@ function calculatePathImpedancePointToPoint(path) {
         steps += `R = Z / √(1 + (X/R)²)\n`;
         steps += `R = ${utilityZ.toFixed(6)} / √(1 + ${utilityXR}²)\n`;
         steps += `R = ${utilityR.toFixed(6)} Ω\n\n`;
-        steps += `Running Total (at ${currentVoltageLevel}V): R = ${totalR.toFixed(6)} Ω, X = ${totalX.toFixed(6)} Ω\n`;
-        steps += `                                            Z = ${Math.sqrt(totalR*totalR + totalX*totalX).toFixed(6)} Ω\n\n`;
+        
+        // Voltage drop at source
+        const sourceVD = calculateComponentVoltageDrop(
+            {type: 'source', name: sourceBus.name},
+            loadCurrent,
+            sourceBus.voltage,
+            utilityR,
+            utilityX,
+            powerFactor
+        );
+        
+        voltageDropData.components.push({
+            step: 1,
+            type: 'source',
+            name: sourceBus.name,
+            ...sourceVD
+        });
+        
+        voltageDropData.cumulativeDropVolts += sourceVD.dropVolts;
+        voltageDropData.cumulativeDropPercent += sourceVD.dropPercent;
+        
+        steps += `💧 VOLTAGE DROP (Source Impedance):\n`;
+        steps += `ΔV = √3 × I × (R×cosφ + X×sinφ)\n`;
+        steps += `ΔV = ${SQRT3.toFixed(4)} × ${loadCurrent.toFixed(2)} × (${utilityR.toFixed(6)} × ${powerFactor} + ${utilityX.toFixed(6)} × ${Math.sqrt(1-powerFactor*powerFactor).toFixed(4)})\n`;
+        steps += `ΔV = ${sourceVD.dropVolts.toFixed(3)} V = ${sourceVD.dropPercent.toFixed(3)}% [${sourceVD.severity}]\n\n`;
+        
+        steps += `Running Total (at ${currentVoltageLevel}V):\n`;
+        steps += `Impedance: R = ${totalR.toFixed(6)} Ω, X = ${totalX.toFixed(6)} Ω, Z = ${Math.sqrt(totalR*totalR + totalX*totalX).toFixed(6)} Ω\n`;
+        steps += `Voltage Drop: ${voltageDropData.cumulativeDropVolts.toFixed(3)} V (${voltageDropData.cumulativeDropPercent.toFixed(3)}%)\n\n`;
     }
     
     // Track processed parallel transformers
@@ -204,7 +334,6 @@ function calculatePathImpedancePointToPoint(path) {
             if (processedTransformerConnections.has(key)) continue;
             processedTransformerConnections.add(key);
             
-            // Find all parallel transformers with same from/to buses
             const parallelXfmrs = components.filter(c => 
                 c.type === 'transformer' && 
                 c.fromBus === comp.fromBus && 
@@ -230,7 +359,6 @@ function calculatePathImpedancePointToPoint(path) {
             steps += `Impedance: ${comp.impedance}% (each transformer)\n`;
             steps += `X/R Ratio: ${comp.xr}\n\n`;
             
-            // Calculate single transformer impedance (referred to secondary)
             const xfmrZbase = (comp.secondary * comp.secondary) / (comp.rating * 1000);
             const xfmrZ_single = (comp.impedance / 100) * xfmrZbase;
             const xfmrX_single = xfmrZ_single * comp.xr / Math.sqrt(1 + comp.xr * comp.xr);
@@ -247,7 +375,6 @@ function calculatePathImpedancePointToPoint(path) {
             steps += `X_xfmr_single = ${xfmrX_single.toFixed(6)} Ω\n`;
             steps += `R_xfmr_single = ${xfmrR_single.toFixed(6)} Ω\n\n`;
             
-            // Calculate parallel impedance
             let xfmrR, xfmrX, xfmrZ;
             if (numParallel > 1) {
                 xfmrR = xfmrR_single / numParallel;
@@ -265,7 +392,6 @@ function calculatePathImpedancePointToPoint(path) {
                 xfmrZ = xfmrZ_single;
             }
             
-            // Refer all previous impedances to secondary side
             const turnsRatio = comp.primary / comp.secondary;
             const R_primary_referred = totalR / (turnsRatio * turnsRatio);
             const X_primary_referred = totalX / (turnsRatio * turnsRatio);
@@ -277,7 +403,42 @@ function calculatePathImpedancePointToPoint(path) {
             steps += `R_pri_referred = ${totalR.toFixed(6)} / ${turnsRatio.toFixed(4)}² = ${R_primary_referred.toFixed(6)} Ω\n`;
             steps += `X_pri_referred = ${totalX.toFixed(6)} / ${turnsRatio.toFixed(4)}² = ${X_primary_referred.toFixed(6)} Ω\n\n`;
             
-            // Add transformer impedance
+            // Voltage drop through transformer (on secondary side)
+            const xfmrCurrentSecondary = loadCurrent * (comp.primary / comp.secondary);
+            const xfmrVD = calculateComponentVoltageDrop(
+                comp,
+                xfmrCurrentSecondary,
+                comp.secondary,
+                xfmrR,
+                xfmrX,
+                powerFactor
+            );
+            
+            voltageDropData.components.push({
+                step: stepNumber,
+                type: 'transformer',
+                name: comp.name || `${comp.fromBusName}→${comp.toBusName}`,
+                rating: totalRating,
+                ...xfmrVD
+            });
+            
+            voltageDropData.cumulativeDropVolts += xfmrVD.dropVolts;
+            voltageDropData.cumulativeDropPercent += xfmrVD.dropPercent;
+            
+            if (xfmrVD.severity === 'HIGH' || xfmrVD.severity === 'CRITICAL') {
+                voltageDropData.criticalComponents.push({
+                    step: stepNumber,
+                    component: comp,
+                    voltageDrop: xfmrVD
+                });
+            }
+            
+            steps += `💧 VOLTAGE DROP (Transformer):\n`;
+            steps += `Secondary Current: ${xfmrCurrentSecondary.toFixed(2)} A (referred from primary)\n`;
+            steps += `ΔV = √3 × I × (R×cosφ + X×sinφ)\n`;
+            steps += `ΔV = ${SQRT3.toFixed(4)} × ${xfmrCurrentSecondary.toFixed(2)} × (${xfmrR.toFixed(6)} × ${powerFactor} + ${xfmrX.toFixed(6)} × ${Math.sqrt(1-powerFactor*powerFactor).toFixed(4)})\n`;
+            steps += `ΔV = ${xfmrVD.dropVolts.toFixed(3)} V = ${xfmrVD.dropPercent.toFixed(3)}% [${xfmrVD.severity}]\n\n`;
+            
             totalR = R_primary_referred + xfmrR;
             totalX = X_primary_referred + xfmrX;
             currentVoltageLevel = comp.secondary;
@@ -285,7 +446,8 @@ function calculatePathImpedancePointToPoint(path) {
             steps += `Total System Impedance (at ${currentVoltageLevel}V secondary):\n`;
             steps += `R_total = ${R_primary_referred.toFixed(6)} + ${xfmrR.toFixed(6)} = ${totalR.toFixed(6)} Ω\n`;
             steps += `X_total = ${X_primary_referred.toFixed(6)} + ${xfmrX.toFixed(6)} = ${totalX.toFixed(6)} Ω\n`;
-            steps += `Z_total = ${Math.sqrt(totalR*totalR + totalX*totalX).toFixed(6)} Ω\n\n`;
+            steps += `Z_total = ${Math.sqrt(totalR*totalR + totalX*totalX).toFixed(6)} Ω\n`;
+            steps += `Cumulative Voltage Drop: ${voltageDropData.cumulativeDropVolts.toFixed(3)} V (${voltageDropData.cumulativeDropPercent.toFixed(3)}%)\n\n`;
             
             stepNumber++;
             continue;
@@ -320,8 +482,58 @@ function calculatePathImpedancePointToPoint(path) {
             steps += `Cable Impedance:\n`;
             steps += `R_cable = ${rBaseTemp.toFixed(8)} × ${comp.length} / ${parallel} = ${cableR.toFixed(6)} Ω\n`;
             steps += `X_cable = ${cableData[comp.material].x.toFixed(8)} × ${comp.length} / ${parallel} = ${cableX.toFixed(6)} Ω\n\n`;
+            
+            // Voltage drop through cable
+            const cableVD = calculateComponentVoltageDrop(
+                comp,
+                loadCurrent,
+                currentVoltageLevel,
+                cableR,
+                cableX,
+                powerFactor
+            );
+            
+            voltageDropData.components.push({
+                step: stepNumber,
+                type: 'cable',
+                name: comp.name || `${comp.size} ${comp.material}`,
+                length: comp.length,
+                ...cableVD
+            });
+            
+            voltageDropData.cumulativeDropVolts += cableVD.dropVolts;
+            voltageDropData.cumulativeDropPercent += cableVD.dropPercent;
+            
+            if (cableVD.severity === 'HIGH' || cableVD.severity === 'CRITICAL') {
+                voltageDropData.criticalComponents.push({
+                    step: stepNumber,
+                    component: comp,
+                    voltageDrop: cableVD
+                });
+            }
+            
+            if (cableVD.dropPercent > voltageDropData.maxDropPercent) {
+                voltageDropData.maxDropPercent = cableVD.dropPercent;
+            }
+            
+            steps += `💧 VOLTAGE DROP (Cable):\n`;
+            steps += `ΔV = √3 × I × (R×cosφ + X×sinφ)\n`;
+            steps += `ΔV = ${SQRT3.toFixed(4)} × ${loadCurrent.toFixed(2)} × (${cableR.toFixed(6)} × ${powerFactor} + ${cableX.toFixed(6)} × ${Math.sqrt(1-powerFactor*powerFactor).toFixed(4)})\n`;
+            steps += `ΔV = ${cableVD.dropVolts.toFixed(3)} V = ${cableVD.dropPercent.toFixed(3)}% [${cableVD.severity}]\n`;
+            
+            if (cableVD.severity === 'HIGH' || cableVD.severity === 'CRITICAL') {
+                steps += `⚠️  WARNING: Voltage drop exceeds IEEE 141 recommended limits!\n`;
+                if (cableVD.dropPercent > 5) {
+                    steps += `   Recommendation: Consider larger cable size or parallel conductors\n`;
+                } else if (cableVD.dropPercent > 3) {
+                    steps += `   Recommendation: Review cable sizing for this application\n`;
+                }
+            }
+            steps += `\n`;
+            
             steps += `Running Total (at ${currentVoltageLevel}V):\n`;
-            steps += `R = ${totalR.toFixed(6)} Ω, X = ${totalX.toFixed(6)} Ω, Z = ${Math.sqrt(totalR*totalR + totalX*totalX).toFixed(6)} Ω\n\n`;
+            steps += `Impedance: R = ${totalR.toFixed(6)} Ω, X = ${totalX.toFixed(6)} Ω, Z = ${Math.sqrt(totalR*totalR + totalX*totalX).toFixed(6)} Ω\n`;
+            steps += `Cumulative Voltage Drop: ${voltageDropData.cumulativeDropVolts.toFixed(3)} V (${voltageDropData.cumulativeDropPercent.toFixed(3)}%)\n\n`;
             
             stepNumber++;
         }
@@ -401,7 +613,6 @@ function calculatePathImpedancePointToPoint(path) {
     }
     
     // Final calculation
-    const targetBus = path[path.length - 1].bus;
     const totalZ = Math.sqrt(totalR * totalR + totalX * totalX);
     const faultCurrent = targetBus.voltage / (SQRT3 * totalZ);
     const faultCurrentKA = faultCurrent / 1000;
@@ -429,6 +640,60 @@ function calculatePathImpedancePointToPoint(path) {
     steps += `Asymmetry Factor = √(1 + 2e^(-4R/X)) = ${multiplier.toFixed(4)}\n`;
     steps += `I_asym = ${faultCurrent.toFixed(2)} × ${multiplier.toFixed(4)} = ${asymFaultCurrent.toFixed(2)} A = ${asymFaultCurrentKA.toFixed(3)} kA\n\n`;
     
+    // === VOLTAGE DROP SUMMARY ===
+    steps += '\n' + '='.repeat(80) + '\n';
+    steps += 'VOLTAGE DROP ANALYSIS SUMMARY\n';
+    steps += '='.repeat(80) + '\n\n';
+    steps += `Load Current: ${loadCurrent.toFixed(2)} A\n`;
+    steps += `Power Factor: ${powerFactor}\n`;
+    steps += `Total Components Analyzed: ${voltageDropData.components.length}\n\n`;
+    steps += `CUMULATIVE VOLTAGE DROP:\n`;
+    steps += `Total Drop: ${voltageDropData.cumulativeDropVolts.toFixed(3)} V (${voltageDropData.cumulativeDropPercent.toFixed(3)}%)\n`;
+    steps += `Maximum Single Component Drop: ${voltageDropData.maxDropPercent.toFixed(3)}%\n\n`;
+    
+    // Determine overall compliance
+    let overallCompliance = 'COMPLIANT';
+    let complianceColor = '✅';
+    if (voltageDropData.cumulativeDropPercent > 7) {
+        overallCompliance = 'NON-COMPLIANT';
+        complianceColor = '❌';
+    } else if (voltageDropData.cumulativeDropPercent > 5) {
+        overallCompliance = 'WARNING';
+        complianceColor = '⚠️';
+    }
+    
+    steps += `IEEE 141 COMPLIANCE: ${complianceColor} ${overallCompliance}\n`;
+    steps += `  • Feeder Limit: 3% (Recommended)\n`;
+    steps += `  • Branch Limit: 5% (Recommended)\n`;
+    steps += `  • Combined Limit: 7% (Maximum)\n`;
+    steps += `  • Actual: ${voltageDropData.cumulativeDropPercent.toFixed(3)}%\n\n`;
+    
+    if (voltageDropData.criticalComponents.length > 0) {
+        steps += `⚠️  CRITICAL COMPONENTS (${voltageDropData.criticalComponents.length}):\n`;
+        voltageDropData.criticalComponents.forEach(item => {
+            const comp = item.component;
+            const vd = item.voltageDrop;
+            steps += `  Step ${item.step}: ${comp.type.toUpperCase()} - ${comp.name || comp.fromBusName}\n`;
+            steps += `    Drop: ${vd.dropPercent.toFixed(3)}% [${vd.severity}]\n`;
+            if (comp.type === 'cable') {
+                steps += `    Recommendation: Consider ${comp.size} cable upgrade or parallel conductors\n`;
+            } else if (comp.type === 'transformer') {
+                steps += `    Recommendation: Review transformer tap settings or consider higher rating\n`;
+            }
+        });
+        steps += `\n`;
+    }
+    
+    steps += `COMPONENT-BY-COMPONENT BREAKDOWN:\n`;
+    steps += `${'─'.repeat(80)}\n`;
+    steps += `Step  Type          Name                    Drop(V)   Drop(%)  Status\n`;
+    steps += `${'─'.repeat(80)}\n`;
+    voltageDropData.components.forEach(item => {
+        const nameStr = (item.name || 'N/A').substring(0, 20).padEnd(20);
+        steps += `${item.step.toString().padEnd(5)} ${item.type.padEnd(12)} ${nameStr}  ${item.dropVolts.toFixed(3).padStart(8)}  ${item.dropPercent.toFixed(3).padStart(7)}  ${item.severity}\n`;
+    });
+    steps += `${'─'.repeat(80)}\n\n`;
+    
     return {
         totalR,
         totalX,
@@ -440,28 +705,40 @@ function calculatePathImpedancePointToPoint(path) {
         asymFaultCurrentKA,
         steps,
         path,
-        method: 'Point-to-Point'
+        method: 'Point-to-Point',
+        voltageDrop: voltageDropData  // NEW: Include voltage drop data
     };
 }
 
 /**
- * Per-Unit Method Calculation
+ * Per-Unit Method Calculation with Integrated Voltage Drop
+ * Modified: 2025-10-27 - Added voltage drop calculations
+ * Note: Implementation similar to Point-to-Point, adapted for per-unit system
  */
 function calculatePathImpedancePerUnit(path) {
     const calculationTimestamp = getCalculationTimestamp();
     const engineerName = document.getElementById('engineer').value || 'Unknown Engineer';
     const temperature = parseFloat(document.getElementById('temperature').value) || 75;
-    let steps = 'PER-UNIT METHOD - FAULT CURRENT CALCULATION\n';
+    let steps = 'PER-UNIT METHOD - FAULT CURRENT & VOLTAGE DROP CALCULATION\n';
     steps += '='.repeat(80) + '\n\n';
     steps += `Date/Time: ${calculationTimestamp}\n`;
     steps += `User: ${engineerName}\n`;
     steps += `Temperature: ${temperature}°C\n`;
-    steps += `Calculation Method: Per-Unit System with Multiple Voltage Levels\n\n`;
+    steps += `Calculation Method: Per-Unit System with Multiple Voltage Levels\n`;
+    steps += `Voltage Drop Analysis: Integrated (IEEE 141 Standards)\n\n`;
     
-    // Determine base kVA - find LARGEST total transformer capacity
-    let baseKVA = 1000; // Default minimum
+    // === VOLTAGE DROP TRACKING ===
+    let voltageDropData = {
+        components: [],
+        cumulativeDropVolts: 0,
+        cumulativeDropPercent: 0,
+        maxDropPercent: 0,
+        criticalComponents: []
+    };
     
-    // Group transformers by connection to find parallel banks
+    // Determine base kVA
+    let baseKVA = 1000;
+    
     const transformersByConnection = {};
     for (let i = 0; i < components.length; i++) {
         const comp = components[i];
@@ -474,7 +751,6 @@ function calculatePathImpedancePerUnit(path) {
         }
     }
     
-    // Find maximum total capacity
     let maxTransformerCapacity = 0;
     for (const key in transformersByConnection) {
         const parallelXfmrs = transformersByConnection[key];
@@ -506,9 +782,20 @@ function calculatePathImpedancePerUnit(path) {
     let totalXpu = 0;
     let currentVoltageLevel = null;
     
-    // Process source
     const sourceBus = path[0].bus;
     currentVoltageLevel = sourceBus.voltage;
+    
+    // Get load current for voltage drop calculations
+    const targetBus = path[path.length - 1].bus;
+    const loadCurrent = getLoadCurrent(targetBus, 100);
+    const powerFactor = 0.85;
+    
+    steps += `LOAD PARAMETERS FOR VOLTAGE DROP ANALYSIS:\n`;
+    steps += '-'.repeat(80) + '\n';
+    steps += `Target Bus: ${targetBus.name}\n`;
+    steps += `Load Current: ${loadCurrent.toFixed(2)} A\n`;
+    steps += `Power Factor: ${powerFactor}\n`;
+    steps += `IEEE 141 Limits: Feeder ≤3%, Branch ≤5%, Combined ≤7%\n\n`;
     
     if (sourceBus.type === 'source' && sourceBus.utilityFaultCurrent) {
         const V_base_source = sourceBus.voltage;
@@ -532,6 +819,9 @@ function calculatePathImpedancePerUnit(path) {
         const utilityXpu = utilityZpu * utilityXR / Math.sqrt(1 + utilityXR * utilityXR);
         const utilityRpu = utilityZpu / Math.sqrt(1 + utilityXR * utilityXR);
         
+        const utilityR = utilityRpu * Z_base_source;
+        const utilityX = utilityXpu * Z_base_source;
+        
         totalRpu += utilityRpu;
         totalXpu += utilityXpu;
         
@@ -547,15 +837,40 @@ function calculatePathImpedancePerUnit(path) {
         steps += `Convert to Per-Unit (using Z_base = ${Z_base_source.toFixed(6)} Ω):\n`;
         steps += `Z_source(pu) = ${utilityZohm.toFixed(6)} / ${Z_base_source.toFixed(6)} = ${utilityZpu.toFixed(6)} pu\n\n`;
         steps += `Component Separation:\n`;
-        steps += `X_source(pu) = ${utilityXpu.toFixed(6)} pu\n`;
-        steps += `R_source(pu) = ${utilityRpu.toFixed(6)} pu\n\n`;
-        steps += `Running Total (pu): R = ${totalRpu.toFixed(6)}, X = ${totalXpu.toFixed(6)}, Z = ${Math.sqrt(totalRpu*totalRpu + totalXpu*totalXpu).toFixed(6)}\n\n`;
+        steps += `X_source(pu) = ${utilityXpu.toFixed(6)} pu (${utilityX.toFixed(6)} Ω)\n`;
+        steps += `R_source(pu) = ${utilityRpu.toFixed(6)} pu (${utilityR.toFixed(6)} Ω)\n\n`;
+        
+        // Voltage drop at source
+        const sourceVD = calculateComponentVoltageDrop(
+            {type: 'source', name: sourceBus.name},
+            loadCurrent,
+            sourceBus.voltage,
+            utilityR,
+            utilityX,
+            powerFactor
+        );
+        
+        voltageDropData.components.push({
+            step: 1,
+            type: 'source',
+            name: sourceBus.name,
+            ...sourceVD
+        });
+        
+        voltageDropData.cumulativeDropVolts += sourceVD.dropVolts;
+        voltageDropData.cumulativeDropPercent += sourceVD.dropPercent;
+        
+        steps += `💧 VOLTAGE DROP (Source Impedance):\n`;
+        steps += `ΔV = √3 × I × (R×cosφ + X×sinφ)\n`;
+        steps += `ΔV = ${SQRT3.toFixed(4)} × ${loadCurrent.toFixed(2)} × (${utilityR.toFixed(6)} × ${powerFactor} + ${utilityX.toFixed(6)} × ${Math.sqrt(1-powerFactor*powerFactor).toFixed(4)})\n`;
+        steps += `ΔV = ${sourceVD.dropVolts.toFixed(3)} V = ${sourceVD.dropPercent.toFixed(3)}% [${sourceVD.severity}]\n\n`;
+        
+        steps += `Running Total (pu): R = ${totalRpu.toFixed(6)}, X = ${totalXpu.toFixed(6)}, Z = ${Math.sqrt(totalRpu*totalRpu + totalXpu*totalXpu).toFixed(6)}\n`;
+        steps += `Cumulative Voltage Drop: ${voltageDropData.cumulativeDropVolts.toFixed(3)} V (${voltageDropData.cumulativeDropPercent.toFixed(3)}%)\n\n`;
     }
     
-    // Track processed parallel transformers
     const processedTransformerConnections = new Set();
     
-    // Process components with voltage level awareness
     let stepNumber = 2;
     for (let i = 1; i < path.length; i++) {
         const segment = path[i];
@@ -570,7 +885,6 @@ function calculatePathImpedancePerUnit(path) {
             if (processedTransformerConnections.has(key)) continue;
             processedTransformerConnections.add(key);
             
-            // Find all parallel transformers
             const parallelXfmrs = components.filter(c => 
                 c.type === 'transformer' && 
                 c.fromBus === comp.fromBus && 
@@ -610,7 +924,6 @@ function calculatePathImpedancePerUnit(path) {
             steps += `  Z_base_sec = ${V_base_secondary}² / ${baseKVA * 1000} = ${Z_base_secondary.toFixed(6)} Ω (CHANGED)\n`;
             steps += `  I_base_sec = ${baseKVA * 1000} / (√3 × ${V_base_secondary}) = ${I_base_secondary.toFixed(2)} A (CHANGED)\n\n`;
             
-            // Calculate per-unit impedance
             let xfmrZpu_single = (comp.impedance / 100) * (baseKVA / comp.rating);
             let xfmrZpu, xfmrXpu, xfmrRpu;
             
@@ -644,282 +957,48 @@ function calculatePathImpedancePerUnit(path) {
             steps += `X_xfmr(pu) = ${xfmrXpu.toFixed(6)} pu\n`;
             steps += `R_xfmr(pu) = ${xfmrRpu.toFixed(6)} pu\n\n`;
             
-            // Show ohmic equivalents on both sides
             const xfmrZohm_pri = xfmrZpu * Z_base_primary;
             const xfmrZohm_sec = xfmrZpu * Z_base_secondary;
+            const xfmrRohm_sec = xfmrRpu * Z_base_secondary;
+            const xfmrXohm_sec = xfmrXpu * Z_base_secondary;
+            
             steps += `Equivalent Ohmic Values:\n`;
             steps += `  Referred to Primary (${V_base_primary}V):\n`;
             steps += `    Z_xfmr = ${xfmrZpu.toFixed(6)} × ${Z_base_primary.toFixed(6)} = ${xfmrZohm_pri.toFixed(6)} Ω\n`;
             steps += `  Referred to Secondary (${V_base_secondary}V):\n`;
-            steps += `    Z_xfmr = ${xfmrZpu.toFixed(6)} × ${Z_base_secondary.toFixed(6)} = ${xfmrZohm_sec.toFixed(6)} Ω\n\n`;
-            steps += `Running Total (pu): R = ${totalRpu.toFixed(6)}, X = ${totalXpu.toFixed(6)}, Z = ${Math.sqrt(totalRpu*totalRpu + totalXpu*totalXpu).toFixed(6)}\n\n`;
+            steps += `    Z_xfmr = ${xfmrZpu.toFixed(6)} × ${Z_base_secondary.toFixed(6)} = ${xfmrZohm_sec.toFixed(6)} Ω\n`;
+            steps += `    R_xfmr = ${xfmrRpu.toFixed(6)} × ${Z_base_secondary.toFixed(6)} = ${xfmrRohm_sec.toFixed(6)} Ω\n`;
+            steps += `    X_xfmr = ${xfmrXpu.toFixed(6)} × ${Z_base_secondary.toFixed(6)} = ${xfmrXohm_sec.toFixed(6)} Ω\n\n`;
             
-            currentVoltageLevel = V_base_secondary;
-            stepNumber++;
-            continue;
-        }
-        
-        // Handle cables
-        if (comp.type === 'cable') {
-            const V_base_cable = currentVoltageLevel;
-            const Z_base_cable = (V_base_cable * V_base_cable) / (baseKVA * 1000);
-            const I_base_cable = (baseKVA * 1000) / (SQRT3 * V_base_cable);
+            // Voltage drop through transformer (on secondary side)
+            const xfmrCurrentSecondary = loadCurrent * (comp.primary / comp.secondary);
+            const xfmrVD = calculateComponentVoltageDrop(
+                comp,
+                xfmrCurrentSecondary,
+                comp.secondary,
+                xfmrRohm_sec,
+                xfmrXohm_sec,
+                powerFactor
+            );
             
-            steps += `STEP ${stepNumber}: CABLE (${comp.fromBusName} → ${comp.toBusName})\n`;
-            steps += '-'.repeat(80) + '\n';
-            steps += `Cable at ${V_base_cable}V Level\n`;
-            steps += `Base Values for this voltage level:\n`;
-            steps += `  S_base = ${baseKVA} kVA\n`;
-            steps += `  V_base = ${V_base_cable} V\n`;
-            steps += `  Z_base = ${Z_base_cable.toFixed(6)} Ω\n`;
-            steps += `  I_base = ${I_base_cable.toFixed(2)} A\n\n`;
-            
-            const cableData = CABLE_IMPEDANCE_DATA[comp.size] || CABLE_IMPEDANCE_DATA['4/0'];
-            const parallel = comp.parallel || 1;
-            
-            let rBase20 = cableData[comp.material].r;
-            let rBaseTemp = temperatureCorrection(rBase20, temperature, comp.material);
-            
-            const cableRohm = (rBaseTemp * comp.length) / parallel;
-            const cableXohm = (cableData[comp.material].x * comp.length) / parallel;
-            const cableRpu = cableRohm / Z_base_cable;
-            const cableXpu = cableXohm / Z_base_cable;
-            
-            totalRpu += cableRpu;
-            totalXpu += cableXpu;
-            
-            steps += `Cable: ${comp.size} ${comp.material}, ${comp.length} ft`;
-            if (parallel > 1) steps += `, ${parallel} parallel`;
-            steps += `\n`;
-            steps += `Temperature: ${temperature}°C\n\n`;
-            steps += `Cable Impedance (Ohmic):\n`;
-            steps += `R_cable(Ω) = ${rBaseTemp.toFixed(8)} Ω/ft × ${comp.length} ft / ${parallel} = ${cableRohm.toFixed(6)} Ω\n`;
-            steps += `X_cable(Ω) = ${cableData[comp.material].x.toFixed(8)} Ω/ft × ${comp.length} ft / ${parallel} = ${cableXohm.toFixed(6)} Ω\n\n`;
-            steps += `Convert to Per-Unit (using Z_base = ${Z_base_cable.toFixed(6)} Ω):\n`;
-            steps += `R_cable(pu) = ${cableRohm.toFixed(6)} / ${Z_base_cable.toFixed(6)} = ${cableRpu.toFixed(6)} pu\n`;
-            steps += `X_cable(pu) = ${cableXohm.toFixed(6)} / ${Z_base_cable.toFixed(6)} = ${cableXpu.toFixed(6)} pu\n\n`;
-            steps += `Running Total (pu): R = ${totalRpu.toFixed(6)}, X = ${totalXpu.toFixed(6)}, Z = ${Math.sqrt(totalRpu*totalRpu + totalXpu*totalXpu).toFixed(6)}\n\n`;
-            
-            stepNumber++;
-        }
-        
-        // Handle generators
-        if (comp.type === 'generator') {
-            const V_base_gen = currentVoltageLevel;
-            const Z_base_gen = (V_base_gen * V_base_gen) / (baseKVA * 1000);
-            
-            const genZpu = (comp.xd / 100) * (baseKVA / comp.rating);
-            const genXpu = genZpu * comp.xr / Math.sqrt(1 + comp.xr * comp.xr);
-            const genRpu = genZpu / Math.sqrt(1 + comp.xr * comp.xr);
-            
-            steps += `STEP ${stepNumber}: GENERATOR (${comp.fromBusName} → ${comp.toBusName})\n`;
-            steps += '-'.repeat(80) + '\n';
-            steps += `Generator: ${comp.rating} kVA, X"d: ${comp.xd}%, X/R: ${comp.xr}\n`;
-            steps += `At ${V_base_gen}V level, Z_base = ${Z_base_gen.toFixed(6)} Ω\n\n`;
-            steps += `Generator Z(pu) = (%X"d / 100) × (S_base / S_gen)\n`;
-            steps += `Generator Z(pu) = (${comp.xd} / 100) × (${baseKVA} / ${comp.rating}) = ${genZpu.toFixed(6)} pu\n\n`;
-            
-            if (totalRpu > 0 || totalXpu > 0) {
-                const systemImpedancePu = { r: totalRpu, x: totalXpu };
-                const generatorImpedancePu = { r: genRpu, x: genXpu };
-                const parallelResultPu = calculateParallelImpedance(systemImpedancePu, generatorImpedancePu);
-                
-                steps += `Generator in Parallel (using Per-Unit complex math):\n`;
-                
-                totalRpu = parallelResultPu.r;
-                totalXpu = parallelResultPu.x;
-            } else {
-                totalRpu = genRpu;
-                totalXpu = genXpu;
-            }
-            
-            steps += `Running Total (pu): R = ${totalRpu.toFixed(6)}, X = ${totalXpu.toFixed(6)}, Z = ${Math.sqrt(totalRpu*totalRpu + totalXpu*totalXpu).toFixed(6)}\n\n`;
-            stepNumber++;
-        }
-        
-        // Handle motors
-        if (comp.type === 'motor') {
-            const V_base_motor = currentVoltageLevel;
-            const Z_base_motor = (V_base_motor * V_base_motor) / (baseKVA * 1000);
-            
-            const motorFLA = (comp.hp * 746) / (V_base_motor * SQRT3 * 0.85);
-            const motorContribution = motorFLA * 5;
-            const motorZohm = V_base_motor / (SQRT3 * motorContribution);
-            const motorZpu = motorZohm / Z_base_motor;
-            const motorXR = comp.motorType === 'induction' ? 6 : 15;
-            const motorXpu = motorZpu * motorXR / Math.sqrt(1 + motorXR * motorXR);
-            const motorRpu = motorZpu / Math.sqrt(1 + motorXR * motorXR);
-            
-            steps += `STEP ${stepNumber}: MOTOR (${comp.fromBusName} → ${comp.toBusName})\n`;
-            steps += '-'.repeat(80) + '\n';
-            steps += `Motor: ${comp.hp} HP ${comp.motorType}\n`;
-            steps += `At ${V_base_motor}V level, Z_base = ${Z_base_motor.toFixed(6)} Ω\n`;
-            steps += `Contribution: ${motorContribution.toFixed(2)} A, Z(pu) = ${motorZpu.toFixed(6)} pu\n\n`;
-            
-            if (totalRpu > 0 || totalXpu > 0) {
-                const systemImpedancePu = { r: totalRpu, x: totalXpu };
-                const motorImpedancePu = { r: motorRpu, x: motorXpu };
-                const parallelResultPu = calculateParallelImpedance(systemImpedancePu, motorImpedancePu);
-                
-                steps += `Motor in Parallel (using Per-Unit complex math):\n`;
-                
-                totalRpu = parallelResultPu.r;
-                totalXpu = parallelResultPu.x;
-            } else {
-                totalRpu = motorRpu;
-                totalXpu = motorXpu;
-            }
-            
-            steps += `Running Total (pu): R = ${totalRpu.toFixed(6)}, X = ${totalXpu.toFixed(6)}, Z = ${Math.sqrt(totalRpu*totalRpu + totalXpu*totalXpu).toFixed(6)}\n\n`;
-            stepNumber++;
-        }
-    }
-    
-    // Final calculation using target bus voltage level
-    const targetBus = path[path.length - 1].bus;
-    const V_base_final = targetBus.voltage;
-    const Z_base_final = (V_base_final * V_base_final) / (baseKVA * 1000);
-    const I_base_final = (baseKVA * 1000) / (SQRT3 * V_base_final);
-    
-    const totalZpu = Math.sqrt(totalRpu * totalRpu + totalXpu * totalXpu);
-    const faultCurrentPU = 1 / totalZpu;
-    const faultCurrent = faultCurrentPU * I_base_final;
-    const faultCurrentKA = faultCurrent / 1000;
-    const xrRatio = totalXpu / totalRpu;
-    
-    const totalRohm = totalRpu * Z_base_final;
-    const totalXohm = totalXpu * Z_base_final;
-    const totalZohm = totalZpu * Z_base_final;
-    
-    const multiplier = Math.sqrt(1 + 2 * Math.exp(-4 * totalRpu / totalXpu));
-    const asymFaultCurrent = faultCurrent * multiplier;
-    const asymFaultCurrentKA = asymFaultCurrent / 1000;
-    
-    steps += '\n' + '='.repeat(80) + '\n';
-    steps += 'FINAL FAULT CURRENT CALCULATION (PER-UNIT METHOD)\n';
-    steps += '='.repeat(80) + '\n\n';
-    steps += `Target Bus: ${targetBus.name}\n`;
-    steps += `Bus Voltage Level: ${V_base_final} V\n\n`;
-    steps += `Base Values at Target Bus (${V_base_final}V):\n`;
-    steps += `  S_base = ${baseKVA} kVA (CONSTANT throughout entire system)\n`;
-    steps += `  V_base = ${V_base_final} V\n`;
-    steps += `  Z_base = ${V_base_final}² / ${baseKVA * 1000} = ${Z_base_final.toFixed(6)} Ω\n`;
-    steps += `  I_base = ${baseKVA * 1000} / (√3 × ${V_base_final}) = ${I_base_final.toFixed(2)} A\n\n`;
-    steps += `Total System Impedance (Per-Unit):\n`;
-    steps += `R_total(pu) = ${totalRpu.toFixed(6)} pu\n`;
-    steps += `X_total(pu) = ${totalXpu.toFixed(6)} pu\n`;
-    steps += `Z_total(pu) = √(${totalRpu.toFixed(6)}² + ${totalXpu.toFixed(6)}²) = ${totalZpu.toFixed(6)} pu\n`;
-    steps += `X/R Ratio = ${totalXpu.toFixed(6)} / ${totalRpu.toFixed(6)} = ${xrRatio.toFixed(3)}\n\n`;
-    steps += `Total System Impedance (Ohmic) at ${V_base_final}V:\n`;
-    steps += `R_total(Ω) = ${totalRpu.toFixed(6)} × ${Z_base_final.toFixed(6)} = ${totalRohm.toFixed(6)} Ω\n`;
-    steps += `X_total(Ω) = ${totalXpu.toFixed(6)} × ${Z_base_final.toFixed(6)} = ${totalXohm.toFixed(6)} Ω\n`;
-    steps += `Z_total(Ω) = ${totalZpu.toFixed(6)} × ${Z_base_final.toFixed(6)} = ${totalZohm.toFixed(6)} Ω\n\n`;
-    steps += `THREE-PHASE SYMMETRICAL FAULT CURRENT:\n`;
-    steps += `I_sc(pu) = 1 / Z_total(pu) = 1 / ${totalZpu.toFixed(6)} = ${faultCurrentPU.toFixed(4)} pu\n\n`;
-    steps += `Convert to Amperes:\n`;
-    steps += `I_sc(A) = ${faultCurrentPU.toFixed(4)} × ${I_base_final.toFixed(2)} = ${faultCurrent.toFixed(2)} A\n`;
-    steps += `I_sc = ${faultCurrentKA.toFixed(3)} kA\n\n`;
-    steps += `Verification using Ohmic method:\n`;
-    steps += `I_sc = ${V_base_final} / (√3 × ${totalZohm.toFixed(6)}) = ${faultCurrent.toFixed(2)} A ✓\n\n`;
-    steps += `ASYMMETRICAL (PEAK) FAULT CURRENT:\n`;
-    steps += `Asymmetry Factor = √(1 + 2e^(-4×${totalRpu.toFixed(6)}/${totalXpu.toFixed(6)})) = ${multiplier.toFixed(4)}\n`;
-    steps += `I_asym = ${faultCurrent.toFixed(2)} × ${multiplier.toFixed(4)} = ${asymFaultCurrent.toFixed(2)} A = ${asymFaultCurrentKA.toFixed(3)} kA\n\n`;
-    steps += `════════════════════════════════════════════════════════════════════════════════\n`;
-    steps += `✓ S_base = ${baseKVA} kVA CONSTANT for ALL voltage levels\n`;
-    steps += `✓ V_base, Z_base, I_base CHANGED at each voltage transformation\n`;
-    steps += `✓ Transformer impedance SAME in pu on both sides\n`;
-    steps += `✓ All impedances used appropriate Z_base for their voltage level\n`;
-    steps += `════════════════════════════════════════════════════════════════════════════════\n\n`;
-    
-    return {
-        totalR: totalRohm,
-        totalX: totalXohm,
-        totalZ: totalZohm,
-        totalRpu: totalRpu,
-        totalXpu: totalXpu,
-        totalZpu: totalZpu,
-        xrRatio: xrRatio,
-        faultCurrent: faultCurrent,
-        faultCurrentKA: faultCurrentKA,
-        asymFaultCurrent: asymFaultCurrent,
-        asymFaultCurrentKA: asymFaultCurrentKA,
-        steps: steps,
-        path: path,
-        method: 'Per-Unit',
-        baseKVA: baseKVA,
-        baseVoltage: V_base_final,
-        baseZ: Z_base_final,
-        baseCurrent: I_base_final
-    };
-}
-
-// ============================================================================
-// PHASE 1 ANALYTICS INTEGRATION - NEW FUNCTIONS
-// Added: 2025-10-27 by bfforex
-// ============================================================================
-
-/**
- * Run comprehensive analytics on all calculated buses
- * Requires: reportAnalytics.js and thresholds.js to be loaded
- */
-function runSystemAnalytics() {
-    try {
-        // Check if analytics module is loaded
-        if (typeof ReportAnalytics === 'undefined') {
-            console.error('❌ ReportAnalytics module not loaded. Please include reportAnalytics.js');
-            return null;
-        }
-        
-        if (typeof IndustryStandards === 'undefined') {
-            console.error('❌ IndustryStandards module not loaded. Please include thresholds.js');
-            return null;
-        }
-        
-        // Check if any buses have been calculated
-        const calculatedBuses = buses.filter(b => b.results);
-        
-        if (calculatedBuses.length === 0) {
-            console.warn('⚠️  No calculated buses found. Please run calculations first.');
-            alert('No buses have been calculated yet.\n\nPlease calculate at least one bus before running analytics.');
-            return null;
-        }
-        
-        console.log(`\n${'='.repeat(80)}`);
-        console.log('🔬 RUNNING SYSTEM ANALYTICS - PHASE 1');
-        console.log(`${'='.repeat(80)}\n`);
-        
-        // Initialize analytics
-        const analytics = new ReportAnalytics();
-        analytics.initialize(calculatedBuses);
-        
-        // Get comprehensive summary
-        const summary = analytics.getSummary();
-        console.log('📊 SYSTEM ANALYTICS SUMMARY');
-        console.log(`${'─'.repeat(80)}`);
-        console.log(`Total Buses Analyzed: ${summary.totalBuses}`);
-        console.log(`Analysis Timestamp: ${summary.timestamp}`);
-        
-        console.log('\n🔝 EXTREME VALUES DETECTED:');
-        console.log(`  ⚡ Highest Fault Current: ${summary.extremeValues.highestFaultCurrent.value.toFixed(2)} kA at ${summary.extremeValues.highestFaultCurrent.busName}`);
-        console.log(`  ⚡ Lowest Fault Current: ${summary.extremeValues.lowestFaultCurrent.value.toFixed(2)} kA at ${summary.extremeValues.lowestFaultCurrent.busName}`);
-        console.log(`  🔧 Highest Impedance: ${summary.extremeValues.highestImpedance.value.toFixed(4)} Ω at ${summary.extremeValues.highestImpedance.busName}`);
-        console.log(`  🔧 Lowest Impedance: ${summary.extremeValues.lowestImpedance.value.toFixed(4)} Ω at ${summary.extremeValues.lowestImpedance.busName}`);
-        console.log(`  📐 Highest X/R Ratio: ${summary.extremeValues.highestXRRatio.value.toFixed(2)} at ${summary.extremeValues.highestXRRatio.busName}`);
-        
-        // Get voltage drop report
-        const voltageDropReport = analytics.getVoltageDropReport();
-        console.log('\n⚡ VOLTAGE DROP ANALYSIS');
-        console.log(`${'─'.repeat(80)}`);
-        console.log(`Critical Buses (High/Critical Voltage Drop): ${voltageDropReport.criticalBuses.length}`);
-        
-        if (voltageDropReport.criticalBuses.length > 0) {
-            console.log('\n  ⚠️  Critical Voltage Drops Detected:');
-            voltageDropReport.criticalBuses.forEach(vd => {
-                console.log(`     • ${vd.busName}: ${vd.dropPercent.toFixed(2)}% [${vd.severity}]`);
+            voltageDropData.components.push({
+                step: stepNumber,
+                type: 'transformer',
+                name: comp.name || `${comp.fromBusName}→${comp.toBusName}`,
+                rating: totalRating,
+                ...xfmrVD
             });
-        } else {
-            console.log('  ✅ No critical voltage drops detected');
-        }
-        
-        if (voltageDropReport.extremes.highest.value > 0) {
-            console.log(`\n  📈 Highest Voltage Drop: ${voltageDropReport.extremes.highest.value.toFixed(2)}% at ${voltageDropReport.extremes.highest
+            
+            voltageDropData.cumulativeDropVolts += xfmrVD.dropVolts;
+            voltageDropData.cumulativeDropPercent += xfmrVD.dropPercent;
+            
+            if (xfmrVD.severity === 'HIGH' || xfmrVD.severity === 'CRITICAL') {
+                voltageDropData.criticalComponents.push({
+                    step: stepNumber,
+                    component: comp,
+                    voltageDrop: xfmrVD
+                });
+            }
+            
+            steps += `💧 VOLTAGE DROP (Transformer):\n`;
+            steps += `Secondary Current: ${xfmrCurrentSecondary.to
