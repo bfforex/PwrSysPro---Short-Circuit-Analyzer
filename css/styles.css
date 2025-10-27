@@ -1667,3 +1667,105 @@ body.dark-mode #recommendationsTabButton {
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================
+   LOAD SUMMARY STYLES
+   Added: 2025-10-27 16:11:27 UTC by bfforex
+   ============================================ */
+
+.load-summary-section {
+    background: rgba(23, 162, 184, 0.1);
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border-left: 4px solid var(--info);
+}
+
+.load-summary-section h4 {
+    color: var(--info);
+    margin-bottom: 15px;
+}
+
+body.dark-mode .load-summary-section {
+    background: rgba(66, 153, 225, 0.2);
+}
+
+.load-summary-total {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--primary-dark);
+    margin-bottom: 15px;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+}
+
+body.dark-mode .load-summary-total {
+    background: #1a202c;
+    color: #64b5f6;
+}
+
+.load-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.load-item {
+    display: grid;
+    grid-template-columns: 120px 1fr 150px 100px;
+    gap: 10px;
+    padding: 8px;
+    background: white;
+    border-radius: 4px;
+    font-size: 0.9em;
+    align-items: center;
+}
+
+body.dark-mode .load-item {
+    background: #1a202c;
+}
+
+.load-type {
+    font-weight: 600;
+    color: var(--primary-bg);
+}
+
+.load-desc {
+    color: var(--text-muted);
+}
+
+.load-location {
+    color: var(--text-dark);
+    font-size: 0.85em;
+}
+
+.load-current {
+    font-weight: bold;
+    color: var(--success);
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .load-item {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+    
+    .load-current {
+        text-align: left;
+    }
+}
+
+/* Parallel cable badge */
+.component-item strong {
+    color: var(--primary-bg);
+    background: rgba(102, 126, 234, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+body.dark-mode .component-item strong {
+    background: rgba(102, 126, 234, 0.2);
+}
