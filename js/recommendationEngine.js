@@ -4,13 +4,18 @@
  * 
  * @author bfforex
  * @date 2025-10-27
+ * @version 1.0.0
  */
 
 class RecommendationEngine {
     constructor() {
         this.rules = RecommendationRules;
-        this.standards = IndustryStandards;  // From thresholds.js
+        this.standards = typeof IndustryStandards !== 'undefined' ? IndustryStandards : {};
         this.recommendations = [];
+        
+        console.log('🔍 Recommendation Engine initializing...');
+        console.log('   - Rules loaded:', Object.keys(this.rules).length, 'categories');
+        console.log('   - Standards available:', Object.keys(this.standards).length > 0);
     }
 
     /**
@@ -20,7 +25,7 @@ class RecommendationEngine {
      */
     analyzeBus(bus) {
         if (!bus.results) {
-            console.warn(`Bus ${bus.name} has no calculation results`);
+            console.warn(`⚠️ Bus ${bus.name} has no calculation results`);
             return [];
         }
 
@@ -44,7 +49,7 @@ class RecommendationEngine {
                         });
                     }
                 } catch (error) {
-                    console.error(`Error evaluating rule ${rule.id}:`, error);
+                    console.error(`❌ Error evaluating rule ${rule.id}:`, error);
                 }
             });
         }
@@ -217,4 +222,19 @@ class RecommendationEngine {
 }
 
 // Create global instance
-const recommendationEngine = new RecommendationEngine();
+try {
+    const recommendationEngine = new RecommendationEngine();
+    console.log('✅ Recommendation Engine initialized successfully');
+    console.log('   - Instance created:', recommendationEngine);
+    
+    // Verify analyzeBus method exists
+    if (typeof recommendationEngine.analyzeBus !== 'function') {
+        throw new Error('analyzeBus method not found');
+    }
+    
+    // Make available globally
+    window.recommendationEngine = recommendationEngine;
+    
+} catch (error) {
+    console.error('❌ Failed to initialize Recommendation Engine:', error);
+}
