@@ -21,11 +21,25 @@ function switchTab(event, tabName) {
 
 /**
  * Display bus calculation results
- * Modified: 2025-10-27 12:35:03 UTC by bfforex
- * Added: Recommendations display integration
+ * Modified: 2025-10-27 15:05:16 UTC by bfforex
+ * Enhanced: Complete recommendations integration with error handling
  */
 function displayBusResults(bus, result, timestamp, recommendations = null) {
     const container = document.getElementById('resultsContainer');
+    
+    // If recommendations not passed, try to generate them
+    if (!recommendations && typeof recommendationEngine !== 'undefined') {
+        try {
+            recommendations = recommendationEngine.analyzeBus(bus);
+            console.log(`✅ Generated ${recommendations.length} recommendations for ${bus.name}`);
+        } catch (error) {
+            console.error('❌ Error generating recommendations:', error);
+            recommendations = [];
+        }
+    } else if (!recommendations) {
+        console.warn('⚠️ Recommendation engine not available');
+        recommendations = [];
+    }
     
     // Generate fault current severity badge
     const getFaultSeverity = (current) => {
@@ -76,7 +90,7 @@ function displayBusResults(bus, result, timestamp, recommendations = null) {
                 </div>
             </div>
 
-            <!-- Voltage Drop Results (if available) -->
+            <!-- Voltage Drop Results -->
             ${result.voltageDrop ? `
                 <div class="voltage-drop-section">
                     <h3>💧 Voltage Drop Analysis</h3>
@@ -102,33 +116,44 @@ function displayBusResults(bus, result, timestamp, recommendations = null) {
                 </div>
             ` : ''}
 
-            <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- 🔥 NEW: RECOMMENDATIONS SECTION -->
-            <!-- ═══════════════════════════════════════════════════════════ -->
-            ${recommendations && recommendations.length > 0 ? `
-                <div class="recommendations-section">
-                    <div class="recommendations-section-header">
-                        <h3>💡 Recommendations for This Bus</h3>
-                        <span class="rec-count">${recommendations.length} recommendation${recommendations.length !== 1 ? 's' : ''} found</span>
-                    </div>
-                    <div id="busRecommendations"></div>
+            <!-- Recommendations Section -->
+            <div class="recommendations-section">
+                <div class="recommendations-section-header">
+                    <h3>💡 Recommendations for This Bus</h3>
+                    ${recommendations.length > 0 ? 
+                        `<span class="rec-count">${recommendations.length} recommendation${recommendations.length !== 1 ? 's' : ''} found</span>` :
+                        `<span class="rec-count-ok">✅ All Clear</span>`
+                    }
                 </div>
-            ` : `
-                <div class="recommendations-section">
-                    <div class="alert alert-success">
-                        <strong>✅ All Clear!</strong>
-                        <p>No issues detected. This bus meets all IEEE standards and design criteria.</p>
-                    </div>
+                
+                <!-- Recommendations Container -->
+                <div id="busRecommendationsContainer">
+                    ${recommendations.length === 0 ? `
+                        <div class="alert alert-success">
+                            <strong>✅ Excellent!</strong>
+                            <p>No issues detected. This bus meets all IEEE standards and design criteria.</p>
+                        </div>
+                    ` : `
+                        <div id="busRecommendations">
+                            <!-- Recommendations will be rendered here -->
+                            <div class="alert alert-info">Loading recommendations...</div>
+                        </div>
+                    `}
                 </div>
-            `}
-            <!-- ═══════════════════════════════════════════════════════════ -->
+            </div>
 
             <!-- Export Buttons -->
             <div class="button-group">
-                <button class="btn btn-info" onclick="exportBusReport('${bus.id}')">📄 Export Bus Report</button>
-                <button class="btn btn-secondary" onclick="viewCalculationSteps('${bus.id}')">🔍 View Detailed Calculations</button>
-                ${recommendations && recommendations.length > 0 ? `
-                    <button class="btn btn-warning" onclick="exportBusRecommendations('${bus.id}')">📋 Export Recommendations</button>
+                <button class="btn btn-info" onclick="exportBusReport('${bus.id}')">
+                    📄 Export Full Report
+                </button>
+                <button class="btn btn-secondary" onclick="viewCalculationSteps('${bus.id}')">
+                    🔍 View Calculations
+                </button>
+                ${recommendations.length > 0 ? `
+                    <button class="btn btn-warning" onclick="exportBusRecommendations('${bus.id}')">
+                        📋 Export Recommendations
+                    </button>
                 ` : ''}
             </div>
         </div>
@@ -136,25 +161,46 @@ function displayBusResults(bus, result, timestamp, recommendations = null) {
 
     container.innerHTML = html;
 
-    // ═══════════════════════════════════════════════════════════
-    // 🔥 NEW: RENDER RECOMMENDATIONS IF AVAILABLE
-    // ═══════════════════════════════════════════════════════════
-    if (recommendations && recommendations.length > 0) {
-        // Small delay to ensure DOM is ready
+    // Render recommendations if available
+    if (recommendations.length > 0) {
+        console.log('🔄 Rendering recommendations...');
         setTimeout(() => {
-            recUI.displayBusRecommendations(bus.id, 'busRecommendations');
+            try {
+                if (typeof recUI !== 'undefined' && typeof recUI.displayBusRecommendations === 'function') {
+                    recUI.displayBusRecommendations(bus.id, 'busRecommendations');
+                    console.log('✅ Recommendations rendered successfully');
+                } else {
+                    throw new Error('recUI not available or displayBusRecommendations not a function');
+                }
+            } catch (error) {
+                console.error('❌ Error rendering recommendations:', error);
+                const recContainer = document.getElementById('busRecommendations');
+                if (recContainer) {
+                    recContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>⚠️ Error displaying recommendations</strong>
+                            <p>Recommendation UI module not loaded. Check console for details.</p>
+                            <p><small>${error.message}</small></p>
+                        </div>
+                    `;
+                }
+            }
         }, 100);
     }
-    // ═══════════════════════════════════════════════════════════
 
-    // Show detailed calculation steps in calculations tab
-    document.getElementById('calculationSteps').innerHTML = `<pre class="calculation-steps">${result.steps}</pre>`;
+    // Show detailed calculation steps
+    if (result.steps) {
+        const calcSteps = document.getElementById('calculationSteps');
+        if (calcSteps) {
+            calcSteps.innerHTML = `<pre class="calculation-steps">${result.steps}</pre>`;
+        }
+    }
 }
 
 /**
  * Calculate all buses in the system
- * Modified: 2025-10-27 12:35:03 UTC by bfforex
- * Added: System-wide recommendations generation
+ * Modified: 2025-10-27 15:05:16 UTC by bfforex
+ * Enhanced: System-wide recommendations with error handling
  */
 function calculateAllBuses() {
     const calculatedBuses = [];
@@ -162,7 +208,6 @@ function calculateAllBuses() {
     
     buses.forEach(bus => {
         try {
-            // Only calculate buses that can be traced to a source
             const path = traceBusPath(bus.id);
             if (path) {
                 const method = document.querySelector('input[name="method"]:checked').value;
@@ -191,7 +236,8 @@ function calculateAllBuses() {
                     path: result.path,
                     method: result.method,
                     calculationDate: getCalculationTimestamp(),
-                    voltageDrop: result.voltageDrop || null
+                    voltageDrop: result.voltageDrop || null,
+                    steps: result.steps
                 };
                 
                 // Store path components
@@ -213,28 +259,31 @@ function calculateAllBuses() {
     updateBusTree();
     updateBusesContent();
     
-    // ═══════════════════════════════════════════════════════════
-    // 🔥 NEW: GENERATE SYSTEM-WIDE RECOMMENDATIONS
-    // ═══════════════════════════════════════════════════════════
-    
     if (calculatedBuses.length > 0) {
         console.log(`✅ Calculated ${calculatedBuses.length} buses`);
         
         // Generate system-wide recommendations
-        const systemReport = recommendationEngine.analyzeSystem(calculatedBuses);
-        
-        console.log(`📊 System Analysis Complete:`);
-        console.log(`   - Total Recommendations: ${systemReport.totalRecommendations}`);
-        console.log(`   - Critical: ${systemReport.critical}`);
-        console.log(`   - High: ${systemReport.high}`);
-        console.log(`   - Medium: ${systemReport.medium}`);
-        
-        // Display system recommendations
-        displaySystemRecommendations(systemReport);
-        
-        // Show summary message
-        const summaryMsg = `
-✅ Calculation Complete!
+        try {
+            if (typeof recommendationEngine !== 'undefined') {
+                const systemReport = recommendationEngine.analyzeSystem(calculatedBuses);
+                
+                console.log(`📊 System Analysis Complete:`);
+                console.log(`   - Total Recommendations: ${systemReport.totalRecommendations}`);
+                console.log(`   - Critical: ${systemReport.critical}`);
+                console.log(`   - High: ${systemReport.high}`);
+                console.log(`   - Medium: ${systemReport.medium}`);
+                
+                // Show recommendations tab
+                const recTabBtn = document.getElementById('recommendationsTabButton');
+                if (recTabBtn) {
+                    recTabBtn.style.display = 'block';
+                }
+                
+                // Display system recommendations
+                displaySystemRecommendations(systemReport);
+                
+                // Show summary alert
+                const summaryMsg = `✅ Calculation Complete!
 
 Buses Calculated: ${calculatedBuses.length}
 ${errors.length > 0 ? `\n⚠️ Errors: ${errors.length}` : ''}
@@ -244,16 +293,23 @@ ${errors.length > 0 ? `\n⚠️ Errors: ${errors.length}` : ''}
   - High: ${systemReport.high}
   - Medium: ${systemReport.medium}
 
-${systemReport.critical > 0 ? '⚠️ ATTENTION: Critical issues require immediate action!' : ''}
-        `;
-        
-        alert(summaryMsg);
-        
-        // Switch to recommendations tab
-        addRecommendationsTab();
-        switchTab(null, 'recommendations');
+${systemReport.critical > 0 ? '⚠️ ATTENTION: Critical issues require immediate action!' : ''}`;
+                
+                alert(summaryMsg);
+                
+                // Switch to recommendations tab
+                addRecommendationsTab();
+                switchTab(null, 'recommendations');
+                
+            } else {
+                console.warn('⚠️ Recommendation engine not available');
+                alert(`✅ Calculation Complete!\n\nBuses Calculated: ${calculatedBuses.length}\n\nRecommendation system not loaded.`);
+            }
+        } catch (error) {
+            console.error('❌ Error generating system recommendations:', error);
+            alert('Calculations complete, but error generating recommendations:\n\n' + error.message);
+        }
     }
-    // ═══════════════════════════════════════════════════════════
     
     if (errors.length > 0) {
         console.warn('Some buses had calculation errors:', errors);
@@ -264,21 +320,31 @@ ${systemReport.critical > 0 ? '⚠️ ATTENTION: Critical issues require immedia
 
 /**
  * Display system-wide recommendations
- * Added: 2025-10-27 12:35:03 UTC by bfforex
+ * Added: 2025-10-27 15:05:16 UTC by bfforex
  */
 function displaySystemRecommendations(systemReport) {
     const container = document.getElementById('recommendationsTabContent');
     if (!container) {
-        console.error('Recommendations tab content not found');
+        console.error('❌ Recommendations tab content not found');
         return;
     }
     
-    recUI.displaySystemRecommendations(systemReport, 'recommendationsTabContent');
+    if (typeof recUI !== 'undefined' && typeof recUI.displaySystemRecommendations === 'function') {
+        recUI.displaySystemRecommendations(systemReport, 'recommendationsTabContent');
+    } else {
+        console.error('❌ recUI.displaySystemRecommendations not available');
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <strong>⚠️ Error</strong>
+                <p>Recommendation UI not loaded. Please refresh the page.</p>
+            </div>
+        `;
+    }
 }
 
 /**
  * View detailed calculation steps for a bus
- * Added: 2025-10-27 12:35:03 UTC by bfforex
+ * Added: 2025-10-27 15:05:16 UTC by bfforex
  */
 function viewCalculationSteps(busId) {
     const bus = buses.find(b => b.id === busId);
@@ -289,7 +355,7 @@ function viewCalculationSteps(busId) {
 
 /**
  * Export recommendations for a specific bus
- * Added: 2025-10-27 12:35:03 UTC by bfforex
+ * Added: 2025-10-27 15:05:16 UTC by bfforex
  */
 function exportBusRecommendations(busId) {
     const bus = buses.find(b => b.id === busId);
@@ -302,7 +368,7 @@ function exportBusRecommendations(busId) {
     }
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `Bus_${bus.name}_Recommendations_${timestamp}.txt`;
+    const filename = `Bus_${bus.name.replace(/\s+/g, '_')}_Recommendations_${timestamp}.txt`;
     
     let content = `
 ${'='.repeat(100)}
@@ -361,14 +427,18 @@ ${'='.repeat(100)}
 
 /**
  * Add recommendations tab to the UI
- * Added: 2025-10-27 12:35:03 UTC by bfforex
+ * Added: 2025-10-27 15:05:16 UTC by bfforex
  */
 function addRecommendationsTab() {
     const tabsContainer = document.querySelector('.tabs');
     if (!tabsContainer) return;
     
     // Check if tab already exists
-    if (document.getElementById('recommendationsTabButton')) return;
+    if (document.getElementById('recommendationsTabButton')) {
+        const btn = document.getElementById('recommendationsTabButton');
+        btn.style.display = 'block';
+        return;
+    }
     
     // Add tab button
     const tabButton = document.createElement('button');
@@ -391,13 +461,18 @@ function addRecommendationsTab() {
 
 /**
  * Run system analytics manually
- * Added: 2025-10-27 12:35:03 UTC by bfforex
+ * Added: 2025-10-27 15:05:16 UTC by bfforex
  */
 function runSystemAnalytics() {
     const calculatedBuses = buses.filter(b => b.results);
     
     if (calculatedBuses.length === 0) {
         alert('No calculated buses found. Please run calculations first.');
+        return;
+    }
+    
+    if (typeof recommendationEngine === 'undefined') {
+        alert('Recommendation engine not loaded. Please refresh the page.');
         return;
     }
     
@@ -409,10 +484,55 @@ function runSystemAnalytics() {
     console.log('📊 System Analytics Complete:', systemReport);
 }
 
-// Export new functions to global scope
+/**
+ * Prompt user to select a bus for export
+ * Added: 2025-10-27 15:05:16 UTC by bfforex
+ */
+function promptBusExport() {
+    const calculatedBuses = buses.filter(b => b.results);
+    
+    if (calculatedBuses.length === 0) {
+        alert('No calculated buses available. Please run calculations first.');
+        return;
+    }
+    
+    // Create modal for bus selection
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Select Bus to Export</h2>
+                <span class="close-modal" onclick="this.closest('.modal').remove()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Select a bus to export its detailed report:</p>
+                <div class="bus-selection-list">
+                    ${calculatedBuses.map(bus => `
+                        <div class="bus-selection-item" onclick="exportBusReport('${bus.id}'); this.closest('.modal').remove();">
+                            <span class="bus-icon">${getBusIcon(bus.type)}</span>
+                            <span class="bus-name">${bus.name}</span>
+                            <span class="bus-voltage">${bus.voltage}V</span>
+                            <span class="bus-fault">${bus.results.faultCurrents.threePhaseSym.toFixed(2)} kA</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Export functions to global scope
 window.viewCalculationSteps = viewCalculationSteps;
 window.exportBusRecommendations = exportBusRecommendations;
 window.runSystemAnalytics = runSystemAnalytics;
+window.promptBusExport = promptBusExport;
 
 /**
  * Initialize theme from localStorage
