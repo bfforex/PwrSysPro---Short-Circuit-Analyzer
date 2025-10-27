@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PwrSys Pro - Short Circuit Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="auto-save-indicator" id="autoSaveIndicator">✓ Auto-saved</div>
+    
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+            <h1>⚡ PwrSys Pro - Short Circuit Analyzer</h1>
+            <p>NEC/PEC Compliant | Multi-Bus Power System Analysis</p>
+            <p style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Author: <strong id="Author">Engr. B. P. Faraon</strong>
+            <p style="font-size: 0.85em; opacity: 0.8; margin-top: 5px;">Session: <span id="sessionDate">2025-10-22 15:10:59</span></p>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="section">
+                    <h3>📋 Project Information</h3>
+                    <div class="form-group">
+                        <label>Project Name:</label>
+                        <input type="text" id="projectName" placeholder="Enter project name">
+                    </div>
+                    <div class="form-group">
+                        <label>Project Number:</label>
+                        <input type="text" id="projectNumber" placeholder="Enter project number">
+                    </div>
+                    <div class="form-group">
+                        <label>Engineer:</label>
+                        <input type="text" id="engineer" placeholder="Enter engineer name">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="autoSave" checked style="width: auto; margin-right: 5px;">
+                            Auto-save to browser
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>🔌 Bus Manager</h3>
+                    <button class="btn btn-success" onclick="openAddBusModal()" style="width: 100%;">+ Add New Bus</button>
+                    <div id="busTree" class="bus-tree">
+                        <div class="alert alert-info">
+                            No buses created yet. Click "Add New Bus" to start.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>⚙️ Calculation Settings</h3>
+                    <div class="form-group">
+                        <label>Load Current for Voltage Drop (A):</label>
+                        <input type="number" id="loadCurrent" placeholder="e.g., 100" step="0.1" value="100" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Power Factor (0 - 1):</label>
+                        <input type="number" id="powerFactor" placeholder="e.g., 0.9" step="0.01" min="0" max="1" value="0.9">
+                    </div>
+                    <div class="form-group">
+                        <label>Voltage Drop Limit (%):</label>
+                        <input type="number" id="voltageDropLimit" placeholder="e.g., 3" step="0.1" value="3" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Temperature (°C):</label>
+                        <input type="number" id="temperature" placeholder="e.g., 75" step="1" value="75" min="-40" max="150">
+                    </div>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="method" value="point-to-point" checked>
+                            Point-to-Point
+                        </label>
+                        <label>
+                            <input type="radio" name="method" value="per-unit">
+                            Per-Unit
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>➕ Add Component</h3>
+                    <div class="form-group">
+                        <label>From Bus:</label>
+                        <select id="fromBus">
+                            <option value="">Select source bus</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>To Bus:</label>
+                        <select id="toBus">
+                            <option value="">Select destination bus</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Component Type:</label>
+                        <select id="componentType">
+                            <option value="transformer">Transformer</option>
+                            <option value="cable">Cable</option>
+                            <option value="generator">Generator</option>
+                            <option value="motor">Motor Contribution</option>
+                        </select>
+                    </div>
+                    <div id="componentInputs"></div>
+                    <button class="btn btn-success" onclick="addComponent()">+ Add Component</button>
+                </div>
+                
+                <div class="section">
+                    <h3>🎬 Actions</h3>
+                    <button id="calculateBtn" class="btn btn-primary" style="width: 100%;">🔢 Calculate All Buses</button>
+                    <button class="btn btn-danger" onclick="clearAll()" style="width: 100%; margin-top: 10px;">🗑️ Clear All</button>
+                    <button class="btn btn-secondary" onclick="saveProject()" style="width: 100%; margin-top: 10px;">💾 Save Project</button>
+                    <button class="btn btn-secondary" onclick="loadProject()" style="width: 100%; margin-top: 10px;">📂 Load Project</button>
+                </div>
+            </div>
+            
+            <div class="content-area">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab(event, 'buses')">🔌 Buses</button>
+                    <button class="tab" onclick="switchTab(event, 'components')">Components</button>
+                    <button class="tab" onclick="switchTab(event, 'results')">Results</button>
+                    <button class="tab" onclick="switchTab(event, 'calculations')">Calculations</button>
+                </div>
+                
+                <div id="busesTab" class="tab-content active">
+                    <div class="section">
+                        <h3>🔌 Power System Buses</h3>
+                        <div id="busesContent">
+                            <div class="alert alert-info">
+                                No buses created yet. Use the Bus Manager to add buses to your system.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="componentsTab" class="tab-content">
+                    <div class="section">
+                        <h3>🔧 System Components</h3>
+                        <div id="componentsList">
+                            <div class="alert alert-info">
+                                No components added yet. Add components to connect your buses.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="resultsTab" class="tab-content">
+                    <div id="resultsContainer">
+                        <div class="alert alert-info">
+                            Run calculation to see results here.
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="calculationsTab" class="tab-content">
+                    <div id="calculationSteps">
+                        <div class="alert alert-info">
+                            Detailed calculations will appear here after running the analysis.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Bus Modal -->
+    <div id="addBusModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Bus</h2>
+                <span class="close-modal" onclick="closeAddBusModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Bus Name:</label>
+                    <input type="text" id="newBusName" placeholder="e.g., Main Switchboard">
+                </div>
+                <div class="form-group">
+                    <label>Bus Voltage (V):</label>
+                    <input type="number" id="newBusVoltage" placeholder="e.g., 480" step="0.1" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Bus Type:</label>
+                    <select id="newBusType" onchange="toggleUtilityFields()">
+                        <option value="distribution">Distribution</option>
+                        <option value="branch">Branch/Panel</option>
+                        <option value="source">Source (Utility/Generator)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Parent Bus:</label>
+                    <select id="newBusParent">
+                        <option value="">None (Root Bus)</option>
+                    </select>
+                </div>
+                
+                <div id="utilityModeGroup" style="display: none;">
+                    <div class="form-group">
+                        <label>Utility Source Data Mode:</label>
+                        <select id="utilityMode" onchange="toggleUtilityInputMode()">
+                            <option value="kA">Fault Current (kA)</option>
+                            <option value="MVA">Fault MVA</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="utilitySourceGroup" style="display: none;">
+                    <div id="faultCurrentMode" class="form-group">
+                        <label>Available Fault Current (kA):
+                            <span class="tooltip">ℹ️
+                                <span class="tooltiptext">Three-phase symmetrical fault current available from utility</span>
+                            </span>
+                        </label>
+                        <input type="number" id="newBusUtilityFault" placeholder="e.g., 50" step="0.1" min="0">
+                    </div>
+                    <div id="faultMVAMode" class="form-group" style="display: none;">
+                        <label>Available Fault MVA:
+                            <span class="tooltip">ℹ️
+                                <span class="tooltiptext">Three-phase symmetrical fault MVA from utility</span>
+                            </span>
+                        </label>
+                        <input type="number" id="newBusUtilityMVA" placeholder="e.g., 500" step="0.1" min="0">
+                    </div>
+                </div>
+                
+                <div class="form-group" id="utilityXRGroup" style="display: none;">
+                    <label>Source X/R Ratio:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Typical values: 3-10 for utility sources, 15-30 for generators</span>
+                        </span>
+                    </label>
+                    <input type="number" id="newBusUtilityXR" placeholder="e.g., 3" step="0.1" min="0" value="3">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddBusModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveBus()">Add Bus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Bus Modal -->
+    <div id="editBusModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Bus</h2>
+                <span class="close-modal" onclick="closeEditBusModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="editBusModalBody">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditBusModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveBusEdits()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Component Modal -->
+    <div id="editComponentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Component</h2>
+                <span class="close-modal" onclick="closeEditComponentModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="editComponentModalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditComponentModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveComponentEdits()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="fileInput" style="display: none;" accept=".json">
+    
+    <!-- Load JavaScript modules -->
+    <script src="js/constants.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/busManager.js"></script>
+    <script src="js/componentManager.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/exportReport.js"></script>
+    <script src="js/projectManager.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
