@@ -234,7 +234,7 @@ const IndustryStandards = {
     protection: {
         circuitBreaker: {
             interruptingCapacity: {
-                safety Margin: 1.25,
+                safetyMargin: 1.25,
                 description: 'Breaker IC should be 125% of calculated fault current'
             },
             operatingTime: {
