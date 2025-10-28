@@ -152,3 +152,49 @@ function autoSave() {
         console.error('❌ Auto-save failed:', error);
     }
 }
+
+/**
+ * Refer current across transformer
+ * Added: 2025-10-28 00:28:22 UTC by bfforex
+ * 
+ * @param {Number} current - Current in amperes
+ * @param {Number} fromVoltage - Source voltage
+ * @param {Number} toVoltage - Destination voltage
+ * @returns {Number} Referred current
+ */
+function referCurrentAcrossTransformer(current, fromVoltage, toVoltage) {
+    const turnsRatio = fromVoltage / toVoltage;
+    return current / turnsRatio;
+}
+
+/**
+ * Calculate transformer full load current
+ * Added: 2025-10-28 00:28:22 UTC by bfforex
+ * 
+ * @param {Number} kva - Transformer rating in kVA
+ * @param {Number} voltage - Voltage in volts
+ * @param {Number} loadingFactor - Loading factor (0-1)
+ * @returns {Number} Full load current in amperes
+ */
+function calculateTransformerCurrent(kva, voltage, loadingFactor = 0.8) {
+    return (kva * 1000 * loadingFactor) / (Math.sqrt(3) * voltage);
+}
+
+/**
+ * Calculate motor full load current
+ * Added: 2025-10-28 00:28:22 UTC by bfforex
+ * 
+ * @param {Number} hp - Motor horsepower
+ * @param {Number} voltage - Voltage in volts
+ * @param {Number} efficiency - Motor efficiency (0-1)
+ * @param {Number} powerFactor - Power factor (0-1)
+ * @returns {Number} Full load current in amperes
+ */
+function calculateMotorCurrent(hp, voltage, efficiency = 0.9, powerFactor = 0.85) {
+    return (hp * 746) / (voltage * Math.sqrt(3) * efficiency * powerFactor);
+}
+
+// Export functions
+window.referCurrentAcrossTransformer = referCurrentAcrossTransformer;
+window.calculateTransformerCurrent = calculateTransformerCurrent;
+window.calculateMotorCurrent = calculateMotorCurrent;

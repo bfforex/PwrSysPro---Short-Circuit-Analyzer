@@ -64,16 +64,24 @@ function calculateDownstreamLoad(busId) {
                     break;
                     
                 case 'transformer':
-                    // Transformer: use rating if no downstream loads
+                    // Calculate downstream load on secondary side
                     const transformerDownstream = traverseDownstream(comp.toBus);
                     if (transformerDownstream > 0) {
-                        branchLoad += transformerDownstream;
+                       // ✅ NEW: Refer secondary current to primary side
+                       const turnsRatio = comp.primary / comp.secondary;
+                                                             const primaryCurrent = transformerDownstream / turnsRatio;  
+                       branchLoad += primaryCurrent;
+        
+                                                             console.log(`${indent}  Transformer: ${comp.rating} kVA`);
+                                                             console.log(`${indent}    Secondary load: ${transformerDownstream.toFixed(2)} A @ ${comp.secondary}V`);
+                                                             console.log(`${indent}    Primary current: ${primaryCurrent.toFixed(2)} A @ ${comp.primary}V`);
+                                                             console.log(`${indent}    Turns ratio: ${turnsRatio.toFixed(4)}`);
+
                     } else if (comp.rating) {
-                        // Use transformer rating as maximum load
-                        // I = kVA / (√3 × kV)
-                        const transformerCurrent = (comp.rating * 1000) / (Math.sqrt(3) * toBus.voltage);
-                        branchLoad += transformerCurrent * 0.8; // Assume 80% loading
-                        console.log(`   Transformer: ${comp.rating} kVA = ${(transformerCurrent * 0.8).toFixed(2)} A`);
+                        // Use transformer rating as maximum load (80% loading)
+                        const transformerCurrent = (comp.rating * 1000) / (Math.sqrt(3) * comp.primary);
+                                                                branchLoad += transformerCurrent * 0.8;
+                                                                console.log(`${indent}  Transformer: ${comp.rating} kVA @ 80% = ${(transformerCurrent * 0.8).toFixed(2)} A`);
                     }
                     break;
                     
