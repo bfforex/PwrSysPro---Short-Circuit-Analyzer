@@ -133,80 +133,138 @@ function calculateBus(busId) {
 
 /**
  * Get load current for voltage drop calculation
+ * Modified: 2025-10-28 00:27:15 UTC by bfforex
+ * Enhanced: Automatic downstream load calculation
+ * 
  * @param {Object} bus - Bus object
- * @param {Object} component - Component object (optional, may have loadCurrent)
- * @param {Number} defaultCurrent - Default current if not specified (A)
+ * @param {Object} component - Component object (optional)
+ * @param {Number} defaultCurrent - Default current if not calculated (A)
  * @returns {Number} Load current in Amperes
  */
 function getLoadCurrent(bus, component = null, defaultCurrent = 100) {
-    // Priority 1: Component-specific load current (from input data)
-    if (component && component.loadCurrent) {
+    console.log(`\n🔍 Calculating load current for bus: ${bus.name}`);
+    
+    // Priority 1: Component-specific load current (manual override)
+    if (component && component.loadCurrent && component.loadCurrent > 0) {
+        console.log(`  ✅ Using component load: ${component.loadCurrent}A (manual)`);
         return parseFloat(component.loadCurrent);
     }
     
     // Priority 2: Bus-specific load current
-    if (bus && bus.loadCurrent) {
+    if (bus && bus.loadCurrent && bus.loadCurrent > 0) {
+        console.log(`  ✅ Using bus load: ${bus.loadCurrent}A`);
         return parseFloat(bus.loadCurrent);
     }
     
-    // Priority 3: Calculate from bus load power
-    if (bus && bus.load && bus.load.power && bus.voltage) {
-        const power = parseFloat(bus.load.power); // kW
-        const powerFactor = parseFloat(bus.load.powerFactor) || 0.85;
-        const voltage = parseFloat(bus.voltage) / 1000; // Convert to kV
-        return (power / (Math.sqrt(3) * voltage * powerFactor)) * 1000; // Convert to A
+    // Priority 3: Calculate from downstream loads
+    const downstreamLoad = calculateDownstreamLoad(bus.id);
+    if (downstreamLoad > 0) {
+        console.log(`  ✅ Calculated downstream: ${downstreamLoad.toFixed(1)}A`);
+        return downstreamLoad;
     }
     
-    // Priority 4: Default value (typical load current for voltage drop analysis)
+    // Priority 4: Default value
+    console.log(`  ⚠️ Using default: ${defaultCurrent}A`);
     return defaultCurrent;
 }
 
 /**
- * Calculate voltage drop for a component
- * @param {Object} component - Component object
- * @param {Number} current - Load current in Amperes
- * @param {Number} voltage - System voltage in Volts
- * @param {Number} R - Resistance in Ohms
- * @param {Number} X - Reactance in Ohms
- * @param {Number} powerFactor - Power factor (default 0.85)
- * @returns {Object} Voltage drop data
+ * Calculate total downstream load from a bus
+ * Added: 2025-10-28 00:27:15 UTC by bfforex
+ * 
+ * @param {String} busId - Bus identifier
+ * @returns {Number} Total downstream load in Amperes
  */
-function calculateComponentVoltageDrop(component, current, voltage, R, X, powerFactor = 0.85) {
-    if (current <= 0 || voltage <= 0) {
-        return {
-            dropVolts: 0,
-            dropPercent: 0,
-            severity: 'N/A',
-            current: 0
-        };
+function calculateDownstreamLoad(busId) {
+    const bus = buses.find(b => b.id === busId);
+    if (!bus) return 0;
+    
+    let totalLoad = 0;
+    const visited = new Set();
+    
+    function traverseDownstream(currentBusId, depth = 0) {
+        if (visited.has(currentBusId)) return 0;
+        visited.add(currentBusId);
+        
+        const indent = '  '.repeat(depth);
+        let branchLoad = 0;
+        
+        const currentBus = buses.find(b => b.id === currentBusId);
+        if (!currentBus) return 0;
+        
+        console.log(`${indent}📍 ${currentBus.name} (${currentBus.voltage}V)`);
+        
+        // Add direct load on this bus
+        if (currentBus.loadCurrent && currentBus.loadCurrent > 0) {
+            branchLoad += currentBus.loadCurrent;
+            console.log(`${indent}  ├─ Direct load: ${currentBus.loadCurrent.toFixed(1)}A`);
+        }
+        
+        // Find all components FROM this bus
+        const downstreamComponents = components.filter(c => c.fromBus === currentBusId);
+        
+        downstreamComponents.forEach(comp => {
+            const toBus = buses.find(b => b.id === comp.toBus);
+            if (!toBus) return;
+            
+            console.log(`${indent}  ├─ ${comp.type.toUpperCase()}: ${comp.name || comp.fromBusName + '→' + comp.toBusName}`);
+            
+            switch(comp.type) {
+                case 'motor':
+                    // Motor FLA calculation
+                    const motorCurrent = (comp.hp * 746) / 
+                                       (toBus.voltage * Math.sqrt(3) * 0.9 * 0.85);
+                    branchLoad += motorCurrent;
+                    console.log(`${indent}  │  └─ ${comp.hp}HP motor = ${motorCurrent.toFixed(1)}A`);
+                    break;
+                    
+                case 'transformer':
+                    // Check downstream of transformer
+                    const xfmrDownstream = traverseDownstream(comp.toBus, depth + 2);
+                    if (xfmrDownstream > 0) {
+                        // Refer current to primary side
+                        const turnsRatio = comp.primary / comp.secondary;
+                        const primaryCurrent = xfmrDownstream / turnsRatio;
+                        branchLoad += primaryCurrent;
+                        console.log(`${indent}  │  └─ Downstream: ${xfmrDownstream.toFixed(1)}A @ ${comp.secondary}V`);
+                        console.log(`${indent}  │     Referred to primary: ${primaryCurrent.toFixed(1)}A @ ${comp.primary}V`);
+                    } else {
+                        // Use 80% of transformer rating as default
+                        const xfmrCurrent = (comp.rating * 1000 * 0.8) / 
+                                          (Math.sqrt(3) * comp.primary);
+                        branchLoad += xfmrCurrent;
+                        console.log(`${indent}  │  └─ ${comp.rating}kVA @ 80% = ${xfmrCurrent.toFixed(1)}A`);
+                    }
+                    break;
+                    
+                case 'cable':
+                    if (comp.loadCurrent && comp.loadCurrent > 0) {
+                        branchLoad += comp.loadCurrent;
+                        console.log(`${indent}  │  └─ Specified: ${comp.loadCurrent.toFixed(1)}A`);
+                    } else {
+                        const cableDownstream = traverseDownstream(comp.toBus, depth + 2);
+                        branchLoad += cableDownstream;
+                    }
+                    break;
+                    
+                case 'generator':
+                    // Generators supply, don't add load
+                    console.log(`${indent}  │  └─ ${comp.rating}kVA generator (source)`);
+                    break;
+            }
+        });
+        
+        if (branchLoad > 0) {
+            console.log(`${indent}  └─ Total: ${branchLoad.toFixed(1)}A`);
+        }
+        
+        return branchLoad;
     }
     
-    // Calculate voltage drop using: ΔV = √3 × I × (R×cosφ + X×sinφ)
-    const sinPhi = Math.sqrt(1 - powerFactor * powerFactor);
-    const dropVolts = Math.sqrt(3) * current * (R * powerFactor + X * sinPhi);
-    const dropPercent = (dropVolts / voltage) * 100;
+    totalLoad = traverseDownstream(busId);
     
-    // Determine severity based on IEEE 141 standards
-    let severity = 'OK';
-    if (component && component.type === 'cable') {
-        // Feeder circuits: 3% max
-        if (dropPercent > 5) severity = 'CRITICAL';
-        else if (dropPercent > 3) severity = 'HIGH';
-        else if (dropPercent > 2) severity = 'MEDIUM';
-    } else {
-        // Branch circuits: 5% max
-        if (dropPercent > 7) severity = 'CRITICAL';
-        else if (dropPercent > 5) severity = 'HIGH';
-        else if (dropPercent > 3) severity = 'MEDIUM';
-    }
-    
-    return {
-        dropVolts: dropVolts,
-        dropPercent: dropPercent,
-        severity: severity,
-        current: current,
-        powerFactor: powerFactor
-    };
+    console.log(`\n📊 Total downstream load for ${bus.name}: ${totalLoad.toFixed(1)}A\n`);
+    return totalLoad;
 }
 
 /**

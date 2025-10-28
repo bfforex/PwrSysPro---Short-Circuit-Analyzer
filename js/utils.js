@@ -1,10 +1,21 @@
 // Utility Functions
+// Modified: 2025-10-27 23:43:22 UTC by bfforex
+// Fixed: Added missing generateComponentId function
 
 /**
  * Generate unique bus ID
  */
 function generateBusId() {
     return 'BUS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+}
+
+/**
+ * Generate unique component ID
+ * Added: 2025-10-27 23:43:22 UTC by bfforex
+ * Fixed: Missing function causing addComponent to fail
+ */
+function generateComponentId() {
+    return Date.now();
 }
 
 /**
