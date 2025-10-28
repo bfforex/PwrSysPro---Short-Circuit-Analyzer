@@ -296,7 +296,7 @@
     <!-- ═══════════════════════════════════════════════════════════ -->
     
     <!-- Add Bus Modal -->
-    <div id="addBusModal" class="modal" role="dialog" aria-labelledby="addBusModalTitle" aria-hidden="true">
+    <div id="addBusModal" class="modal" role="dialog" aria-labelledby="addBusModalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="addBusModalTitle">Add New Bus</h2>
@@ -381,7 +381,7 @@
     </div>
 
     <!-- Edit Bus Modal -->
-    <div id="editBusModal" class="modal" role="dialog" aria-labelledby="editBusModalTitle" aria-hidden="true">
+    <div id="editBusModal" class="modal" role="dialog" aria-labelledby="editBusModalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="editBusModalTitle">Edit Bus</h2>
@@ -396,7 +396,7 @@
     </div>
 
     <!-- Edit Component Modal -->
-    <div id="editComponentModal" class="modal" role="dialog" aria-labelledby="editComponentModalTitle" aria-hidden="true">
+    <div id="editComponentModal" class="modal" role="dialog" aria-labelledby="editComponentModalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="editComponentModalTitle">Edit Component</h2>
@@ -416,8 +416,8 @@
     
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- JAVASCRIPT MODULES -->
-    <!-- Updated: 2025-10-28 01:02:09 UTC by bfforex -->
-    <!-- Enhanced: Separated calculation modules architecture -->
+    <!-- Updated: 2025-10-28 02:53:11 UTC by bfforex -->
+    <!-- Enhanced: Added modal manager for accessibility -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     
     <!-- Foundation Layer -->
@@ -425,18 +425,21 @@
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
     
+    <!-- Modal Manager (Accessibility) - MUST BE BEFORE MANAGERS -->
+    <script src="js/modalManager.js"></script>
+    
     <!-- Manager Layer -->
     <script src="js/busManager.js"></script>
     <script src="js/componentManager.js"></script>
     
-    <!-- Calculation Layer - NEW SEPARATION -->
-    <!-- Load in dependency order: calculations depend on load flow -->
+    <!-- Calculation Layer -->
     <script src="js/loadCalculations.js"></script>
+    <script src="js/motorContribution.js"></script>
     <script src="js/shortCircuitCalc.js"></script>
     <script src="js/loadFlowCalc.js"></script>
     <script src="js/voltageDropCalc.js"></script>
     
-    <!-- Calculation Coordinator (uses all calc modules) -->
+    <!-- Calculation Coordinator -->
     <script src="js/calculations.js"></script>
     
     <!-- Display Layer -->
@@ -455,13 +458,55 @@
     <script src="js/reportAnalytics.js"></script>
 
     <!-- Recommendation System -->
-    <!-- Added: 2025-10-27 15:11:49 UTC by bfforex -->
     <script src="js/recommendationRules.js"></script>
     <script src="js/recommendationEngine.js"></script>
     <script src="js/recommendationUI.js"></script>
     
     <!-- Application Entry Point (must be last) -->
     <script src="js/main.js"></script>
+    
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- DIAGNOSTIC SCRIPT - Check module loading -->
+    <!-- Added: 2025-10-28 04:53:30 UTC by bfforex -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <script>
+        console.log('\n' + '═'.repeat(80));
+        console.log('MODULE LOADING DIAGNOSTIC');
+        console.log('═'.repeat(80));
+        
+        const requiredFunctions = {
+            'calculateShortCircuit': typeof calculateShortCircuit !== 'undefined',
+            'calculateShortCircuitPointToPoint': typeof calculateShortCircuitPointToPoint !== 'undefined',
+            'calculateShortCircuitPerUnit': typeof calculateShortCircuitPerUnit !== 'undefined',
+            'calculateLoadFlow': typeof calculateLoadFlow !== 'undefined',
+            'calculateVoltageDrop': typeof calculateVoltageDrop !== 'undefined',
+            'calculateMotorContribution': typeof calculateMotorContribution !== 'undefined',
+            'combineMotorWithSystem': typeof combineMotorWithSystem !== 'undefined',
+            'calculateBus': typeof calculateBus !== 'undefined',
+            'calculateAllBuses': typeof calculateAllBuses !== 'undefined',
+            'displayCalculationResults': typeof displayCalculationResults !== 'undefined'
+        };
+        
+        let allLoaded = true;
+        
+        for (const [funcName, isLoaded] of Object.entries(requiredFunctions)) {
+            const status = isLoaded ? '✅' : '❌';
+            console.log(`${status} ${funcName}: ${isLoaded ? 'LOADED' : 'MISSING'}`);
+            if (!isLoaded) allLoaded = false;
+        }
+        
+        console.log('═'.repeat(80));
+        
+        if (allLoaded) {
+            console.log('✅ ALL MODULES LOADED SUCCESSFULLY');
+        } else {
+            console.error('❌ SOME MODULES FAILED TO LOAD');
+            console.error('   Check script loading order in index.html');
+            console.error('   Check browser console for JavaScript errors');
+        }
+        
+        console.log('═'.repeat(80) + '\n');
+    </script>
     
 </body>
 </html>
