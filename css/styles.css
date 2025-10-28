@@ -1769,3 +1769,476 @@ body.dark-mode .load-item {
 body.dark-mode .component-item strong {
     background: rgba(102, 126, 234, 0.2);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   CALCULATION DISPLAY STYLES
+   Added: 2025-10-28 00:56:14 UTC by bfforex
+   ═══════════════════════════════════════════════════════════ */
+
+/* Calculation Tabs */
+.calculation-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    border-bottom: 2px solid var(--border);
+}
+
+.calc-tab {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.3s ease;
+}
+
+.calc-tab:hover {
+    color: var(--primary-bg);
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.calc-tab.active {
+    color: var(--primary-bg);
+    border-bottom-color: var(--primary-bg);
+    background: rgba(102, 126, 234, 0.1);
+}
+
+/* Tab Content */
+.calc-tab-content {
+    display: none;
+    padding: 20px 0;
+}
+
+.calc-tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.stat-card.success { border-left: 4px solid var(--success); }
+.stat-card.warning { border-left: 4px solid var(--warning); }
+.stat-card.danger { border-left: 4px solid var(--danger); }
+.stat-card.info { border-left: 4px solid var(--info); }
+
+.stat-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--primary-dark);
+    margin: 10px 0;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Dark Mode */
+body.dark-mode .stat-card {
+    background: #1a202c;
+}
+
+body.dark-mode .stat-value {
+    color: #64b5f6;
+}
+
+/* Load Breakdown Chart */
+.load-breakdown-chart {
+    margin: 20px 0;
+}
+
+.load-bar {
+    display: grid;
+    grid-template-columns: 150px 1fr 150px;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.load-label {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.load-progress {
+    background: #e0e0e0;
+    border-radius: 10px;
+    height: 30px;
+    overflow: hidden;
+    position: relative;
+}
+
+body.dark-mode .load-progress {
+    background: #2d3748;
+}
+
+.load-fill {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    color: white;
+    font-weight: bold;
+    transition: width 0.5s ease;
+}
+
+.load-value {
+    text-align: right;
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+/* Component Breakdown Tables */
+.component-breakdown {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+body.dark-mode .component-breakdown {
+    background: #1a202c;
+}
+
+.component-breakdown h5 {
+    margin-bottom: 15px;
+    color: var(--primary-bg);
+}
+
+.breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+body.dark-mode .breakdown-table {
+    background: #2d3748;
+}
+
+.breakdown-table thead {
+    background: var(--primary-bg);
+    color: white;
+}
+
+.breakdown-table th,
+.breakdown-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.breakdown-table tbody tr:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.breakdown-table tfoot {
+    background: #f8f9fa;
+    font-weight: bold;
+}
+
+body.dark-mode .breakdown-table tfoot {
+    background: #1a202c;
+}
+
+/* Compliance Status */
+.compliance-status {
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.compliance-status.success {
+    background: rgba(76, 175, 80, 0.1);
+    border-left: 4px solid var(--success);
+}
+
+.compliance-status.warning {
+    background: rgba(255, 152, 0, 0.1);
+    border-left: 4px solid var(--warning);
+}
+
+.compliance-status.danger {
+    background: rgba(244, 67, 54, 0.1);
+    border-left: 4px solid var(--danger);
+}
+
+.compliance-status.info {
+    background: rgba(33, 150, 243, 0.1);
+    border-left: 4px solid var(--info);
+}
+
+.compliance-details {
+    margin-top: 15px;
+}
+
+.compliance-item {
+    display: grid;
+    grid-template-columns: 200px 1fr 50px;
+    gap: 15px;
+    padding: 10px;
+    margin-bottom: 5px;
+    background: white;
+    border-radius: 4px;
+}
+
+body.dark-mode .compliance-item {
+    background: #2d3748;
+}
+
+.compliance-label {
+    font-weight: 600;
+}
+
+.compliance-limit {
+    color: var(--text-muted);
+}
+
+.compliance-check {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Voltage Drop Table Styling */
+.voltage-drop-table {
+    margin: 20px 0;
+}
+
+.breakdown-table tr.vd-ok td {
+    background: rgba(76, 175, 80, 0.05);
+}
+
+.breakdown-table tr.vd-medium td {
+    background: rgba(255, 235, 59, 0.1);
+}
+
+.breakdown-table tr.vd-high td {
+    background: rgba(255, 152, 0, 0.1);
+}
+
+.breakdown-table tr.vd-critical td {
+    background: rgba(244, 67, 54, 0.1);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.ok {
+    background: var(--success);
+    color: white;
+}
+
+.status-badge.medium {
+    background: #ffeb3b;
+    color: #333;
+}
+
+.status-badge.high {
+    background: var(--warning);
+    color: white;
+}
+
+.status-badge.critical {
+    background: var(--danger);
+    color: white;
+}
+
+/* Voltage Drop Chart */
+.voltage-drop-chart {
+    margin: 30px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+body.dark-mode .voltage-drop-chart {
+    background: #1a202c;
+}
+
+.chart-container {
+    position: relative;
+    padding: 20px 0;
+}
+
+.vd-chart {
+    position: relative;
+}
+
+.vd-chart-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 15px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.vd-chart-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.vd-chart-bar-container {
+    position: relative;
+    background: #e0e0e0;
+    border-radius: 4px;
+    height: 30px;
+}
+
+body.dark-mode .vd-chart-bar-container {
+    background: #2d3748;
+}
+
+.vd-chart-bar {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    transition: width 0.5s ease;
+}
+
+.vd-chart-value {
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.vd-chart-limit {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: red;
+    z-index: 10;
+}
+
+.vd-limit-label {
+    position: absolute;
+    top: -25px;
+    right: 0;
+    font-size: 11px;
+    font-weight: bold;
+    color: red;
+    white-space: nowrap;
+}
+
+/* Modal for Calculation Steps */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content.large {
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.calculation-steps {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 20px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .load-bar {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+    
+    .compliance-item {
+        grid-template-columns: 1fr;
+    }
+    
+    .vd-chart-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .calculation-tabs {
+        flex-direction: column;
+    }
+    
+    .calc-tab {
+        border-bottom: none;
+        border-left: 3px solid transparent;
+    }
+    
+    .calc-tab.active {
+        border-bottom: none;
+        border-left-color: var(--primary-bg);
+    }
+}
