@@ -416,53 +416,78 @@
     
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- JAVASCRIPT MODULES -->
-    <!-- Updated: 2025-10-28 02:53:11 UTC by bfforex -->
-    <!-- Enhanced: Added modal manager for accessibility -->
+    <!-- Updated: 2025-10-28 11:25:58 UTC by bfforex -->
+    <!-- CRITICAL FIX: Moved recommendation system BEFORE export layer -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     
-    <!-- Foundation Layer -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 1: FOUNDATION (Constants, State, Utilities) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <script src="js/constants.js"></script>
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
     
-    <!-- Modal Manager (Accessibility) - MUST BE BEFORE MANAGERS -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 2: MODAL MANAGER (Accessibility) -->
+    <!-- MUST BE BEFORE MANAGERS THAT USE MODALS -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <script src="js/modalManager.js"></script>
     
-    <!-- Manager Layer -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 3: ANALYTICS AND STANDARDS (Before Recommendations) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <script src="js/thresholds.js"></script>
+    <script src="js/reportAnalytics.js"></script>
+    
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 4: RECOMMENDATION SYSTEM -->
+    <!-- ✅ CRITICAL: MUST LOAD BEFORE exportReport.js -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <script src="js/recommendationRules.js"></script>
+    <script src="js/recommendationEngine.js"></script>
+    <script src="js/recommendationUI.js"></script>
+    
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 5: MANAGER LAYER (Bus and Component Management) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <script src="js/busManager.js"></script>
     <script src="js/componentManager.js"></script>
     
-    <!-- Calculation Layer -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 6: CALCULATION LAYER -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <script src="js/loadCalculations.js"></script>
     <script src="js/motorContribution.js"></script>
     <script src="js/shortCircuitCalc.js"></script>
     <script src="js/loadFlowCalc.js"></script>
     <script src="js/voltageDropCalc.js"></script>
     
-    <!-- Calculation Coordinator -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 7: CALCULATION COORDINATOR -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <script src="js/calculations.js"></script>
     
-    <!-- Display Layer -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 8: DISPLAY LAYER -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <script src="js/calculationDisplay.js"></script>
     <script src="js/ui.js"></script>
     
-    <!-- Export/Report Layer -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 9: EXPORT/REPORT LAYER -->
+    <!-- ✅ NOW recommendationEngine is available! -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <script src="js/exportReport.js"></script>
     <script src="js/exportLoadFlowReport.js"></script>
     
-    <!-- Project Management -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 10: PROJECT MANAGEMENT -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <script src="js/projectManager.js"></script>
     
-    <!-- Analytics and Standards -->
-    <script src="js/thresholds.js"></script>
-    <script src="js/reportAnalytics.js"></script>
-
-    <!-- Recommendation System -->
-    <script src="js/recommendationRules.js"></script>
-    <script src="js/recommendationEngine.js"></script>
-    <script src="js/recommendationUI.js"></script>
-    
-    <!-- Application Entry Point (must be last) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- LAYER 11: APPLICATION ENTRY POINT (MUST BE LAST) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
     <script src="js/main.js"></script>
     
     <!-- ═══════════════════════════════════════════════════════════ -->
