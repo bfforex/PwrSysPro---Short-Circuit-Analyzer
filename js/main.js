@@ -18,25 +18,105 @@ console.log('═'.repeat(80) + '\n');
 /**
  * Initialize theme
  * Loads saved theme preference from localStorage
+ * Enhanced: 2025-10-28 10:18:31 UTC by bfforex
  */
 function initTheme() {
     const savedTheme = localStorage.getItem('pwrsyspro_theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    // Update theme button if it exists
+    updateThemeButton(savedTheme);
+    
     console.log('🌓 Theme initialized:', savedTheme);
 }
 
 /**
  * Toggle theme between light and dark
+ * Enhanced: 2025-10-28 10:18:31 UTC by bfforex
+ * Fixed: Better UI feedback and state management
  */
 function toggleTheme() {
     const html = document.documentElement;
     const currentTheme = html.getAttribute('data-theme') || 'light';
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     
+    console.log(`🌓 Toggling theme: ${currentTheme} → ${newTheme}`);
+    
+    // Apply new theme
     html.setAttribute('data-theme', newTheme);
+    
+    // Save to localStorage
     localStorage.setItem('pwrsyspro_theme', newTheme);
     
-    console.log(`🌓 Theme changed: ${currentTheme} → ${newTheme}`);
+    // Update button appearance
+    updateThemeButton(newTheme);
+    
+    // Add smooth transition
+    html.classList.add('theme-transitioning');
+    setTimeout(() => {
+        html.classList.remove('theme-transitioning');
+    }, 300);
+    
+    console.log(`✅ Theme changed to: ${newTheme}`);
+    
+    // Show feedback to user
+    showThemeChangeFeedback(newTheme);
+}
+
+/**
+ * Update theme toggle button appearance
+ * New function: 2025-10-28 10:18:31 UTC by bfforex
+ * @param {String} theme - Current theme ('light' or 'dark')
+ */
+function updateThemeButton(theme) {
+    // Find theme button (supports multiple selectors)
+    const themeBtn = document.querySelector('.theme-toggle') || 
+                     document.getElementById('themeToggle');
+    
+    if (!themeBtn) {
+        console.warn('⚠️ Theme toggle button not found in DOM');
+        return;
+    }
+    
+    // Update button content based on theme
+    if (theme === 'dark') {
+        themeBtn.innerHTML = '☀️ Light Mode';
+        themeBtn.setAttribute('aria-label', 'Switch to Light Mode');
+        themeBtn.setAttribute('title', 'Switch to Light Mode');
+        themeBtn.classList.add('dark-active');
+    } else {
+        themeBtn.innerHTML = '🌙 Dark Mode';
+        themeBtn.setAttribute('aria-label', 'Switch to Dark Mode');
+        themeBtn.setAttribute('title', 'Switch to Dark Mode');
+        themeBtn.classList.remove('dark-active');
+    }
+}
+
+/**
+ * Show visual feedback when theme changes
+ * New function: 2025-10-28 10:18:31 UTC by bfforex
+ * @param {String} theme - New theme name
+ */
+function showThemeChangeFeedback(theme) {
+    // Create temporary feedback element
+    const feedback = document.createElement('div');
+    feedback.className = 'theme-change-feedback';
+    feedback.innerHTML = theme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode';
+    
+    document.body.appendChild(feedback);
+    
+    // Animate in
+    setTimeout(() => {
+        feedback.classList.add('show');
+    }, 10);
+    
+    // Remove after 2 seconds
+    setTimeout(() => {
+        feedback.classList.remove('show');
+        setTimeout(() => {
+            feedback.remove();
+        }, 300);
+    }, 2000);
 }
 
 /**
@@ -400,7 +480,10 @@ function clearResults() {
 // Core application functions
 window.clearAll = clearAll;
 window.clearResults = clearResults;
+window.initTheme = initTheme;
 window.toggleTheme = toggleTheme;
+window.updateThemeButton = updateThemeButton;
+window.showThemeChangeFeedback = showThemeChangeFeedback;
 window.switchTab = switchTab;
 
 // Bus manager functions

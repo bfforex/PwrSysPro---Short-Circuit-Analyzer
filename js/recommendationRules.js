@@ -242,6 +242,31 @@ const RecommendationRules = {
             impact: 'Inefficient system design',
             cost: 'LOW to MEDIUM',
             effort: 'Variable (depends on component)'
+        },
+        {
+            id: 'VD-005',
+            name: 'Source Impedance in Voltage Drop Calculation',
+            condition: (bus, standards) => {
+                // Check if source impedance was incorrectly included in VD calculation
+                if (!bus.results || !bus.results.voltageDrop) return false;
+                
+                const components = bus.results.voltageDrop.components || [];
+                if (components.length === 0) return false;
+                
+                // Check if first component is a source with high voltage drop
+                const firstComp = components[0];
+                const hasSourceInVD = firstComp.type === 'source' && firstComp.dropPercent > 5;
+                
+                return hasSourceInVD;
+            },
+            severity: 'HIGH',
+            priority: 2,
+            recommendation: 'Source impedance appears to be included in voltage drop calculation',
+            action: 'Per IEEE 141-1993 Section 3.2.1, voltage drop should be calculated from the first distribution point, NOT including utility source impedance. Recalculate voltage drop excluding source impedance.',
+            standard: 'IEEE 141-1993 Section 3.2.1',
+            impact: 'Incorrectly calculated voltage drop showing false non-compliance. System may actually be compliant.',
+            cost: 'NONE',
+            effort: 'Low (calculation correction only - no equipment changes needed)'
         }
     ],
 

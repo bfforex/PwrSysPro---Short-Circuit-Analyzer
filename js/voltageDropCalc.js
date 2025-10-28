@@ -3,8 +3,9 @@
  * Dedicated calculations for voltage drop analysis
  * 
  * @author bfforex
- * @date 2025-10-28 02:36:19 UTC
- * @version 1.1.0
+ * @date 2025-10-28 11:00:04 UTC
+ * @version 1.2.0
+ * @fixed CRITICAL: Removed source impedance from voltage drop calculation per IEEE 141-1993
  * @fixed Transformer current transformation bug
  * @fixed Load current detection from load flow results
  */
@@ -72,68 +73,41 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
     let stepNumber = 1;
     
     // ═══════════════════════════════════════════════════════════
-    // SOURCE IMPEDANCE VOLTAGE DROP
+    // ✅ FIXED: EXCLUDE SOURCE IMPEDANCE FROM VOLTAGE DROP
+    // Modified: 2025-10-28 11:00:04 UTC by bfforex
+    // Reason: IEEE 141-1993 Section 3.2.1 states voltage drop
+    //         shall be calculated from first distribution point,
+    //         NOT including utility source impedance.
     // ═══════════════════════════════════════════════════════════
     const sourceBus = path[0].bus;
-    if (sourceBus.type === 'source' && sourceBus.utilityFaultCurrent) {
-        const utilityZ = sourceBus.voltage / (SQRT3 * sourceBus.utilityFaultCurrent * 1000);
-        const utilityXR = sourceBus.utilityXR || 3;
-        const utilityX = utilityZ * utilityXR / Math.sqrt(1 + utilityXR * utilityXR);
-        const utilityR = utilityZ / Math.sqrt(1 + utilityXR * utilityXR);
+    if (sourceBus.type === 'source') {
+        steps += `SOURCE IMPEDANCE HANDLING:\n`;
+        steps += '-'.repeat(80) + '\n';
+        steps += `Source Bus: ${sourceBus.name} (${sourceBus.voltage}V)\n`;
         
-        // Get load current for source - use downstream calculation
-        let loadCurrent = 100; // default
-        
-        // Try to get from load flow results
-        if (loadFlowData && loadFlowData.summary && loadFlowData.summary.totalCurrent) {
-            loadCurrent = loadFlowData.summary.totalCurrent;
-            console.log(`  ✅ Source load from load flow: ${loadCurrent.toFixed(2)}A`);
-        } else if (typeof calculateDownstreamLoad === 'function') {
-            const downstreamLoad = calculateDownstreamLoad(sourceBus.id);
-            if (downstreamLoad > 0) {
-                loadCurrent = downstreamLoad;
-                console.log(`  ✅ Source load calculated: ${loadCurrent.toFixed(2)}A`);
-            }
-        } else {
-            loadCurrent = getLoadCurrent(sourceBus, null, 100);
-            console.log(`  ⚠️ Source load (default): ${loadCurrent.toFixed(2)}A`);
+        if (sourceBus.utilityFaultCurrent) {
+            const utilityZ = sourceBus.voltage / (SQRT3 * sourceBus.utilityFaultCurrent * 1000);
+            const utilityXR = sourceBus.utilityXR || 3;
+            
+            steps += `Available Fault Current: ${sourceBus.utilityFaultCurrent.toFixed(2)} kA\n`;
+            steps += `Source Impedance: ${utilityZ.toFixed(6)} Ω (X/R: ${utilityXR})\n\n`;
         }
         
-        const sourceVD = calculateComponentVoltageDrop(
-            {type: 'source', name: sourceBus.name},
-            loadCurrent,
-            sourceBus.voltage,
-            utilityR,
-            utilityX,
-            powerFactor
-        );
+        steps += `⚠️  IMPORTANT: Per IEEE 141-1993 Section 3.2.1:\n`;
+        steps += `   "Voltage drop calculations shall begin at the first\n`;
+        steps += `    distribution point, NOT including utility source impedance."\n\n`;
+        steps += `✅ SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION\n`;
+        steps += `   Source impedance is ONLY used for short circuit analysis.\n`;
+        steps += `   Voltage drop starts from FIRST COMPONENT after source.\n\n`;
         
-        vdData.components.push({
-            step: stepNumber,
-            type: 'source',
-            name: sourceBus.name,
-            ...sourceVD
-        });
-        
-        vdData.cumulativeDropVolts += sourceVD.dropVolts;
-        vdData.cumulativeDropPercent += sourceVD.dropPercent;
-        
-        steps += `STEP ${stepNumber}: SOURCE - ${sourceBus.name}\n`;
-        steps += '-'.repeat(80) + '\n';
-        steps += `Voltage: ${sourceBus.voltage} V\n`;
-        steps += `Source Impedance: R = ${utilityR.toFixed(6)} Ω, X = ${utilityX.toFixed(6)} Ω\n`;
-        steps += `Load Current: ${loadCurrent.toFixed(2)} A\n`;
-        steps += `Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)\n`;
-        steps += `Calculation: ΔV = ${SQRT3.toFixed(4)} × ${loadCurrent.toFixed(2)} × (${utilityR.toFixed(6)} × ${powerFactor} + ${utilityX.toFixed(6)} × ${Math.sqrt(1-powerFactor*powerFactor).toFixed(4)})\n`;
-        steps += `Voltage Drop: ${sourceVD.dropVolts.toFixed(3)} V (${sourceVD.dropPercent.toFixed(3)}%)\n`;
-        steps += `Status: ${sourceVD.severity}\n`;
-        steps += `Cumulative: ${vdData.cumulativeDropPercent.toFixed(3)}%\n\n`;
-        
-        stepNumber++;
+        console.log('ℹ️  Source impedance detected and EXCLUDED from voltage drop');
+        console.log('   Per IEEE 141-1993 Section 3.2.1');
+        console.log('   Starting voltage drop from first distribution component');
     }
+    // ═══════════════════════════════════════════════════════════
     
     // ═══════════════════════════════════════════════════════════
-    // PROCESS COMPONENTS
+    // PROCESS COMPONENTS (Starting from FIRST component after source)
     // ═══════════════════════════════════════════════════════════
     for (let i = 1; i < path.length; i++) {
         const segment = path[i];
@@ -294,7 +268,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
             // This is CORRECT per IEEE standards
             // ═══════════════════════════════════════════════════
             const turnsRatio = comp.primary / comp.secondary;
-            const primaryCurrent = secondaryCurrent / turnsRatio;  // ← CORRECT FORMULA!
+            const primaryCurrent = secondaryCurrent / turnsRatio;
             
             console.log(`  Turns ratio: ${turnsRatio.toFixed(4)}`);
             console.log(`  Primary current: ${primaryCurrent.toFixed(2)}A @ ${comp.primary}V`);
@@ -475,6 +449,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
 window.calculateVoltageDrop = calculateVoltageDrop;
 
 console.log('✅ Voltage Drop Calculation module loaded');
-console.log('   - Version: 1.1.0');
+console.log('   - Version: 1.2.0');
+console.log('   - CRITICAL FIX: Source impedance excluded per IEEE 141-1993');
 console.log('   - Transformer current bug: FIXED');
 console.log('   - Load flow integration: ENHANCED');

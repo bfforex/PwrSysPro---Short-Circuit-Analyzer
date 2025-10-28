@@ -136,8 +136,9 @@ function generateShortCircuitDisplay(busId, results) {
                         <h5>Base Values</h5>
                         <strong>Base kVA:</strong> ${results.perUnit.baseKVA.toLocaleString()} kVA<br>
                         <strong>Base Voltage:</strong> ${results.perUnit.baseVoltage} V<br>
-                        <strong>Base Impedance:</strong> ${results.perUnit.baseZ.toFixed(6)} Ω<br>
-                        <strong>Base Current:</strong> ${results.perUnit.baseCurrent.toFixed(2)} A
+                        <!-- ✅ FIXED: Show actual base impedance value -->
+                        <strong>Base Impedance:</strong> ${results.perUnit.baseZ ? results.perUnit.baseZ.toFixed(6) : 'N/A'} Ω<br>
+                        <strong>Base Current:</strong> ${results.perUnit.baseCurrent ? results.perUnit.baseCurrent.toFixed(2) : 'N/A'} A
                     </div>
                     <div class="pu-section">
                         <h5>Per-Unit Impedances</h5>

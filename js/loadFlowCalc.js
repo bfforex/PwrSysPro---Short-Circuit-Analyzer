@@ -233,6 +233,12 @@ function calculateLoadFlow(busId) {
     loadData.summary.totalPowerKVA = (loadData.totalLoad * bus.voltage * Math.sqrt(3)) / 1000;
     loadData.summary.totalPowerKW = loadData.summary.totalPowerKVA * loadData.summary.powerFactor;
     
+    // ═══════════════════════════════════════════════════════════
+    // ✅ FIXED: Correct transformer percentage display
+    // Modified: 2025-10-28 11:00:04 UTC by bfforex
+    // Issue: Showing 5248.6% because of incorrect percentage calc
+    // ═══════════════════════════════════════════════════════════
+    
     steps += '═'.repeat(80) + '\n';
     steps += 'LOAD FLOW SUMMARY\n';
     steps += '═'.repeat(80) + '\n\n';
@@ -245,14 +251,24 @@ function calculateLoadFlow(busId) {
     steps += '-'.repeat(80) + '\n';
     
     const motorTotal = loadData.breakdown.motors.reduce((sum, m) => sum + m.current, 0);
-    const xfmrTotal = loadData.breakdown.transformers.reduce((sum, t) => sum + t.primaryCurrent, 0);
+    
+    // ✅ FIXED: Only count PRIMARY current for transformers
+    // Don't multiply - the current is already reflected to primary side
+    const xfmrTotal = loadData.breakdown.transformers.reduce((sum, t) => {
+        return sum + (t.primaryCurrent || 0);
+    }, 0);
+    
     const cableTotal = loadData.breakdown.cables.reduce((sum, c) => sum + c.current, 0);
     const directTotal = loadData.breakdown.directLoads.reduce((sum, d) => sum + d.current, 0);
     
-    steps += `Motors: ${motorTotal.toFixed(2)} A (${(motorTotal/loadData.totalLoad*100).toFixed(1)}%)\n`;
-    steps += `Transformers: ${xfmrTotal.toFixed(2)} A (${(xfmrTotal/loadData.totalLoad*100).toFixed(1)}%)\n`;
-    steps += `Cables: ${cableTotal.toFixed(2)} A (${(cableTotal/loadData.totalLoad*100).toFixed(1)}%)\n`;
-    steps += `Direct Loads: ${directTotal.toFixed(2)} A (${(directTotal/loadData.totalLoad*100).toFixed(1)}%)\n`;
+    // ✅ FIXED: Calculate percentage based on total load at THIS voltage level
+    // For transformers, they reflect load from another voltage level
+    const totalAtThisLevel = motorTotal + directTotal + cableTotal;
+    
+    steps += `Motors: ${motorTotal.toFixed(2)} A (${totalAtThisLevel > 0 ? (motorTotal/totalAtThisLevel*100).toFixed(1) : '0.0'}%)\n`;
+    steps += `Transformers: ${xfmrTotal.toFixed(2)} A (reflected from downstream)\n`;
+    steps += `Cables: ${cableTotal.toFixed(2)} A (${totalAtThisLevel > 0 ? (cableTotal/totalAtThisLevel*100).toFixed(1) : '0.0'}%)\n`;
+    steps += `Direct Loads: ${directTotal.toFixed(2)} A (${totalAtThisLevel > 0 ? (directTotal/totalAtThisLevel*100).toFixed(1) : '0.0'}%)\n`;
     steps += `Generators: ${loadData.breakdown.generators.length} (Sources)\n\n`;
     
     loadData.calculationSteps = steps;

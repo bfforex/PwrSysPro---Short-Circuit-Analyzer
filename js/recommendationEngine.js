@@ -29,6 +29,32 @@ class RecommendationEngine {
             return [];
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // ✅ NEW: Validate voltage drop calculation
+        // Added: 2025-10-28 11:00:04 UTC by bfforex
+        // Purpose: Detect if source impedance was incorrectly included
+        // ═══════════════════════════════════════════════════════════
+        if (bus.results.voltageDrop && bus.results.voltageDrop.components.length > 0) {
+            const firstComp = bus.results.voltageDrop.components[0];
+            
+            // Check for source impedance in voltage drop
+            if (firstComp.type === 'source' && firstComp.dropPercent > 5) {
+                console.warn(`⚠️  Bus ${bus.name}: Source impedance detected in VD calc`);
+                console.warn(`   First component: ${firstComp.name} = ${firstComp.dropPercent.toFixed(2)}%`);
+                console.warn(`   This violates IEEE 141-1993 Section 3.2.1`);
+                console.warn(`   Voltage drop should start from first distribution component`);
+                console.warn(`   System may show false non-compliance!`);
+            }
+            
+            // Check for unrealistic total voltage drop
+            if (bus.results.voltageDrop.cumulativeDropPercent > 10) {
+                console.warn(`⚠️  Bus ${bus.name}: Unrealistic voltage drop detected`);
+                console.warn(`   Total VD: ${bus.results.voltageDrop.cumulativeDropPercent.toFixed(2)}%`);
+                console.warn(`   This may indicate source impedance inclusion error`);
+            }
+        }
+        // ═══════════════════════════════════════════════════════════
+
         const busRecommendations = [];
 
         // Evaluate all rule categories
@@ -62,7 +88,6 @@ class RecommendationEngine {
 
         return busRecommendations;
     }
-
     /**
      * Analyze all buses in system
      * @param {Array} buses - Array of bus objects
