@@ -3,8 +3,10 @@
  * Dedicated calculations for voltage drop analysis
  * 
  * @author bfforex
- * @date 2025-10-28 00:49:48 UTC
- * @version 1.0.0
+ * @date 2025-10-28 02:36:19 UTC
+ * @version 1.1.0
+ * @fixed Transformer current transformation bug
+ * @fixed Load current detection from load flow results
  */
 
 /**
@@ -69,7 +71,9 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
     let currentVoltageLevel = path[0].bus.voltage;
     let stepNumber = 1;
     
-    // Source impedance voltage drop
+    // ═══════════════════════════════════════════════════════════
+    // SOURCE IMPEDANCE VOLTAGE DROP
+    // ═══════════════════════════════════════════════════════════
     const sourceBus = path[0].bus;
     if (sourceBus.type === 'source' && sourceBus.utilityFaultCurrent) {
         const utilityZ = sourceBus.voltage / (SQRT3 * sourceBus.utilityFaultCurrent * 1000);
@@ -77,8 +81,23 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
         const utilityX = utilityZ * utilityXR / Math.sqrt(1 + utilityXR * utilityXR);
         const utilityR = utilityZ / Math.sqrt(1 + utilityXR * utilityXR);
         
-        // Get load current for source
-        const loadCurrent = getLoadCurrent(sourceBus, null, 100);
+        // Get load current for source - use downstream calculation
+        let loadCurrent = 100; // default
+        
+        // Try to get from load flow results
+        if (loadFlowData && loadFlowData.summary && loadFlowData.summary.totalCurrent) {
+            loadCurrent = loadFlowData.summary.totalCurrent;
+            console.log(`  ✅ Source load from load flow: ${loadCurrent.toFixed(2)}A`);
+        } else if (typeof calculateDownstreamLoad === 'function') {
+            const downstreamLoad = calculateDownstreamLoad(sourceBus.id);
+            if (downstreamLoad > 0) {
+                loadCurrent = downstreamLoad;
+                console.log(`  ✅ Source load calculated: ${loadCurrent.toFixed(2)}A`);
+            }
+        } else {
+            loadCurrent = getLoadCurrent(sourceBus, null, 100);
+            console.log(`  ⚠️ Source load (default): ${loadCurrent.toFixed(2)}A`);
+        }
         
         const sourceVD = calculateComponentVoltageDrop(
             {type: 'source', name: sourceBus.name},
@@ -113,13 +132,18 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
         stepNumber++;
     }
     
-    // Process components
+    // ═══════════════════════════════════════════════════════════
+    // PROCESS COMPONENTS
+    // ═══════════════════════════════════════════════════════════
     for (let i = 1; i < path.length; i++) {
         const segment = path[i];
         const comp = segment.component;
         
         if (!comp) continue;
         
+        // ═══════════════════════════════════════════════════════
+        // CABLE
+        // ═══════════════════════════════════════════════════════
         if (comp.type === 'cable') {
             steps += `STEP ${stepNumber}: CABLE\n`;
             steps += '-'.repeat(80) + '\n';
@@ -133,8 +157,28 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
             const cableR = (rBaseTemp * comp.length) / parallel;
             const cableX = (cableData[comp.material].x * comp.length) / parallel;
             
-            // Get load current from load flow or component
-            const loadCurrent = getLoadCurrent(segment.bus, comp, 100);
+            // Get load current - priority order:
+            // 1. Component-specific load
+            // 2. Downstream calculation
+            // 3. Default
+            let loadCurrent = 100;
+            
+            if (comp.loadCurrent && comp.loadCurrent > 0) {
+                loadCurrent = comp.loadCurrent;
+                console.log(`  ✅ Cable load (specified): ${loadCurrent.toFixed(2)}A`);
+            } else if (typeof calculateDownstreamLoad === 'function') {
+                const downstreamLoad = calculateDownstreamLoad(segment.bus.id);
+                if (downstreamLoad > 0) {
+                    loadCurrent = downstreamLoad;
+                    console.log(`  ✅ Cable load (calculated): ${loadCurrent.toFixed(2)}A`);
+                } else {
+                    loadCurrent = getLoadCurrent(segment.bus, comp, 100);
+                    console.log(`  ⚠️ Cable load (default): ${loadCurrent.toFixed(2)}A`);
+                }
+            } else {
+                loadCurrent = getLoadCurrent(segment.bus, comp, 100);
+                console.log(`  ⚠️ Cable load (default): ${loadCurrent.toFixed(2)}A`);
+            }
             
             const cableVD = calculateComponentVoltageDrop(
                 comp,
@@ -200,6 +244,9 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
             stepNumber++;
         }
         
+        // ═══════════════════════════════════════════════════════
+        // TRANSFORMER - CORRECTED CURRENT HANDLING
+        // ═══════════════════════════════════════════════════════
         if (comp.type === 'transformer') {
             steps += `STEP ${stepNumber}: TRANSFORMER\n`;
             steps += '-'.repeat(80) + '\n';
@@ -209,14 +256,58 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
             const xfmrX = xfmrZ * comp.xr / Math.sqrt(1 + comp.xr * comp.xr);
             const xfmrR = xfmrZ / Math.sqrt(1 + comp.xr * comp.xr);
             
-            // Get load current
-            const primaryCurrent = getLoadCurrent(segment.bus, comp, 100);
-            const secondaryCurrent = primaryCurrent * (comp.primary / comp.secondary);
+            // ═══════════════════════════════════════════════════
+            // ✅ CRITICAL FIX: GET SECONDARY LOAD (DOWNSTREAM)
+            // The load AFTER the transformer, not before!
+            // ═══════════════════════════════════════════════════
+            let secondaryCurrent = 0;
             
+            // Priority 1: Calculate downstream load on secondary side
+            if (typeof calculateDownstreamLoad === 'function') {
+                secondaryCurrent = calculateDownstreamLoad(comp.toBus);
+                if (secondaryCurrent > 0) {
+                    console.log(`  ✅ Transformer secondary load (calculated): ${secondaryCurrent.toFixed(2)}A @ ${comp.secondary}V`);
+                }
+            }
+            
+            // Priority 2: Try to get from load flow results
+            if (secondaryCurrent === 0 && loadFlowData && loadFlowData.breakdown && loadFlowData.breakdown.transformers) {
+                const thisXfmr = loadFlowData.breakdown.transformers.find(t => 
+                    t.rating === comp.rating && t.primaryVoltage === comp.primary
+                );
+                if (thisXfmr && thisXfmr.secondaryCurrent) {
+                    secondaryCurrent = thisXfmr.secondaryCurrent;
+                    console.log(`  ✅ Transformer secondary load (load flow): ${secondaryCurrent.toFixed(2)}A`);
+                }
+            }
+            
+            // Priority 3: Fall back to specified load or default
+            if (secondaryCurrent === 0) {
+                const secondaryBus = buses.find(b => b.id === comp.toBus);
+                secondaryCurrent = getLoadCurrent(secondaryBus, comp, 100);
+                console.log(`  ⚠️ Transformer secondary load (default): ${secondaryCurrent.toFixed(2)}A`);
+            }
+            
+            // ═══════════════════════════════════════════════════
+            // ✅ CALCULATE PRIMARY CURRENT (FOR INFO ONLY)
+            // Primary current = Secondary current / turns ratio
+            // This is CORRECT per IEEE standards
+            // ═══════════════════════════════════════════════════
+            const turnsRatio = comp.primary / comp.secondary;
+            const primaryCurrent = secondaryCurrent / turnsRatio;  // ← CORRECT FORMULA!
+            
+            console.log(`  Turns ratio: ${turnsRatio.toFixed(4)}`);
+            console.log(`  Primary current: ${primaryCurrent.toFixed(2)}A @ ${comp.primary}V`);
+            
+            // ═══════════════════════════════════════════════════
+            // ✅ VOLTAGE DROP CALCULATED ON SECONDARY SIDE
+            // Uses SECONDARY current and SECONDARY voltage
+            // This is where the actual voltage drop occurs
+            // ═══════════════════════════════════════════════════
             const xfmrVD = calculateComponentVoltageDrop(
                 comp,
-                secondaryCurrent,
-                comp.secondary,
+                secondaryCurrent,  // ← Use SECONDARY current
+                comp.secondary,    // ← Use SECONDARY voltage
                 xfmrR,
                 xfmrX,
                 powerFactor
@@ -230,6 +321,8 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
                 primaryVoltage: comp.primary,
                 secondaryVoltage: comp.secondary,
                 impedance: comp.impedance,
+                primaryCurrent: primaryCurrent,
+                secondaryCurrent: secondaryCurrent,
                 ...xfmrVD
             });
             
@@ -245,27 +338,59 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
                 };
             }
             
+            // Calculate actual loading
+            const fullLoadCurrent = (comp.rating * 1000) / (SQRT3 * comp.secondary);
+            const loading = (secondaryCurrent / fullLoadCurrent) * 100;
+            
             steps += `Transformer: ${comp.rating} kVA\n`;
             steps += `Voltage: ${comp.primary}V / ${comp.secondary}V\n`;
+            steps += `Turns Ratio: ${turnsRatio.toFixed(4)}:1\n`;
             steps += `Impedance: ${comp.impedance}%, X/R: ${comp.xr}\n`;
             steps += `Impedance (Ω): R = ${xfmrR.toFixed(6)} Ω, X = ${xfmrX.toFixed(6)} Ω\n`;
-            steps += `Primary Current: ${primaryCurrent.toFixed(2)} A\n`;
-            steps += `Secondary Current: ${secondaryCurrent.toFixed(2)} A\n`;
-            steps += `Voltage Drop: ${xfmrVD.dropVolts.toFixed(3)} V (${xfmrVD.dropPercent.toFixed(3)}%)\n`;
-            steps += `Status: ${xfmrVD.severity}\n`;
+            steps += `\n`;
+            steps += `PRIMARY SIDE (${comp.primary}V):\n`;
+            steps += `  Current: ${primaryCurrent.toFixed(2)} A\n`;
+            steps += `\n`;
+            steps += `SECONDARY SIDE (${comp.secondary}V):\n`;
+            steps += `  Current: ${secondaryCurrent.toFixed(2)} A\n`;
+            steps += `  Full Load Current: ${fullLoadCurrent.toFixed(2)} A\n`;
+            steps += `  Loading: ${loading.toFixed(1)}%\n`;
+            steps += `\n`;
+            steps += `VOLTAGE DROP:\n`;
+            steps += `  Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)\n`;
+            steps += `  ΔV = ${SQRT3.toFixed(4)} × ${secondaryCurrent.toFixed(2)} × (${xfmrR.toFixed(6)} × ${powerFactor} + ${xfmrX.toFixed(6)} × ${Math.sqrt(1-powerFactor*powerFactor).toFixed(4)})\n`;
+            steps += `  Drop: ${xfmrVD.dropVolts.toFixed(3)} V (${xfmrVD.dropPercent.toFixed(3)}%)\n`;
+            steps += `  Status: ${xfmrVD.severity}\n`;
             
-            if (xfmrVD.severity === 'HIGH' || xfmrVD.severity === 'CRITICAL') {
+            if (loading > 100) {
                 vdData.criticalComponents.push({
                     step: stepNumber,
                     component: comp,
                     voltageDrop: xfmrVD
                 });
                 
-                steps += `⚠️  WARNING: High voltage drop!\n`;
+                steps += `\n⚠️  CRITICAL: Transformer is OVERLOADED!\n`;
+                steps += `   Current Loading: ${loading.toFixed(1)}%\n`;
+                steps += `   Rated: ${fullLoadCurrent.toFixed(0)}A, Actual: ${secondaryCurrent.toFixed(0)}A\n`;
+                steps += `   IMMEDIATE ACTION REQUIRED!\n`;
+                steps += `   Recommendations:\n`;
+                steps += `   - Install larger transformer (minimum ${Math.ceil(comp.rating * loading / 80)}kVA)\n`;
+                steps += `   - Reduce load on secondary side\n`;
+                steps += `   - Add parallel transformer\n`;
+            } else if (xfmrVD.severity === 'HIGH' || xfmrVD.severity === 'CRITICAL') {
+                vdData.criticalComponents.push({
+                    step: stepNumber,
+                    component: comp,
+                    voltageDrop: xfmrVD
+                });
+                
+                steps += `\n⚠️  WARNING: High voltage drop!\n`;
                 steps += `   Recommendations:\n`;
                 steps += `   - Review transformer tap settings\n`;
                 steps += `   - Consider lower impedance transformer\n`;
-                steps += `   - Check loading (${(secondaryCurrent * comp.secondary * Math.sqrt(3) / (comp.rating * 1000) * 100).toFixed(1)}%)\n`;
+                if (loading > 80) {
+                    steps += `   - Loading is ${loading.toFixed(1)}% - consider larger transformer\n`;
+                }
             }
             
             steps += `Cumulative: ${vdData.cumulativeDropPercent.toFixed(3)}%\n\n`;
@@ -275,7 +400,9 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
         }
     }
     
-    // Determine compliance
+    // ═══════════════════════════════════════════════════════════
+    // DETERMINE COMPLIANCE
+    // ═══════════════════════════════════════════════════════════
     steps += '═'.repeat(80) + '\n';
     steps += 'VOLTAGE DROP SUMMARY\n';
     steps += '═'.repeat(80) + '\n\n';
@@ -348,3 +475,6 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
 window.calculateVoltageDrop = calculateVoltageDrop;
 
 console.log('✅ Voltage Drop Calculation module loaded');
+console.log('   - Version: 1.1.0');
+console.log('   - Transformer current bug: FIXED');
+console.log('   - Load flow integration: ENHANCED');

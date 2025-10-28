@@ -1,7 +1,7 @@
 /**
  * Main Calculations Coordinator
- * Modified: 2025-10-28 00:56:14 UTC by bfforex
- * Enhanced: Separated calculations into three distinct modules
+ * Modified: 2025-10-28 04:53:30 UTC by bfforex
+ * Enhanced: Added function existence checks
  */
 
 /**
@@ -37,6 +37,20 @@ function calculateBus(busId) {
         // 1. SHORT CIRCUIT ANALYSIS
         // ═══════════════════════════════════════════════════════════
         console.log('🔥 Running Short Circuit Analysis...');
+        
+        // ✅ DEFENSIVE CHECK: Verify function exists
+        if (typeof calculateShortCircuit !== 'function') {
+            const errorMsg = '❌ ERROR: calculateShortCircuit function not found!\n\n' +
+                           'This usually means:\n' +
+                           '1. shortCircuitCalc.js did not load\n' +
+                           '2. Script loading order is incorrect\n' +
+                           '3. Function export is missing\n\n' +
+                           'Check browser console for loading errors.';
+            console.error(errorMsg);
+            alert(errorMsg);
+            return;
+        }
+        
         const shortCircuitResults = calculateShortCircuit(busId, method);
         
         // Store basic fault current data (backward compatibility)
@@ -49,13 +63,27 @@ function calculateBus(busId) {
         // 2. LOAD FLOW ANALYSIS
         // ═══════════════════════════════════════════════════════════
         console.log('🔌 Running Load Flow Analysis...');
-        const loadFlowResults = calculateLoadFlow(busId);
+        
+        // ✅ DEFENSIVE CHECK: Verify function exists
+        if (typeof calculateLoadFlow !== 'function') {
+            console.warn('⚠️ WARNING: calculateLoadFlow function not found! Skipping load flow analysis.');
+            const loadFlowResults = null;
+        } else {
+            var loadFlowResults = calculateLoadFlow(busId);
+        }
         
         // ═══════════════════════════════════════════════════════════
         // 3. VOLTAGE DROP ANALYSIS
         // ═══════════════════════════════════════════════════════════
         console.log('📉 Running Voltage Drop Analysis...');
-        const voltageDropResults = calculateVoltageDrop(busId, path, loadFlowResults);
+        
+        // ✅ DEFENSIVE CHECK: Verify function exists
+        if (typeof calculateVoltageDrop !== 'function') {
+            console.warn('⚠️ WARNING: calculateVoltageDrop function not found! Skipping voltage drop analysis.');
+            var voltageDropResults = null;
+        } else {
+            var voltageDropResults = calculateVoltageDrop(busId, path, loadFlowResults);
+        }
         
         // ═══════════════════════════════════════════════════════════
         // STORE ALL RESULTS
@@ -94,18 +122,24 @@ function calculateBus(busId) {
         // ═══════════════════════════════════════════════════════════
         // GENERATE RECOMMENDATIONS
         // ═══════════════════════════════════════════════════════════
-        const busRecommendations = recommendationEngine.analyzeBus(bus);
-        console.log(`📊 ${busRecommendations.length} recommendations generated`);
+        if (typeof recommendationEngine !== 'undefined') {
+            const busRecommendations = recommendationEngine.analyzeBus(bus);
+            console.log(`📊 ${busRecommendations.length} recommendations generated`);
+        }
         
         // ═══════════════════════════════════════════════════════════
         // DISPLAY RESULTS (NEW SEPARATED DISPLAY)
         // ═══════════════════════════════════════════════════════════
-        displayCalculationResults(
-            busId,
-            shortCircuitResults,
-            loadFlowResults,
-            voltageDropResults
-        );
+        if (typeof displayCalculationResults === 'function') {
+            displayCalculationResults(
+                busId,
+                shortCircuitResults,
+                loadFlowResults,
+                voltageDropResults
+            );
+        } else {
+            console.warn('⚠️ WARNING: displayCalculationResults function not found!');
+        }
         
         switchTab(null, 'results');
         
@@ -113,13 +147,14 @@ function calculateBus(busId) {
         
         console.log('\n✅ ALL ANALYSES COMPLETE');
         console.log('   - Short Circuit: ✓');
-        console.log('   - Load Flow: ✓');
-        console.log('   - Voltage Drop: ✓');
+        console.log('   - Load Flow: ' + (loadFlowResults ? '✓' : '⚠️ Skipped'));
+        console.log('   - Voltage Drop: ' + (voltageDropResults ? '✓' : '⚠️ Skipped'));
         console.log('═'.repeat(80) + '\n');
         
     } catch (error) {
         console.error('Error calculating bus:', error);
-        alert('Error calculating bus:\n\n' + error.message);
+        console.error('Stack trace:', error.stack);
+        alert('Error calculating bus:\n\n' + error.message + '\n\nCheck browser console for details.');
     }
 }
 
@@ -142,6 +177,7 @@ function calculateAllBuses() {
     
     let successCount = 0;
     let errorCount = 0;
+    const errors = [];
     
     calculatedBuses.forEach(bus => {
         try {
@@ -150,6 +186,7 @@ function calculateAllBuses() {
             successCount++;
         } catch (error) {
             console.error(`Failed to calculate ${bus.name}:`, error);
+            errors.push({ bus: bus.name, error: error.message });
             errorCount++;
         }
     });
@@ -161,5 +198,20 @@ function calculateAllBuses() {
     console.log(`❌ Failed: ${errorCount}`);
     console.log('═'.repeat(80) + '\n');
     
+    if (errorCount > 0) {
+        console.error('Errors:', errors);
+    }
+    
     alert(`Analysis complete!\n\n✅ Successful: ${successCount}\n❌ Failed: ${errorCount}`);
 }
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT FUNCTIONS TO GLOBAL SCOPE
+// ═══════════════════════════════════════════════════════════
+window.calculateBus = calculateBus;
+window.calculateAllBuses = calculateAllBuses;
+
+console.log('✅ Calculations coordinator loaded');
+console.log('   - calculateBus: Available');
+console.log('   - calculateAllBuses: Available');
+console.log('   - Dependencies check: Enabled');

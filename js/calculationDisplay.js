@@ -3,8 +3,9 @@
  * Unified display handler for all calculation types
  * 
  * @author bfforex
- * @date 2025-10-28 00:49:48 UTC
- * @version 1.0.0
+ * @date 2025-10-28 01:45:36 UTC
+ * @version 1.0.1
+ * @fixed busId scope issue in display functions
  */
 
 /**
@@ -51,17 +52,17 @@ function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, 
         
         <!-- Short Circuit Tab Content -->
         <div id="shortcircuit-content" class="calc-tab-content active">
-            ${generateShortCircuitDisplay(shortCircuitResults)}
+            ${generateShortCircuitDisplay(busId, shortCircuitResults)}
         </div>
         
         <!-- Load Flow Tab Content -->
         <div id="loadflow-content" class="calc-tab-content">
-            ${generateLoadFlowDisplay(loadFlowResults)}
+            ${generateLoadFlowDisplay(busId, loadFlowResults)}
         </div>
         
         <!-- Voltage Drop Tab Content -->
         <div id="voltagedrop-content" class="calc-tab-content">
-            ${generateVoltageDropDisplay(voltageDropResults)}
+            ${generateVoltageDropDisplay(busId, voltageDropResults)}
         </div>
     `;
     
@@ -70,13 +71,21 @@ function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, 
 
 /**
  * Generate short circuit display HTML
+ * Updated: 2025-10-28 04:45:03 UTC by bfforex
+ * Enhanced: Show per-unit data when available
  */
-function generateShortCircuitDisplay(results) {
+function generateShortCircuitDisplay(busId, results) {
     if (!results) return '<div class="alert alert-info">No short circuit data available.</div>';
     
-    return `
+    const isPerUnit = results.method === 'Per-Unit';
+    
+    let html = `
         <div class="results-section">
             <h3>⚡ Fault Current Results</h3>
+            <div class="method-badge">
+                <span class="badge ${isPerUnit ? 'badge-info' : 'badge-primary'}">${results.method || 'Point-to-Point'} Method</span>
+            </div>
+            
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">⚡</div>
@@ -100,6 +109,18 @@ function generateShortCircuitDisplay(results) {
                 </div>
             </div>
             
+            ${results.motorContribution && results.motorContribution.motors.length > 0 ? `
+                <div class="alert alert-success">
+                    <h4>⚡ Motor Contribution Included</h4>
+                    <div class="motor-contribution-details">
+                        <strong>Motors Connected:</strong> ${results.motorContribution.motors.length}<br>
+                        <strong>Motor Contribution:</strong> ${(results.motorContribution.motorFaultCurrent/1000).toFixed(3)} kA<br>
+                        <strong>Total Impedance:</strong> ${(results.motorContribution.totalMotorZ * 1000).toFixed(3)} mΩ<br>
+                        <small class="text-muted">Per IEEE 141-1993, IEC 60909, and NEC Article 430</small>
+                    </div>
+                </div>
+            ` : ''}
+            
             <h4>📋 Impedance Breakdown</h4>
             <div class="result-item">
                 <strong>Resistance (R):</strong> ${(results.totalImpedance.resistance * 1000).toFixed(3)} mΩ<br>
@@ -108,28 +129,97 @@ function generateShortCircuitDisplay(results) {
                 <strong>Angle:</strong> ${results.totalImpedance.angle.toFixed(2)}°
             </div>
             
+            ${isPerUnit && results.perUnit ? `
+                <h4>📊 Per-Unit System Data</h4>
+                <div class="result-item per-unit-data">
+                    <div class="pu-section">
+                        <h5>Base Values</h5>
+                        <strong>Base kVA:</strong> ${results.perUnit.baseKVA.toLocaleString()} kVA<br>
+                        <strong>Base Voltage:</strong> ${results.perUnit.baseVoltage} V<br>
+                        <strong>Base Impedance:</strong> ${results.perUnit.baseZ.toFixed(6)} Ω<br>
+                        <strong>Base Current:</strong> ${results.perUnit.baseCurrent.toFixed(2)} A
+                    </div>
+                    <div class="pu-section">
+                        <h5>Per-Unit Impedances</h5>
+                        <strong>R_pu:</strong> ${results.perUnit.totalRpu.toFixed(6)} pu<br>
+                        <strong>X_pu:</strong> ${results.perUnit.totalXpu.toFixed(6)} pu<br>
+                        <strong>Z_pu:</strong> ${results.perUnit.totalZpu.toFixed(6)} pu<br>
+                        <strong>X/R:</strong> ${results.xrRatio.toFixed(3)}
+                    </div>
+                    <div class="pu-section">
+                        <h5>Fault Current (Per-Unit)</h5>
+                        <strong>I_sc_pu:</strong> ${(1.0 / results.perUnit.totalZpu).toFixed(6)} pu<br>
+                        <strong>I_sc_actual:</strong> ${results.faultCurrents.threePhaseSym.toFixed(3)} kA<br>
+                        <small class="text-muted">I_actual = I_pu × I_base</small>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h5>ℹ️ Per-Unit Method Advantages</h5>
+                    <ul>
+                        <li>✓ Voltage level changes handled automatically</li>
+                        <li>✓ Transformer ratios built into per-unit conversion</li>
+                        <li>✓ Easy parallel/series impedance combinations</li>
+                        <li>✓ Standard for multi-voltage level systems</li>
+                        <li>✓ Simplifies analysis of complex power systems</li>
+                    </ul>
+                </div>
+            ` : ''}
+            
             <h4>📊 Other Fault Types</h4>
             <div class="result-item">
-                <strong>Line-to-Ground:</strong> ${results.faultCurrents.lineToGround.toFixed(2)} kA<br>
-                <strong>Line-to-Line:</strong> ${results.faultCurrents.lineToLine.toFixed(2)} kA
+                <strong>Line-to-Ground:</strong> ${results.faultCurrents.lineToGround.toFixed(2)} kA (≈85% of 3-phase)<br>
+                <strong>Line-to-Line:</strong> ${results.faultCurrents.lineToLine.toFixed(2)} kA (≈86.6% of 3-phase)
             </div>
+            
+            ${results.motorContribution && results.motorContribution.motors.length > 0 ? `
+                <h4>⚙️ Motor Details</h4>
+                <table class="breakdown-table">
+                    <thead>
+                        <tr>
+                            <th>Motor</th>
+                            <th>HP</th>
+                            <th>Type</th>
+                            <th>FLC (A)</th>
+                            <th>LRC (A)</th>
+                            <th>Z (Ω)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${results.motorContribution.motors.map(motor => `
+                            <tr>
+                                <td>${motor.name}</td>
+                                <td>${motor.hp}</td>
+                                <td>${motor.type}</td>
+                                <td>${motor.flc.toFixed(1)}</td>
+                                <td>${motor.lrc.toFixed(1)}</td>
+                                <td>${motor.z.toFixed(6)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            ` : ''}
             
             <div class="button-group">
                 <button class="btn btn-info" onclick="showCalculationSteps('shortcircuit')">
                     📝 View Detailed Calculations
                 </button>
-                <button class="btn btn-success" onclick="exportShortCircuitReport('${busId}')">
+                <button class="btn btn-success" onclick="exportBusReport('${busId}')">
                     📄 Export Report
                 </button>
             </div>
         </div>
     `;
+    
+    return html;
 }
 
 /**
  * Generate load flow display HTML
+ * @param {String} busId - Bus identifier (ADDED)
+ * @param {Object} results - Load flow results
  */
-function generateLoadFlowDisplay(results) {
+function generateLoadFlowDisplay(busId, results) {
     if (!results) return '<div class="alert alert-info">No load flow data available.</div>';
     
     const motorTotal = results.breakdown.motors.reduce((sum, m) => sum + m.current, 0);
@@ -317,7 +407,7 @@ function generateLoadFlowDisplay(results) {
                 <button class="btn btn-info" onclick="showCalculationSteps('loadflow')">
                     📝 View Detailed Calculations
                 </button>
-                <button class="btn btn-success" onclick="exportLoadFlowReport('${results.busId}')">
+                <button class="btn btn-success" onclick="exportLoadFlowReport('${busId}')">
                     📄 Export Report
                 </button>
             </div>
@@ -327,8 +417,10 @@ function generateLoadFlowDisplay(results) {
 
 /**
  * Generate voltage drop display HTML
+ * @param {String} busId - Bus identifier (ADDED)
+ * @param {Object} results - Voltage drop results
  */
-function generateVoltageDropDisplay(results) {
+function generateVoltageDropDisplay(busId, results) {
     if (!results) return '<div class="alert alert-info">No voltage drop data available.</div>';
     
     let complianceClass = 'success';
@@ -392,7 +484,7 @@ function generateVoltageDropDisplay(results) {
                 </div>
             </div>
             
-            ${results.criticalComponents.length > 0 ? `
+            ${results.criticalComponents && results.criticalComponents.length > 0 ? `
                 <div class="alert alert-warning">
                     <h4>⚠️ Critical Components Requiring Attention (${results.criticalComponents.length})</h4>
                     <ul>
@@ -472,7 +564,7 @@ function generateVoltageDropDisplay(results) {
                 <button class="btn btn-info" onclick="showCalculationSteps('voltagedrop')">
                     📝 View Detailed Calculations
                 </button>
-                <button class="btn btn-success" onclick="exportVoltageDropReport('${results.busId}')">
+                <button class="btn btn-success" onclick="exportVoltageDropReport('${busId}')">
                     📄 Export Report
                 </button>
             </div>
@@ -531,13 +623,15 @@ function switchCalcTab(calcType) {
     document.querySelectorAll('.calc-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    document.querySelector(`.calc-tab[data-calc-type="${calcType}"]`).classList.add('active');
+    const activeTab = document.querySelector(`.calc-tab[data-calc-type="${calcType}"]`);
+    if (activeTab) activeTab.classList.add('active');
     
     // Update content
     document.querySelectorAll('.calc-tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    document.getElementById(`${calcType}-content`).classList.add('active');
+    const activeContent = document.getElementById(`${calcType}-content`);
+    if (activeContent) activeContent.classList.add('active');
 }
 
 /**

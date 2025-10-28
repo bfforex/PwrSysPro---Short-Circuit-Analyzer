@@ -1,7 +1,183 @@
-// Main Application Module - Initialization and event handlers
+/**
+ * Main Application Module
+ * Initialization and event handlers
+ * 
+ * @author Engr. B. P. Faraon
+ * @date 2025-10-28 05:38:11 UTC
+ * @version 1.3.0
+ * @enhanced Complete helper functions integration
+ * @enhanced Motor contribution support (IEEE 141/IEC 60909)
+ */
+
+console.log('\n' + '═'.repeat(80));
+console.log('⚡ PwrSys Pro - Initializing...');
+console.log('Current Date/Time (UTC): 2025-10-28 05:38:11');
+console.log('User: bfforex');
+console.log('═'.repeat(80) + '\n');
+
+/**
+ * Initialize theme
+ * Loads saved theme preference from localStorage
+ */
+function initTheme() {
+    const savedTheme = localStorage.getItem('pwrsyspro_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    console.log('🌓 Theme initialized:', savedTheme);
+}
+
+/**
+ * Toggle theme between light and dark
+ */
+function toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('pwrsyspro_theme', newTheme);
+    
+    console.log(`🌓 Theme changed: ${currentTheme} → ${newTheme}`);
+}
+
+/**
+ * Initialize file input listener
+ * File operations handled by projectManager.js
+ */
+function initFileInputListener() {
+    console.log('✅ File input listener ready (handled by projectManager.js)');
+}
+
+/**
+ * Initialize auto-save listeners
+ * Triggers auto-save on any input change
+ */
+function initAutoSaveListeners() {
+    const inputs = document.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (typeof scheduleAutoSave === 'function') {
+                scheduleAutoSave();
+            }
+        });
+    });
+    
+    console.log('✅ Auto-save listeners initialized');
+}
+
+/**
+ * Initialize modal click outside handler
+ * Closes modals when clicking outside the modal content
+ */
+function initModalClickOutside() {
+    window.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            const modals = ['addBusModal', 'editBusModal', 'editComponentModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (modal && event.target === modal) {
+                    if (typeof closeModal === 'function') {
+                        closeModal(modalId);
+                    } else {
+                        modal.style.display = 'none';
+                    }
+                }
+            });
+        }
+    });
+    
+    console.log('✅ Modal click-outside handler initialized');
+}
+
+/**
+ * Update session time display
+ * Updates the session timestamp every second
+ */
+function updateSessionTime() {
+    const sessionDate = document.getElementById('sessionDate');
+    if (sessionDate) {
+        const now = new Date();
+        const formatted = now.toISOString().replace('T', ' ').substring(0, 19);
+        sessionDate.textContent = formatted;
+    }
+}
+
+/**
+ * Switch between tabs
+ * Handles tab navigation in the main content area
+ * 
+ * @param {Event} event - Click event (can be null)
+ * @param {String} tabName - Name of tab to switch to
+ */
+function switchTab(event, tabName) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(tabName + 'Tab');
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Mark tab button as active
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        // If no event, find tab button by name
+        const tabButton = Array.from(tabs).find(tab => 
+            tab.textContent.toLowerCase().includes(tabName.toLowerCase())
+        );
+        if (tabButton) {
+            tabButton.classList.add('active');
+        }
+    }
+}
+
+/**
+ * Initialize keyboard shortcuts
+ * Ctrl+S: Save project
+ * Ctrl+Enter: Calculate all buses
+ */
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+S or Cmd+S - Save project
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            if (typeof saveProject === 'function') {
+                saveProject();
+            } else {
+                console.warn('⚠️ saveProject function not available');
+            }
+        }
+        
+        // Ctrl+Enter or Cmd+Enter - Calculate all buses
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            if (typeof calculateAllBuses === 'function') {
+                calculateAllBuses();
+            } else {
+                console.warn('⚠️ calculateAllBuses function not available');
+            }
+        }
+    });
+    
+    console.log('✅ Keyboard shortcuts initialized');
+    console.log('   • Ctrl+S: Save project');
+    console.log('   • Ctrl+Enter: Calculate all buses');
+}
 
 /**
  * Initialize the application
+ * Main entry point for application setup
  */
 function initApp() {
     console.log(`╔════════════════════════════════════════════════════════════════════════════╗`);
@@ -9,75 +185,89 @@ function initApp() {
     console.log(`║  Multi-Bus Power System Analysis - NEC/PEC Compliant                      ║`);
     console.log(`╠════════════════════════════════════════════════════════════════════════════╣`);
     console.log(`║  Author: ${AUTHOR}                                            ║`);
-    console.log(`║  Date/Time (UTC): 2025-01-27 01:54:57                                     ║`);
+    console.log(`║  Date/Time (UTC): 2025-10-28 05:38:11                                     ║`);
     console.log(`║  ✓ Parallel Transformer Support                                           ║`);
     console.log(`║  ✓ Point-to-Point Method                                                  ║`);
     console.log(`║  ✓ Per-Unit Method                                                        ║`);
     console.log(`║  ✓ Multi-Voltage Level Support                                            ║`);
     console.log(`║  ✓ Temperature Correction                                                 ║`);
+    console.log(`║  ✓ Motor Contribution (IEEE 141/IEC 60909)                                ║`);
     console.log(`╚════════════════════════════════════════════════════════════════════════════╝`);
     
-    // Set author information
-    document.getElementById('Author').textContent = AUTHOR;
-    
-    // Initialize theme
-    initTheme();
-    
-    // Initialize component type selector
-    initComponentTypeSelector();
-    
-    // Initialize file input listener
-    initFileInputListener();
-    
-    // Initialize auto-save listeners
-    initAutoSaveListeners();
-    
-    // Initialize modal click outside handler
-    initModalClickOutside();
-    
-    // Initialize session time update
-    updateSessionTime();
-    setInterval(updateSessionTime, 1000);
-    
-    // Initialize calculate button
-    document.getElementById('calculateBtn').addEventListener('click', calculateAllBuses);
-    
-    // Initialize keyboard shortcuts
-    initKeyboardShortcuts();
-    
-    // Load auto-saved project
-    loadAutoSavedProject();
-}
-
-/**
- * Initialize keyboard shortcuts
- */
-function initKeyboardShortcuts() {
-    document.addEventListener('keydown', function(e) {
-        // Ctrl+S or Cmd+S - Save project
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-            saveProject();
+    try {
+        // Set author information
+        const authorElement = document.getElementById('Author');
+        if (authorElement) {
+            authorElement.textContent = AUTHOR;
         }
-        // Ctrl+Enter or Cmd+Enter - Calculate all buses
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-            e.preventDefault();
-            calculateAllBuses();
+        
+        // Initialize theme
+        initTheme();
+        
+        // Initialize component type selector
+        if (typeof initComponentTypeSelector === 'function') {
+            initComponentTypeSelector();
+        } else {
+            console.warn('⚠️ initComponentTypeSelector not available');
         }
-    });
+        
+        // Initialize file input listener
+        initFileInputListener();
+        
+        // Initialize auto-save listeners
+        initAutoSaveListeners();
+        
+        // Initialize modal click outside handler
+        initModalClickOutside();
+        
+        // Initialize session time update
+        updateSessionTime();
+        setInterval(updateSessionTime, 1000);
+        
+        // Initialize calculate button
+        const calcBtn = document.getElementById('calculateBtn');
+        if (calcBtn) {
+            calcBtn.addEventListener('click', function() {
+                if (typeof calculateAllBuses === 'function') {
+                    calculateAllBuses();
+                } else {
+                    console.error('❌ calculateAllBuses not loaded');
+                    alert('Error: Calculation module not loaded.\n\nPlease refresh the page and try again.');
+                }
+            });
+            console.log('✅ Calculate button initialized');
+        }
+        
+        // Initialize keyboard shortcuts
+        initKeyboardShortcuts();
+        
+        // Load auto-saved project
+        if (typeof loadAutoSavedProject === 'function') {
+            setTimeout(function() {
+                loadAutoSavedProject();
+            }, 500);
+            console.log('✅ Auto-save recovery scheduled');
+        }
+        
+        console.log('\n✅ Application initialization complete!');
+        console.log('═'.repeat(80) + '\n');
+        
+    } catch (error) {
+        console.error('❌ Initialization error:', error);
+        console.error('Stack trace:', error.stack);
+        alert('⚠️ Application initialization error.\n\nCheck browser console for details.\n\nSome features may not work correctly.');
+    }
 }
 
 /**
  * Clear all data and reset application
- * Added: 2025-10-27 17:03:47 UTC by bfforex
- * Fixed: Missing function error
+ * Requires double confirmation for safety
  */
 function clearAll() {
     if (!confirm('⚠️ WARNING: This will delete ALL buses, components, and calculations.\n\nThis action CANNOT be undone.\n\nAre you absolutely sure?')) {
         return;
     }
     
-    // Second confirmation for safety
     if (!confirm('🔴 FINAL CONFIRMATION:\n\nDelete everything and start fresh?\n\nClick OK to proceed or Cancel to keep your data.')) {
         return;
     }
@@ -118,10 +308,10 @@ function clearAll() {
     if (methodPtp) methodPtp.checked = true;
     
     // Update all displays
-    updateBusTree();
-    updateBusDropdowns();
-    updateBusesContent();
-    updateComponentsList();
+    if (typeof updateBusTree === 'function') updateBusTree();
+    if (typeof updateBusDropdowns === 'function') updateBusDropdowns();
+    if (typeof updateBusesContent === 'function') updateBusesContent();
+    if (typeof updateComponentsList === 'function') updateComponentsList();
     
     // Clear results
     const resultsContainer = document.getElementById('resultsContainer');
@@ -149,8 +339,8 @@ function clearAll() {
 }
 
 /**
- * Clear only calculation results (keep buses and components)
- * Added: 2025-10-27 17:03:47 UTC by bfforex
+ * Clear only calculation results
+ * Keeps buses and components intact
  */
 function clearResults() {
     if (!confirm('Clear all calculation results?\n\nThis will keep your buses and components but remove all fault current calculations.')) {
@@ -160,7 +350,7 @@ function clearResults() {
     console.log('🧹 Clearing calculation results...');
     
     // Clear results from all buses
-    buses.forEach(bus => {
+    buses.forEach(function(bus) {
         bus.faultCurrent = null;
         bus.asymFaultCurrent = null;
         bus.xrRatio = null;
@@ -172,8 +362,8 @@ function clearResults() {
     selectedBusId = null;
     
     // Update displays
-    updateBusTree();
-    updateBusesContent();
+    if (typeof updateBusTree === 'function') updateBusTree();
+    if (typeof updateBusesContent === 'function') updateBusesContent();
     
     // Clear results display
     const resultsContainer = document.getElementById('resultsContainer');
@@ -193,37 +383,27 @@ function clearResults() {
         recTab.style.display = 'none';
     }
     
-    scheduleAutoSave();
+    // Trigger auto-save
+    if (typeof scheduleAutoSave === 'function') {
+        scheduleAutoSave();
+    }
     
     console.log('✅ Calculation results cleared');
     alert('✅ Calculation results cleared.\n\nYour buses and components are still intact.');
 }
 
-/**
- * Initialize application on page load
- */
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initializing PwrSys Pro...');
-    initApp();
-});
+// ═══════════════════════════════════════════════════════════
+// EXPORT FUNCTIONS TO GLOBAL SCOPE
+// Required for inline event handlers and cross-module access
+// ═══════════════════════════════════════════════════════════
 
-/**
- * Export all functions to global scope
- */
+// Core application functions
 window.clearAll = clearAll;
 window.clearResults = clearResults;
+window.toggleTheme = toggleTheme;
+window.switchTab = switchTab;
 
-console.log('✅ Main.js loaded successfully');
-console.log('   - clearAll: Available');
-console.log('   - clearResults: Available');
-// Initialize application when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initApp);
-} else {
-    initApp();
-}
-
-// Export functions to global scope for inline event handlers
+// Bus manager functions
 window.openAddBusModal = openAddBusModal;
 window.closeAddBusModal = closeAddBusModal;
 window.toggleUtilityFields = toggleUtilityFields;
@@ -235,27 +415,52 @@ window.closeEditBusModal = closeEditBusModal;
 window.saveBusEdits = saveBusEdits;
 window.deleteBus = deleteBus;
 window.selectBus = selectBus;
-window.calculateBus = calculateBus;
+
+// Component manager functions
 window.addComponent = addComponent;
 window.editComponent = editComponent;
 window.closeEditComponentModal = closeEditComponentModal;
 window.saveComponentEdits = saveComponentEdits;
 window.moveComponent = moveComponent;
 window.deleteComponent = deleteComponent;
-window.clearAll = clearAll;
-window.toggleTheme = toggleTheme;
-window.switchTab = switchTab;
+
+// Export/report functions
 window.exportBusReport = exportBusReport;
 window.exportAllBusesSummary = exportAllBusesSummary;
+
+// Project management functions
 window.saveProject = saveProject;
 window.loadProject = loadProject;
 
-// ═══════════════════════════════════════════════════════════
-// RECOMMENDATION SYSTEM EXPORTS
-// Added: 2025-10-27 12:35:03 UTC by bfforex
-// ═══════════════════════════════════════════════════════════
+// Recommendation system functions
 window.runSystemAnalytics = runSystemAnalytics;
 window.viewCalculationSteps = viewCalculationSteps;
 window.exportBusRecommendations = exportBusRecommendations;
 
-console.log('✅ Recommendation system initialized');
+// ═══════════════════════════════════════════════════════════
+// APPLICATION INITIALIZATION
+// Initializes when DOM is ready
+// ═══════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    // DOM already loaded
+    initApp();
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE LOAD CONFIRMATION
+// ═══════════════════════════════════════════════════════════
+
+console.log('✅ Main.js loaded successfully');
+console.log('   - Version: 1.3.0');
+console.log('   - Date: 2025-10-28 05:38:11 UTC');
+console.log('   - Author: bfforex');
+console.log('   - All helper functions: Available');
+console.log('   - clearAll: Available');
+console.log('   - clearResults: Available');
+console.log('   - Motor contribution: Enabled');
+console.log('   - IEEE 141/IEC 60909: Compliant');
+console.log('✅ Application ready');
+console.log('═'.repeat(80) + '\n');

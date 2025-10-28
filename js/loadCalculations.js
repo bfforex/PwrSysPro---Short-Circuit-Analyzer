@@ -72,16 +72,16 @@ function calculateDownstreamLoad(busId) {
                                                              const primaryCurrent = transformerDownstream / turnsRatio;  
                        branchLoad += primaryCurrent;
         
-                                                             console.log(`${indent}  Transformer: ${comp.rating} kVA`);
-                                                             console.log(`${indent}    Secondary load: ${transformerDownstream.toFixed(2)} A @ ${comp.secondary}V`);
-                                                             console.log(`${indent}    Primary current: ${primaryCurrent.toFixed(2)} A @ ${comp.primary}V`);
-                                                             console.log(`${indent}    Turns ratio: ${turnsRatio.toFixed(4)}`);
+                                                             console.log(`   Transformer: ${comp.rating} kVA`);
+                       console.log(`     Secondary load: ${transformerDownstream.toFixed(2)} A @ ${comp.secondary}V`);
+                       console.log(`     Primary current: ${primaryCurrent.toFixed(2)} A @ ${comp.primary}V`);
+                       console.log(`     Turns ratio: ${turnsRatio.toFixed(4)}`);
 
                     } else if (comp.rating) {
                         // Use transformer rating as maximum load (80% loading)
                         const transformerCurrent = (comp.rating * 1000) / (Math.sqrt(3) * comp.primary);
                                                                 branchLoad += transformerCurrent * 0.8;
-                                                                console.log(`${indent}  Transformer: ${comp.rating} kVA @ 80% = ${(transformerCurrent * 0.8).toFixed(2)} A`);
+                                                                console.log(`   Transformer: ${comp.rating} kVA @ 80% = ${(transformerCurrent * 0.8).toFixed(2)} A`);
                     }
                     break;
                     

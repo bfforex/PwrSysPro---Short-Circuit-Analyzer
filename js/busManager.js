@@ -1,11 +1,11 @@
 // Bus Manager Module - Handles all bus-related operations
-// Modified: 2025-10-27 16:26:23 UTC by bfforex
-// Added: Load current specification for dynamic load calculation
+// Modified: 2025-10-28 02:53:11 UTC by bfforex
+// Enhanced: Accessibility support with modal manager integration
 
 /**
  * Open add bus modal
- * Modified: 2025-10-27 16:26:23 UTC by bfforex
- * Added: Load current input field
+ * Enhanced: 2025-10-28 02:53:11 UTC by bfforex
+ * Accessibility: Uses centralized modal manager
  */
 function openAddBusModal() {
     const parentSelect = document.getElementById('newBusParent');
@@ -14,14 +14,22 @@ function openAddBusModal() {
         parentSelect.innerHTML += `<option value="${bus.id}">${bus.name} (${bus.voltage}V)</option>`;
     });
     
-    document.getElementById('addBusModal').style.display = 'block';
+    // Open modal with accessibility support
+    openModal('addBusModal', function() {
+        // Focus first input
+        const firstInput = document.getElementById('newBusName');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 150);
+        }
+    });
 }
 
 /**
  * Close add bus modal
+ * Enhanced: 2025-10-28 02:53:11 UTC by bfforex
+ * Accessibility: Uses centralized modal manager
  */
 function closeAddBusModal() {
-    document.getElementById('addBusModal').style.display = 'none';
     document.getElementById('newBusName').value = '';
     document.getElementById('newBusVoltage').value = '';
     document.getElementById('newBusType').value = 'distribution';
@@ -40,6 +48,14 @@ function closeAddBusModal() {
     document.getElementById('utilityModeGroup').style.display = 'none';
     document.getElementById('faultCurrentMode').style.display = 'block';
     document.getElementById('faultMVAMode').style.display = 'none';
+    
+    // Clear any errors
+    if (typeof clearModalErrors === 'function') {
+        clearModalErrors('addBusModal');
+    }
+    
+    // Close modal with accessibility support
+    closeModal('addBusModal');
 }
 
 /**
@@ -121,10 +137,7 @@ function saveBus() {
         created: new Date().toISOString()
     };
     
-    // ═══════════════════════════════════════════════════════════
-    // 🔥 NEW: STORE LOAD CURRENT IF SPECIFIED
-    // Added: 2025-10-27 16:26:23 UTC by bfforex
-    // ═══════════════════════════════════════════════════════════
+    // Store load current if specified
     const loadField = document.getElementById('newBusLoad');
     if (loadField) {
         const loadCurrent = parseFloat(loadField.value);
@@ -133,7 +146,6 @@ function saveBus() {
             console.log(`✅ Bus ${name}: Load current set to ${loadCurrent} A`);
         }
     }
-    // ═══════════════════════════════════════════════════════════
     
     if (type === 'source') {
         const utilityMode = document.getElementById('utilityMode').value;
@@ -253,8 +265,8 @@ function selectBus(busId) {
 
 /**
  * Edit bus
- * Modified: 2025-10-27 16:26:23 UTC by bfforex
- * Added: Load current editing
+ * Enhanced: 2025-10-28 02:53:11 UTC by bfforex
+ * Accessibility: Uses centralized modal manager
  */
 function editBus(busId) {
     editingBusId = busId;
@@ -323,15 +335,31 @@ function editBus(busId) {
         ${utilityFieldsHTML}
     `;
     
-    document.getElementById('editBusModal').style.display = 'block';
+    // Open modal with accessibility support
+    openModal('editBusModal', function() {
+        // Focus first input
+        const firstInput = document.getElementById('editBusName');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 150);
+        }
+    });
 }
 
 /**
  * Close edit bus modal
+ * Enhanced: 2025-10-28 02:53:11 UTC by bfforex
+ * Accessibility: Uses centralized modal manager
  */
 function closeEditBusModal() {
-    document.getElementById('editBusModal').style.display = 'none';
     editingBusId = null;
+    
+    // Clear any errors
+    if (typeof clearModalErrors === 'function') {
+        clearModalErrors('editBusModal');
+    }
+    
+    // Close modal with accessibility support
+    closeModal('editBusModal');
 }
 
 /**
@@ -348,10 +376,7 @@ function saveBusEdits() {
     bus.name = document.getElementById('editBusName').value.trim();
     bus.voltage = parseFloat(document.getElementById('editBusVoltage').value);
     
-    // ═══════════════════════════════════════════════════════════
-    // 🔥 NEW: SAVE LOAD CURRENT
-    // Added: 2025-10-27 16:26:23 UTC by bfforex
-    // ═══════════════════════════════════════════════════════════
+    // Save load current
     const editLoadField = document.getElementById('editBusLoad');
     if (editLoadField) {
         const loadCurrent = parseFloat(editLoadField.value);
@@ -359,12 +384,10 @@ function saveBusEdits() {
             bus.loadCurrent = loadCurrent;
             console.log(`✅ Bus ${bus.name}: Load current updated to ${loadCurrent} A`);
         } else {
-            // Remove load current if cleared
             delete bus.loadCurrent;
             console.log(`🔄 Bus ${bus.name}: Load current cleared (will auto-calculate)`);
         }
     }
-    // ═══════════════════════════════════════════════════════════
     
     if (bus.type === 'source') {
         const editUtilityMode = document.getElementById('editUtilityMode');

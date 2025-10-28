@@ -376,13 +376,20 @@ function updateComponentsList() {
 
 /**
  * Edit component
- * Modified: 2025-10-27 16:46:49 UTC by bfforex
- * Enhanced: Edit parallel cable count with real-time preview
+ * Enhanced: 2025-10-28 02:53:11 UTC by bfforex
+ * Accessibility: Uses centralized modal manager
  */
 function editComponent(compId) {
-    editingComponentId = compId;
-    const comp = components.find(c => c.id === compId);
-    if (!comp) return;
+    // Convert string ID to number if needed
+    const id = typeof compId === 'string' ? parseInt(compId) : compId;
+    editingComponentId = id;
+    
+    const comp = components.find(c => c.id == id);
+    if (!comp) {
+        console.error('Component not found:', id, 'Available IDs:', components.map(c => c.id));
+        alert('Error: Component not found. Please refresh the page.');
+        return;
+    }
     
     const modalBody = document.getElementById('editComponentModalBody');
     let inputsHTML = '';
@@ -411,10 +418,6 @@ function editComponent(compId) {
                 <input type="number" id="editCableLength" value="${comp.length}" step="0.1" min="0">
             </div>
             
-            <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- 🔥 NEW: EDIT PARALLEL CABLES WITH PREVIEW -->
-            <!-- Added: 2025-10-27 16:46:49 UTC by bfforex -->
-            <!-- ═══════════════════════════════════════════════════════════ -->
             <div class="form-group">
                 <label>Number of Parallel Cables:
                     <span class="tooltip">ℹ️
@@ -433,7 +436,6 @@ function editComponent(compId) {
                     <br>• Voltage Drop: <strong>Reduced by ${parallel}×</strong>
                 </div>
             </div>
-            <!-- ═══════════════════════════════════════════════════════════ -->
             
             <div class="form-group">
                 <label>Conduit Type:</label>
@@ -508,7 +510,15 @@ function editComponent(compId) {
     }
     
     modalBody.innerHTML = inputsHTML;
-    document.getElementById('editComponentModal').style.display = 'block';
+    
+    // Open modal with accessibility support
+    openModal('editComponentModal', function() {
+        // Focus first input
+        setTimeout(() => {
+            const firstInput = modalBody.querySelector('input, select');
+            if (firstInput) firstInput.focus();
+        }, 150);
+    });
 }
 
 /**
@@ -612,21 +622,39 @@ function saveComponentEdits() {
 
 /**
  * Close edit component modal
+ * Enhanced: 2025-10-28 02:53:11 UTC by bfforex
+ * Accessibility: Uses centralized modal manager
  */
 function closeEditComponentModal() {
-    document.getElementById('editComponentModal').style.display = 'none';
     editingComponentId = null;
+    
+    // Clear any errors
+    if (typeof clearModalErrors === 'function') {
+        clearModalErrors('editComponentModal');
+    }
+    
+    // Close modal with accessibility support
+    closeModal('editComponentModal');
 }
 
 /**
  * Delete component
+ * Fixed: 2025-10-28 02:00:19 UTC by bfforex
+ * Issue: ID type mismatch (string vs number)
  */
 function deleteComponent(compId) {
-    const comp = components.find(c => c.id === compId);
-    if (!comp) return;
+    // Convert string ID to number if needed
+    const id = typeof compId === 'string' ? parseInt(compId) : compId;
+    
+    const comp = components.find(c => c.id == id); // Use == for loose comparison
+    if (!comp) {
+        console.error('Component not found:', id, 'Available IDs:', components.map(c => c.id));
+        alert('Error: Component not found. Please refresh the page.');
+        return;
+    }
     
     if (confirm(`Are you sure you want to delete component "${comp.name || comp.type}"?`)) {
-        components = components.filter(c => c.id !== compId);
+        components = components.filter(c => c.id != id); // Use != for loose comparison
         updateComponentsList();
         updateComponentDropdowns();
         scheduleAutoSave();
