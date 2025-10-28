@@ -416,21 +416,40 @@
     
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- JAVASCRIPT MODULES -->
+    <!-- Updated: 2025-10-28 01:02:09 UTC by bfforex -->
+    <!-- Enhanced: Separated calculation modules architecture -->
     <!-- ═══════════════════════════════════════════════════════════ -->
     
-    <!-- Core Modules -->
+    <!-- Foundation Layer -->
     <script src="js/constants.js"></script>
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
+    
+    <!-- Manager Layer -->
     <script src="js/busManager.js"></script>
     <script src="js/componentManager.js"></script>
+    
+    <!-- Calculation Layer - NEW SEPARATION -->
+    <!-- Load in dependency order: calculations depend on load flow -->
     <script src="js/loadCalculations.js"></script>
+    <script src="js/shortCircuitCalc.js"></script>
+    <script src="js/loadFlowCalc.js"></script>
+    <script src="js/voltageDropCalc.js"></script>
+    
+    <!-- Calculation Coordinator (uses all calc modules) -->
     <script src="js/calculations.js"></script>
+    
+    <!-- Display Layer -->
+    <script src="js/calculationDisplay.js"></script>
     <script src="js/ui.js"></script>
+    
+    <!-- Export/Report Layer -->
     <script src="js/exportReport.js"></script>
+    <script src="js/exportLoadFlowReport.js"></script>
+    
+    <!-- Project Management -->
     <script src="js/projectManager.js"></script>
-    <script src="js/main.js"></script>
-
+    
     <!-- Analytics and Standards -->
     <script src="js/thresholds.js"></script>
     <script src="js/reportAnalytics.js"></script>
@@ -440,6 +459,9 @@
     <script src="js/recommendationRules.js"></script>
     <script src="js/recommendationEngine.js"></script>
     <script src="js/recommendationUI.js"></script>
+    
+    <!-- Application Entry Point (must be last) -->
+    <script src="js/main.js"></script>
     
 </body>
 </html>
