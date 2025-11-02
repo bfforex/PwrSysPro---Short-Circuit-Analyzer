@@ -827,7 +827,25 @@ function calculateShortCircuitPointToPoint(path) {
     steps += '═'.repeat(80) + '\n';
     steps += 'END OF SHORT CIRCUIT CALCULATION\n';
     steps += '═'.repeat(80) + '\n';
-    
+  
+    // ══════════════════════════════════════════════════════════════════════════════
+    // PROTECTION DEVICE REQUIREMENTS
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    if     (typeof generateProtectionDeviceRequirements === 'function') {
+        steps += generateProtectionDeviceRequirements({
+            faultCurrents: {
+                threePhaseSym: faultCurrentKA,
+                threePhaseAsym: asymFaultCurrentKA,
+                lineToGround: lineToGroundKA,
+                lineToLine: faultCurrentKA * 0.866
+            },
+            motorContribution: motorContribution,
+            xrRatio: xrRatio,
+            path: path
+        }, null, 'mid-range'); // null = all manufacturers, 'mid-range' = cost preference
+    }
+  
     return {
         totalR: totalR,
         totalX: totalX,
@@ -1457,6 +1475,24 @@ function calculateShortCircuitPerUnit(path) {
     steps += `✓ ANSI C37.010 - AC High-Voltage Circuit Breakers\n`;
     steps += `✓ NEC Article 110.24 - Available Fault Current\n`;
     steps += `✓ IEEE 142 (Green Book) - Grounding of Industrial Power Systems\n\n`;
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // PROTECTION DEVICE REQUIREMENTS
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    if     (typeof generateProtectionDeviceRequirements === 'function') {
+        steps += generateProtectionDeviceRequirements({
+            faultCurrents: {
+                threePhaseSym: faultCurrentKA,
+                threePhaseAsym: asymFaultCurrentKA,
+                lineToGround: lineToGroundKA,
+                lineToLine: faultCurrentKA * 0.866
+            },
+            motorContribution: motorContribution,
+            xrRatio: xrRatio,
+            path: path
+        }, null, 'mid-range'); // null = all manufacturers, 'mid-range' = cost preference
+    }
     
     return {
         totalR: totalR_ohms,
