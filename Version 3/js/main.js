@@ -256,8 +256,71 @@ function initKeyboardShortcuts() {
 }
 
 /**
+ * Check if required modules are loaded
+ * ✅ ISSUE #4: Module dependency checker
+ * @returns {Object} Result with {success: boolean, missing: string[], warnings: string[]}
+ */
+function checkModuleDependencies() {
+    const requiredModules = [
+        // Core modules
+        { name: 'buses', type: 'array', description: 'Bus data array' },
+        { name: 'components', type: 'array', description: 'Components array' },
+        { name: 'selectedBusId', type: 'any', description: 'Selected bus ID' },
+        
+        // Manager functions
+        { name: 'addBus', type: 'function', description: 'Bus manager' },
+        { name: 'addComponent', type: 'function', description: 'Component manager' },
+        { name: 'updateBusTree', type: 'function', description: 'UI update function' },
+        
+        // Calculation functions
+        { name: 'calculateShortCircuit', type: 'function', description: 'Short circuit calculation' },
+        { name: 'calculateVoltageDropEnhanced', type: 'function', description: 'Voltage drop calculation' },
+        { name: 'calculateLoadFlow', type: 'function', description: 'Load flow calculation' },
+        { name: 'calculateAllBuses', type: 'function', description: 'Calculate all function' },
+        
+        // Display functions
+        { name: 'displayCalculationResults', type: 'function', description: 'Results display' },
+        { name: 'updateComponentInputs', type: 'function', description: 'Component input updater' },
+        
+        // Export functions
+        { name: 'exportReport', type: 'function', description: 'Report export' },
+        { name: 'exportEnhancedSystemReport', type: 'function', description: 'Enhanced report export' },
+        
+        // Project management
+        { name: 'saveProject', type: 'function', description: 'Project save' },
+        { name: 'loadProject', type: 'function', description: 'Project load' }
+    ];
+    
+    const missing = [];
+    const warnings = [];
+    
+    requiredModules.forEach(module => {
+        try {
+            const value = eval(module.name);
+            
+            if (value === undefined) {
+                missing.push(`${module.name} (${module.description})`);
+            } else if (module.type === 'function' && typeof value !== 'function') {
+                warnings.push(`${module.name} is not a function (${module.description})`);
+            } else if (module.type === 'array' && !Array.isArray(value)) {
+                warnings.push(`${module.name} is not an array (${module.description})`);
+            }
+        } catch (e) {
+            missing.push(`${module.name} (${module.description})`);
+        }
+    });
+    
+    return {
+        success: missing.length === 0,
+        missing,
+        warnings
+    };
+}
+
+/**
  * Initialize the application
  * Main entry point for application setup
+ * ✅ ISSUE #4: Enhanced with module dependency checking
  */
 function initApp() {
     console.log(`╔════════════════════════════════════════════════════════════════════════════╗`);
@@ -273,6 +336,33 @@ function initApp() {
     console.log(`║  ✓ Temperature Correction                                                 ║`);
     console.log(`║  ✓ Motor Contribution (IEEE 141/IEC 60909)                                ║`);
     console.log(`╚════════════════════════════════════════════════════════════════════════════╝`);
+    
+    // ✅ ISSUE #4: Check module dependencies before initialization
+    console.log('\n🔍 Checking module dependencies...');
+    const depCheck = checkModuleDependencies();
+    
+    if (!depCheck.success) {
+        console.error('❌ CRITICAL: Missing required modules:');
+        depCheck.missing.forEach(m => console.error(`   ✗ ${m}`));
+        
+        alert(
+            '⚠️ APPLICATION INITIALIZATION ERROR\n\n' +
+            'Some required modules failed to load:\n\n' +
+            depCheck.missing.join('\n') +
+            '\n\nThe application may not function correctly.\n' +
+            'Please refresh the page. If the problem persists, check the browser console.'
+        );
+        
+        // Continue with initialization but warn user
+        console.warn('⚠️ Continuing with initialization despite missing modules...');
+    } else {
+        console.log('✅ All required modules loaded successfully');
+    }
+    
+    if (depCheck.warnings.length > 0) {
+        console.warn('⚠️ Module warnings:');
+        depCheck.warnings.forEach(w => console.warn(`   ⚠ ${w}`));
+    }
     
     try {
         // Set author information

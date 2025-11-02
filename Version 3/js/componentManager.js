@@ -446,23 +446,20 @@ function addComponent() {
             return;
         }
         
-        // ✅ Check for duplicate tags
+        // ✅ ISSUE #9: Enforce unique cable tag constraint
         const existingCable = components.find(c => c.type === 'cable' && c.tag === tag);
         if (existingCable) {
-            const overwrite = confirm(
-                `⚠️ WARNING: Cable tag "${tag}" already exists!\n\n` +
+            alert(
+                `❌ ERROR: Cable tag "${tag}" already exists!\n\n` +
                 `Existing cable: ${existingCable.fromBusName} → ${existingCable.toBusName}\n` +
                 `New cable: ${fromBus.name} → ${toBus.name}\n\n` +
-                `Having duplicate tags can cause confusion in reports.\n\n` +
-                `Click OK to use a different tag (recommended)\n` +
-                `Click Cancel to proceed with duplicate tag (not recommended)`
+                `Cable tags must be unique for proper tracking and reporting.\n\n` +
+                `Please choose a different tag.`
             );
-            
-            if (overwrite) {
-                document.getElementById('cableTag')?.focus();
-                document.getElementById('cableTag')?.select();
-                return;
-            }
+            document.getElementById('cableTag')?.focus();
+            document.getElementById('cableTag')?.select();
+            console.warn(`⚠️ Duplicate cable tag rejected: "${tag}"`);
+            return;
         }
         
         const size = document.getElementById('cableSize').value;
@@ -514,23 +511,20 @@ function addComponent() {
                                return;
                         }
         
-                        // ✅ Check for duplicate tags
+                        // ✅ ISSUE #9: Enforce unique transformer tag constraint
                        const existingXfmr = components.find(c => c.type === 'transformer' && c.tag === tag);
                       if (existingXfmr) {
-                               const overwrite = confirm(
-                                          `⚠️ WARNING: Transformer tag "${tag}" already exists!\n\n` +
+                               alert(
+                                          `❌ ERROR: Transformer tag "${tag}" already exists!\n\n` +
                                           `Existing transformer: ${existingXfmr.fromBusName} → ${existingXfmr.toBusName}\n` +
                                           `New transformer: ${fromBus.name} → ${toBus.name}\n\n` +
-                                          `Having duplicate tags can cause confusion in reports.\n\n` +
-                                          `Click OK to use a different tag (recommended)\n` +
-                                          `Click Cancel to proceed with duplicate tag (not recommended)`
+                                          `Transformer tags must be unique for proper tracking and reporting.\n\n` +
+                                          `Please choose a different tag.`
                                 );
-            
-                               if (overwrite) {
-                                       document.getElementById('transformerTag')?.focus();
-                                       document.getElementById('transformerTag')?.select();
-                                       return;
-                               }
+                               document.getElementById('transformerTag')?.focus();
+                               document.getElementById('transformerTag')?.select();
+                               console.warn(`⚠️ Duplicate transformer tag rejected: "${tag}"`);
+                               return;
                       }
         
                        const rating = parseFloat(document.getElementById('transformerRating').value);
@@ -1385,7 +1379,7 @@ function saveComponentEdits() {
             return;
         }
         
-        // Check for duplicate tags (excluding current cable)
+        // ✅ ISSUE #9: Enforce unique cable tag constraint (excluding current cable)
         const existingCable = components.find(c => 
             c.type === 'cable' && 
             c.tag === newTag && 
@@ -1393,17 +1387,16 @@ function saveComponentEdits() {
         );
         
         if (existingCable) {
-            const overwrite = confirm(
-                `⚠️ WARNING: Cable tag "${newTag}" is already used by another cable!\n\n` +
+            alert(
+                `❌ ERROR: Cable tag "${newTag}" is already used by another cable!\n\n` +
                 `Existing cable: ${existingCable.fromBusName} → ${existingCable.toBusName}\n\n` +
-                `Click OK to use a different tag (recommended)\n` +
-                `Click Cancel to proceed with duplicate tag (not recommended)`
+                `Cable tags must be unique for proper tracking and reporting.\n\n` +
+                `Please choose a different tag.`
             );
-            
-            if (overwrite) {
-                document.getElementById('editCableTag')?.focus();
-                return;
-            }
+            document.getElementById('editCableTag')?.focus();
+            document.getElementById('editCableTag')?.select();
+            console.warn(`⚠️ Duplicate cable tag rejected during edit: "${newTag}"`);
+            return;
         }
         
         component.tag = newTag;
