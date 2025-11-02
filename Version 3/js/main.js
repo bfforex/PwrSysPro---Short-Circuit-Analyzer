@@ -264,31 +264,20 @@ function initKeyboardShortcuts() {
  */
 function checkModuleDependencies() {
     const requiredModules = [
-        // Core modules
-        { name: 'buses', type: 'array', description: 'Bus data array' },
-        { name: 'components', type: 'array', description: 'Components array' },
-        { name: 'selectedBusId', type: 'any', description: 'Selected bus ID' },
-        
-        // Manager functions
-        { name: 'addBus', type: 'function', description: 'Bus manager' },
-        { name: 'addComponent', type: 'function', description: 'Component manager' },
-        { name: 'updateBusTree', type: 'function', description: 'UI update function' },
-        
-        // Calculation functions
+        // Calculation functions (these ARE exported to window)
         { name: 'calculateShortCircuit', type: 'function', description: 'Short circuit calculation' },
-        { name: 'calculateVoltageDropEnhanced', type: 'function', description: 'Voltage drop calculation' },
+        { name: 'calculateVoltageDrop', type: 'function', description: 'Voltage drop calculation' },
         { name: 'calculateLoadFlow', type: 'function', description: 'Load flow calculation' },
         { name: 'calculateAllBuses', type: 'function', description: 'Calculate all function' },
-        
+    
         // Display functions
         { name: 'displayCalculationResults', type: 'function', description: 'Results display' },
         { name: 'updateComponentInputs', type: 'function', description: 'Component input updater' },
-        
-        // Export functions
-        { name: 'exportReport', type: 'function', description: 'Report export' },
+    
+        // Export functions (these ARE exported)
         { name: 'exportEnhancedSystemReport', type: 'function', description: 'Enhanced report export' },
-        
-        // Project management
+    
+        // Project management (these ARE exported)
         { name: 'saveProject', type: 'function', description: 'Project save' },
         { name: 'loadProject', type: 'function', description: 'Project load' }
     ];
@@ -351,19 +340,28 @@ function initApp() {
     const depCheck = checkModuleDependencies();
     
     if (!depCheck.success) {
-        console.error('❌ CRITICAL: Missing required modules:');
-        depCheck.missing.forEach(m => console.error(`   ✗ ${m}`));
-        
-        alert(
-            '⚠️ APPLICATION INITIALIZATION ERROR\n\n' +
-            'Some required modules failed to load:\n\n' +
-            depCheck.missing.join('\n') +
-            '\n\nThe application may not function correctly.\n' +
-            'Please refresh the page. If the problem persists, check the browser console.'
-        );
-        
-        // Continue with initialization but warn user
-        console.warn('⚠️ Continuing with initialization despite missing modules...');
+        console.warn('⚠️ Some modules not yet loaded (may still be loading):');
+        depCheck.missing.forEach(m => console.warn(`   • ${m}`));
+        console.warn('⚠️ Will re-check after initialization completes...');
+    
+        // Re-check after modules have had time to load
+        setTimeout(() => {
+            const recheckResult = checkModuleDependencies();
+            if (!recheckResult.success) {
+                console.error('❌ CRITICAL: Missing required modules after initialization:');
+                recheckResult.missing.forEach(m => console.error(`   ✗ ${m}`));
+                alert(
+                    '⚠️ APPLICATION ERROR\n\n' +
+                    'Some required modules failed to load:\n\n' +
+                    recheckResult.missing.join('\n') +
+                    '\n\nThe application may not function correctly.\n' +
+                    'Please refresh the page.'
+                );
+            } else {
+                console.log('✅ Post-initialization check: All modules loaded successfully');
+            }
+        }, 2000);
+
     } else {
         console.log('✅ All required modules loaded successfully');
     }
