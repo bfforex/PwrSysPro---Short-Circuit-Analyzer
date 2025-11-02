@@ -623,7 +623,7 @@ function combineSystemAndMotorFault(systemFaultResults, motorContribution) {
         path: systemFaultResults.path,
         calculationDate: systemFaultResults.calculationDate || getCalculationTimestamp(),
         perUnit: systemFaultResults.perUnit || null,
-        calculationSteps: systemFaultResults.calculationSteps + '\n\n' + motorContribution.calculationSteps
+        calculationSteps: systemFaultResults.calculationSteps
     };
 }
 
