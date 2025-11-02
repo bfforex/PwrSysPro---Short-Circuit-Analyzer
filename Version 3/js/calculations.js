@@ -1,15 +1,16 @@
 /**
  * Main Calculations Coordinator
- * Modified: 2025-10-30 02:10:26 UTC by bfforex
+ * Modified: 2025-11-02 16:43:15 UTC by bfforex
  * Enhanced: Feature #1 - Motor Contribution Integration
  * Enhanced: Feature #5 - Demand & Diversity Factors Integration
+ * Enhanced: Arc Flash Analysis Integration (IEEE 1584-2018 & NFPA 70E-2021)
  * FIXED: Error handling, optional chaining, safe property access
- * @version 1.3.2 - FIXED VERSION
+ * @version 1.3.3 - Arc Flash Integration
  */
 
 /**
  * Calculate all analyses for a bus
- * Runs Short Circuit (with Motor Contribution), Load Flow, and Voltage Drop analyses
+ * Runs Short Circuit (with Motor Contribution), Load Flow, Voltage Drop, and Arc Flash analyses
  */
 function calculateBus(busId) {
     const calculationDateStamp = getCalculationTimestamp();
@@ -74,11 +75,11 @@ function calculateBus(busId) {
             try {
                 // Calculate motor contribution (interrupting duty)
                 try {
-    motorContributionResults = calculateTotalMotorContribution(busId, 'interrupting');
-} catch (motorError) {
-    console.error('❌ Error in calculateTotalMotorContribution:', motorError);
-    motorContributionResults = null;
-}
+                    motorContributionResults = calculateTotalMotorContribution(busId, 'interrupting');
+                } catch (motorError) {
+                    console.error('❌ Error in calculateTotalMotorContribution:', motorError);
+                    motorContributionResults = null;
+                }
                 
                 if (motorContributionResults && motorContributionResults.motorCount > 0) {
                     console.log(`✅ ${motorContributionResults.motorCount} motor(s) found`);
@@ -210,9 +211,57 @@ function calculateBus(busId) {
         }
         
         // ═══════════════════════════════════════════════════════════
+        // 4. ARC FLASH ANALYSIS (IEEE 1584-2018 & NFPA 70E-2021)
+        // Added: 2025-11-02 16:43:15 UTC by bfforex
+        // ═══════════════════════════════════════════════════════════
+        console.log('🔥 Running Arc Flash Analysis...');
+        
+        let arcFlashResults = null;
+        
+        // ✅ DEFENSIVE CHECK: Verify function exists
+        if (typeof calculateArcFlash !== 'function') {
+            console.warn('⚠️ WARNING: calculateArcFlash function not found! Skipping arc flash analysis.');
+        } else {
+            try {
+                // Arc flash requires short circuit data
+                if (shortCircuitResults?.faultCurrents?.threePhaseSym) {
+                    arcFlashResults = calculateArcFlash(busId, {
+                        threePhaseFault: {
+                            faultCurrent: shortCircuitResults.faultCurrents.threePhaseSym
+                        }
+                    }, {
+                        equipmentType: 'VCB',        // Vacuum Circuit Breaker (default)
+                        clearingTimeCycles: 2,        // Instantaneous breaker (default)
+                        // Optional overrides:
+                        // workingDistance: 18,       // inches (auto-calculated by voltage)
+                        // electrodeGap: 32,          // mm (auto-calculated by voltage)
+                    });
+                    
+                    // ✅ Store globally
+                    if (!window.arcFlashResults) window.arcFlashResults = {};
+                    window.arcFlashResults[busId] = arcFlashResults;
+                    
+                    console.log('✅ Arc Flash Analysis Complete');
+                    console.log(`   Incident Energy: ${arcFlashResults.incidentEnergy.toFixed(2)} cal/cm²`);
+                    console.log(`   Arc Flash Boundary: ${(arcFlashResults.arcFlashBoundary / 12).toFixed(2)} feet`);
+                    console.log(`   PPE Category: ${arcFlashResults.ppeCategory}`);
+                    console.log(`   Hazard Level: ${arcFlashResults.hazardLevel}`);
+                } else {
+                    console.warn('⚠️ Short circuit data incomplete - skipping arc flash analysis');
+                }
+            } catch (arcFlashError) {
+                console.error('❌ Error in arc flash calculation:', arcFlashError);
+                console.warn('⚠️ Continuing without arc flash analysis');
+                arcFlashResults = null;
+            }
+        }
+        
+        // ═══════════════════════════════════════════════════════════
         // STORE ALL RESULTS WITH BASE VALUES
         // Enhanced: 2025-11-01 13:00:01 UTC by bfforex
+        // Enhanced: 2025-11-02 16:43:15 UTC by bfforex
         // Added: Base kVA, baseZ, baseCurrent for per-unit analysis
+        // Added: Arc flash results storage
         // ═══════════════════════════════════════════════════════════
         
         // ✅ Calculate base values for per-unit system
@@ -246,6 +295,7 @@ function calculateBus(busId) {
             motorContribution: motorContributionResults,
             loadFlow: loadFlowResults,
             voltageDrop: voltageDropResults,
+            arcFlash: arcFlashResults,
             
             // ✅ NEW: Base values for per-unit analysis
             baseKVA: baseKVA,
@@ -268,14 +318,17 @@ function calculateBus(busId) {
             
             // Additional metadata
             analysisComplete: true,
-            analysisTypes: ['shortCircuit', 'loadFlow', 'voltageDrop'],
+            analysisTypes: ['shortCircuit', 'loadFlow', 'voltageDrop', 'arcFlash'],
             
             // ✅ Feature #1 metadata
             includesMotorContribution: motorContributionResults?.motorCount > 0 || false,
             motorCount: motorContributionResults?.motorCount || 0,
             
             // ✅ Feature #5 metadata
-            demandFactorsEnabled: loadFlowResults?.demandFactorsApplied || false
+            demandFactorsEnabled: loadFlowResults?.demandFactorsApplied || false,
+            
+            // ✅ Arc Flash metadata
+            arcFlashAnalyzed: arcFlashResults !== null
         };
         
         // ✅ LOG: Verify base values calculated
@@ -317,12 +370,7 @@ function calculateBus(busId) {
         // ═══════════════════════════════════════════════════════════
         if (typeof displayCalculationResults === 'function') {
             try {
-                displayCalculationResults(
-                    busId,
-                    shortCircuitResults,
-                    loadFlowResults,
-                    voltageDropResults
-                );
+                displayCalculationResults(busId, shortCircuitResults, loadFlowResults, voltageDropResults, arcFlashResults);
             } catch (displayError) {
                 console.error('❌ Error displaying calculation results:', displayError);
                 console.warn('⚠️ Results calculated but display failed');
@@ -340,6 +388,7 @@ function calculateBus(busId) {
         console.log('   - Motor Contribution: ' + (motorContributionResults?.motorCount > 0 ? `✓ (${motorContributionResults.motorCount} motors)` : '⚠️ No motors'));
         console.log('   - Load Flow: ' + (loadFlowResults ? '✓' : '⚠️ Skipped'));
         console.log('   - Voltage Drop: ' + (voltageDropResults ? '✓' : '⚠️ Skipped'));
+        console.log('   - Arc Flash: ' + (arcFlashResults ? '✓' : '⚠️ Skipped'));
         console.log('   - Demand Factors: ' + (loadFlowResults?.demandFactorsApplied ? '✓ Applied' : '⚠️ Not Applied'));
         console.log('═'.repeat(80) + '\n');
         
@@ -347,6 +396,68 @@ function calculateBus(busId) {
         console.error('Error calculating bus:', error);
         console.error('Stack trace:', error.stack);
         alert('Error calculating bus:\n\n' + error.message + '\n\nCheck browser console for details.');
+    }
+}
+
+/**
+ * Calculate arc flash for a bus (standalone function)
+ * Can be called separately if needed
+ */
+function performArcFlashAnalysis(busId) {
+    try {
+        const bus = buses.find(b => b.id === busId);
+        if (!bus) {
+            alert('Bus not found');
+            return null;
+        }
+        
+        // Get short circuit data first
+        const scResult = bus.results?.shortCircuit;
+        if (!scResult) {
+            alert('Please calculate short circuit first');
+            return null;
+        }
+        
+        // Calculate arc flash
+        const result = calculateArcFlash(busId, {
+            threePhaseFault: {
+                faultCurrent: scResult.faultCurrents.threePhaseSym
+            }
+        }, {
+            equipmentType: 'VCB',
+            clearingTimeCycles: 2 // Can be adjusted
+        });
+        
+        // Store result
+        if (!window.arcFlashResults) window.arcFlashResults = {};
+        window.arcFlashResults[busId] = result;
+        
+        // Store in bus results
+        if (bus.results) {
+            bus.results.arcFlash = result;
+            bus.results.arcFlashAnalyzed = true;
+        }
+        
+        // Refresh display if display function exists
+        if (typeof displayCalculationResults === 'function' && bus.results) {
+            displayCalculationResults(
+                busId,
+                bus.results.shortCircuit,
+                bus.results.loadFlow,
+                bus.results.voltageDrop,
+                result
+            );
+        }
+        
+        console.log('✅ Arc Flash analysis complete');
+        console.log(`   Incident Energy: ${result.incidentEnergy.toFixed(2)} cal/cm²`);
+        console.log(`   PPE Category: ${result.ppeCategory}`);
+        
+        return result;
+    } catch (error) {
+        console.error('Arc flash calculation error:', error);
+        alert(`Error: ${error.message}`);
+        return null;
     }
 }
 
@@ -380,12 +491,20 @@ function calculateAllBuses() {
         console.log('⚠️ Feature #5: Demand & Diversity Factors NOT AVAILABLE');
     }
     
+    // ✅ Arc Flash status check
+    if (typeof calculateArcFlash === 'function') {
+        console.log('✅ Arc Flash Analysis: ENABLED (IEEE 1584-2018)');
+    } else {
+        console.log('⚠️ Arc Flash Analysis: NOT AVAILABLE');
+    }
+    
     console.log('═'.repeat(80) + '\n');
     
     let successCount = 0;
     let errorCount = 0;
     let motorsFoundCount = 0;
     let demandAppliedCount = 0;
+    let arcFlashCount = 0;
     const errors = [];
     
     calculatedBuses.forEach(bus => {
@@ -402,6 +521,11 @@ function calculateAllBuses() {
             // Count buses with demand factors applied
             if (bus.results?.demandFactorsEnabled) {
                 demandAppliedCount++;
+            }
+            
+            // Count buses with arc flash analysis
+            if (bus.results?.arcFlash) {
+                arcFlashCount++;
             }
         } catch (error) {
             console.error(`Failed to calculate ${bus.name}:`, error);
@@ -420,6 +544,7 @@ function calculateAllBuses() {
     if (successCount > 0) {
         console.log(`⚡ Motor Contribution: ${motorsFoundCount}/${successCount} buses`);
         console.log(`📊 Demand Factors Applied: ${demandAppliedCount}/${successCount} buses`);
+        console.log(`🔥 Arc Flash Analysis: ${arcFlashCount}/${successCount} buses`);
     }
     
     console.log('═'.repeat(80) + '\n');
@@ -438,6 +563,10 @@ function calculateAllBuses() {
         message += `\n\n📊 Feature #5: Demand & Diversity Factors\n   Applied to ${demandAppliedCount} bus(es)`;
     }
     
+    if (arcFlashCount > 0) {
+        message += `\n\n🔥 Arc Flash Analysis (IEEE 1584-2018)\n   Completed for ${arcFlashCount} bus(es)`;
+    }
+    
     alert(message);
 }
 
@@ -446,12 +575,15 @@ function calculateAllBuses() {
 // ═══════════════════════════════════════════════════════════
 window.calculateBus = calculateBus;
 window.calculateAllBuses = calculateAllBuses;
+window.performArcFlashAnalysis = performArcFlashAnalysis;
 
-console.log('✅ Calculations coordinator v1.3.2 loaded - FIXED VERSION');
+console.log('✅ Calculations coordinator v1.3.3 loaded - Arc Flash Integration');
 console.log('   - calculateBus: Available');
 console.log('   - calculateAllBuses: Available');
+console.log('   - performArcFlashAnalysis: Available');
 console.log('   - Feature #1 Integration: ' + (typeof calculateTotalMotorContribution === 'function' ? 'READY' : 'PENDING'));
 console.log('   - Feature #5 Integration: ' + (typeof calculateLoadFlowWithDemand === 'function' ? 'READY' : 'PENDING'));
+console.log('   - Arc Flash Integration: ' + (typeof calculateArcFlash === 'function' ? 'READY' : 'PENDING'));
 console.log('   - Dependencies check: Enabled');
 console.log('   - Defensive null checks: ENHANCED');
 console.log('   - Error handling: COMPREHENSIVE');

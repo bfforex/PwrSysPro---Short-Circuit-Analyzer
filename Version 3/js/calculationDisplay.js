@@ -19,8 +19,9 @@ console.log('🔧 Loading Calculation Display Module v1.2.0...');
  * @param {Object} shortCircuitResults - Short circuit calculation results
  * @param {Object} loadFlowResults - Load flow calculation results
  * @param {Object} voltageDropResults - Voltage drop calculation results
+ * @param {Object} arcFlashResults - Arc flash calculation results (optional)
  */
-function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, voltageDropResults) {
+function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, voltageDropResults, arcFlashResults = null) {
     try {
         console.log('📊 Displaying results for bus:', busId);
         
@@ -36,6 +37,9 @@ function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, 
             console.error('❌ Bus not found:', busId);
             return;
         }
+        
+        // Check if arc flash results exist
+        const hasArcFlash = arcFlashResults !== null && arcFlashResults !== undefined;
         
         let html = `
             <div class="results-header">
@@ -58,6 +62,11 @@ function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, 
                 <button class="calc-tab" data-calc-type="voltagedrop" onclick="switchCalcTab('voltagedrop')">
                     📉 Voltage Drop
                 </button>
+                ${hasArcFlash ? `
+                    <button class="calc-tab" data-calc-type="arcflash" onclick="switchCalcTab('arcflash')">
+                        🔥 Arc Flash
+                    </button>
+                ` : ''}
             </div>
             
             <!-- Short Circuit Tab Content -->
@@ -74,11 +83,19 @@ function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, 
             <div id="voltagedrop-content" class="calc-tab-content">
                 ${generateVoltageDropDisplay(busId, voltageDropResults)}
             </div>
+            
+            ${hasArcFlash ? `
+                <!-- Arc Flash Tab Content -->
+                <div id="arcflash-content" class="calc-tab-content">
+                    ${generateArcFlashDisplay(busId, arcFlashResults)}
+                </div>
+            ` : ''}
         `;
         
         resultsContainer.innerHTML = html;
         
         console.log('✅ Results displayed successfully');
+        console.log(`   Arc Flash: ${hasArcFlash ? 'Available' : 'Not calculated'}`);
         
     } catch (error) {
         console.error('❌ Error displaying results:', error);
@@ -704,6 +721,353 @@ function generateVoltageDropTable(results, totalDropPercent) {
 }
 
 /**
+ * Generate arc flash display HTML
+ * NEW: Arc Flash Analysis v1.0.0
+ * Added: 2025-11-02 16:14:25 UTC by bfforex
+ * 
+ * @param {String} busId - Bus identifier
+ * @param {Object} results - Arc flash results
+ * @returns {String} HTML for arc flash display
+ */
+function generateArcFlashDisplay(busId, results) {
+    if (!results) return '<div class="alert alert-info">No arc flash data available.</div>';
+    
+    const incidentEnergy = results.incidentEnergy || 0;
+    const arcFlashBoundary = results.arcFlashBoundary || 0;
+    const ppeCategory = results.ppeCategory || 0;
+    const hazardLevel = results.hazardLevel || 'Unknown';
+    
+    // Determine hazard class
+    let hazardClass = 'success';
+    let hazardIcon = '✅';
+    if (incidentEnergy >= 40) {
+        hazardClass = 'danger';
+        hazardIcon = '❌';
+    } else if (incidentEnergy >= 25) {
+        hazardClass = 'danger';
+        hazardIcon = '⚠️';
+    } else if (incidentEnergy >= 8) {
+        hazardClass = 'warning';
+        hazardIcon = '⚠️';
+    } else if (incidentEnergy >= 4) {
+        hazardClass = 'warning';
+        hazardIcon = 'ℹ️';
+    }
+    
+    return `
+        <div class="results-section">
+            <h3>🔥 Arc Flash Hazard Analysis</h3>
+            
+            <div class="stats-grid">
+                <div class="stat-card ${hazardClass}">
+                    <div class="stat-icon">${hazardIcon}</div>
+                    <div class="stat-value">${incidentEnergy.toFixed(2)}</div>
+                    <div class="stat-label">Incident Energy (cal/cm²)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📏</div>
+                    <div class="stat-value">${(arcFlashBoundary / 12).toFixed(2)}</div>
+                    <div class="stat-label">Arc Flash Boundary (ft)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🦺</div>
+                    <div class="stat-value">${ppeCategory}</div>
+                    <div class="stat-label">PPE Category</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-value">${results.arcingCurrentKA.toFixed(2)}</div>
+                    <div class="stat-label">Arcing Current (kA)</div>
+                </div>
+            </div>
+            
+            ${generateArcFlashHazardSection(incidentEnergy, hazardLevel, hazardClass)}
+            ${generatePPERequirementsSection(results)}
+            ${generateArcFlashParametersTable(results)}
+            ${generateEquipmentLabelSection(results)}
+            
+            <div class="button-group">
+                <button class="btn btn-info" onclick="showCalculationSteps('arcflash')">
+                    📝 View Detailed Calculations
+                </button>
+                <button class="btn btn-success" onclick="exportArcFlashReport('${busId}')">
+                    📄 Export Report
+                </button>
+                <button class="btn btn-warning" onclick="generateArcFlashLabel('${busId}')">
+                    🏷️ Generate Warning Label
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Generate arc flash hazard section
+ */
+function generateArcFlashHazardSection(incidentEnergy, hazardLevel, hazardClass) {
+    let hazardDescription = '';
+    let recommendations = [];
+    
+    if (incidentEnergy < 1.2) {
+        hazardDescription = 'Limited hazard - minimal risk of burns';
+        recommendations = [
+            'Non-melting or FR clothing recommended',
+            'Standard safety glasses',
+            'Leather work gloves'
+        ];
+    } else if (incidentEnergy < 4) {
+        hazardDescription = 'Low hazard - potential for second-degree burns';
+        recommendations = [
+            'FR long-sleeve shirt and pants required',
+            'Arc-rated face shield',
+            'Arc-rated gloves',
+            'Hard hat with arc rating'
+        ];
+    } else if (incidentEnergy < 8) {
+        hazardDescription = 'Moderate hazard - significant burn risk';
+        recommendations = [
+            'FR clothing system required',
+            'Arc-rated face shield with balaclava',
+            'Heavy-duty arc-rated gloves',
+            'Full body coverage mandatory'
+        ];
+    } else if (incidentEnergy < 25) {
+        hazardDescription = 'High hazard - severe burn risk';
+        recommendations = [
+            'Arc flash suit required',
+            'Full face shield with hood',
+            'Multi-layer protection',
+            'Second person for observation',
+            'Consider remote operation'
+        ];
+    } else if (incidentEnergy < 40) {
+        hazardDescription = 'Very high hazard - life-threatening';
+        recommendations = [
+            'Multi-layer arc flash suit required',
+            'Maximum protection PPE',
+            'Second person mandatory',
+            'Remote operation strongly recommended',
+            'Energized work permit required'
+        ];
+    } else {
+        hazardDescription = 'Extreme hazard - immediately dangerous';
+        recommendations = [
+            'DO NOT perform energized work',
+            'De-energize and lock out required',
+            'Remote operation mandatory if possible',
+            'Maximum protection if work unavoidable',
+            'Engineering controls required'
+        ];
+    }
+    
+    return `
+        <div class="alert alert-${hazardClass}">
+            <h4>⚠️ HAZARD ASSESSMENT: ${hazardLevel.toUpperCase()}</h4>
+            <div class="hazard-details">
+                <p><strong>Description:</strong> ${hazardDescription}</p>
+                <p><strong>Incident Energy:</strong> ${incidentEnergy.toFixed(2)} cal/cm² at working distance</p>
+                
+                <h5>🛡️ Safety Requirements:</h5>
+                <ul>
+                    ${recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                </ul>
+                
+                <p class="text-muted" style="margin-top: 10px;">
+                    <small>Per IEEE 1584-2018 and NFPA 70E-2021</small>
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Generate PPE requirements section
+ */
+function generatePPERequirementsSection(results) {
+    const ppe = results.ppeRequirements || {};
+    const ppeCategory = results.ppeCategory || 0;
+    
+    return `
+        <div class="ppe-requirements">
+            <h4>🦺 Required Personal Protective Equipment</h4>
+            
+            <div class="ppe-category-badge">
+                <span class="badge badge-danger" style="font-size: 1.5em; padding: 10px 20px;">
+                    PPE CATEGORY ${ppeCategory}
+                </span>
+                <span style="margin-left: 15px;">Minimum Arc Rating: ${ppe.cal || 0} cal/cm²</span>
+            </div>
+            
+            <div class="ppe-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 15px;">
+                <div class="ppe-item">
+                    <h5>👔 Body Protection</h5>
+                    <p>${ppe.clothing || 'Standard FR clothing'}</p>
+                    <small>Arc-rated minimum: ${ppe.cal || 0} cal/cm²</small>
+                </div>
+                
+                <div class="ppe-item">
+                    <h5>👷 Head Protection</h5>
+                    <p>${ppeCategory >= 2 ? 'Arc-rated face shield with balaclava' : 'Arc-rated face shield'}</p>
+                    <small>Hard hat (Class E) required</small>
+                </div>
+                
+                <div class="ppe-item">
+                    <h5>🧤 Hand Protection</h5>
+                    <p>${ppeCategory >= 2 ? 'Heavy-duty leather gloves over rubber insulating gloves' : 'Arc-rated gloves'}</p>
+                    <small>Arc-rated ${ppe.cal || 0} cal/cm² minimum</small>
+                </div>
+                
+                <div class="ppe-item">
+                    <h5>👢 Foot Protection</h5>
+                    <p>Leather work boots (no synthetics)</p>
+                    <small>Steel toe ASTM F2413 compliant</small>
+                </div>
+            </div>
+            
+            ${ppeCategory >= 3 ? `
+                <div class="alert alert-danger" style="margin-top: 15px;">
+                    <h5>⚠️ Additional Requirements for Category ${ppeCategory}:</h5>
+                    <ul>
+                        <li>Arc flash suit hood with integrated face shield</li>
+                        <li>Arc-rated hearing protection</li>
+                        <li>FR underwear recommended</li>
+                        <li>Second person for observation (NFPA 70E requirement)</li>
+                        <li>Consider remote operation if available</li>
+                    </ul>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+/**
+ * Generate arc flash parameters table
+ */
+function generateArcFlashParametersTable(results) {
+    return `
+        <h4>📊 Calculation Parameters</h4>
+        <table class="breakdown-table">
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Standard/Reference</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>System Voltage</td>
+                    <td>${results.voltage} V</td>
+                    <td>System nominal voltage</td>
+                </tr>
+                <tr>
+                    <td>Bolted Fault Current</td>
+                    <td>${(results.boltedFaultCurrent / 1000).toFixed(3)} kA</td>
+                    <td>From short circuit analysis</td>
+                </tr>
+                <tr>
+                    <td>Arcing Current</td>
+                    <td>${results.arcingCurrentKA.toFixed(3)} kA</td>
+                    <td>IEEE 1584-2018 (85% factor)</td>
+                </tr>
+                <tr>
+                    <td>Clearing Time</td>
+                    <td>${results.clearingTimeCycles.toFixed(1)} cycles (${results.clearingTimeSec.toFixed(3)} sec)</td>
+                    <td>Protective device</td>
+                </tr>
+                <tr>
+                    <td>Working Distance</td>
+                    <td>${results.workingDistance} inches</td>
+                    <td>IEEE 1584-2018 Table 4.5</td>
+                </tr>
+                <tr>
+                    <td>Equipment Type</td>
+                    <td>${results.equipmentType}</td>
+                    <td>IEEE 1584-2018</td>
+                </tr>
+                <tr>
+                    <td>Electrode Gap</td>
+                    <td>${results.electrodeGap} mm</td>
+                    <td>IEEE 1584-2018</td>
+                </tr>
+            </tbody>
+        </table>
+    `;
+}
+
+/**
+ * Generate equipment label section
+ */
+function generateEquipmentLabelSection(results) {
+    const boundaryFeet = (results.arcFlashBoundary / 12).toFixed(1);
+    const ppe = results.ppeRequirements || {};
+    
+    return `
+        <h4>🏷️ Equipment Warning Label (NEC 110.16)</h4>
+        <div class="equipment-label" style="
+            border: 3px solid #ff0000;
+            background: #fff3cd;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Arial Black', sans-serif;
+        ">
+            <div style="text-align: center; margin-bottom: 15px;">
+                <div style="font-size: 2em; color: #ff0000; font-weight: bold;">⚠️ DANGER</div>
+                <div style="font-size: 1.3em; font-weight: bold; color: #000;">
+                    ARC FLASH AND SHOCK HAZARD
+                </div>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 5px;"><strong>Equipment:</strong></td>
+                    <td style="padding: 5px;">${results.busTag || results.busName}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px;"><strong>Voltage:</strong></td>
+                    <td style="padding: 5px;">${results.voltage} V</td>
+                </tr>
+                <tr style="background: #ffebee;">
+                    <td style="padding: 5px;"><strong>Incident Energy:</strong></td>
+                    <td style="padding: 5px; font-size: 1.2em; font-weight: bold;">${results.incidentEnergy.toFixed(2)} cal/cm²</td>
+                </tr>
+                <tr style="background: #ffebee;">
+                    <td style="padding: 5px;"><strong>Arc Flash Boundary:</strong></td>
+                    <td style="padding: 5px; font-size: 1.2em; font-weight: bold;">${boundaryFeet} feet</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px;"><strong>Working Distance:</strong></td>
+                    <td style="padding: 5px;">${results.workingDistance} inches</td>
+                </tr>
+                <tr style="background: #e3f2fd;">
+                    <td style="padding: 5px;"><strong>PPE Category:</strong></td>
+                    <td style="padding: 5px; font-size: 1.2em; font-weight: bold;">${results.ppeCategory}</td>
+                </tr>
+                <tr style="background: #e3f2fd;">
+                    <td style="padding: 5px;"><strong>Arc Rating Required:</strong></td>
+                    <td style="padding: 5px; font-size: 1.2em; font-weight: bold;">${ppe.cal || 0} cal/cm²</td>
+                </tr>
+            </table>
+            
+            <div style="margin-top: 15px; padding: 10px; background: #fff; border: 1px solid #000;">
+                <p style="margin: 5px 0; font-weight: bold;">
+                    Appropriate PPE SHALL be worn when working on or near this equipment.
+                </p>
+                <p style="margin: 5px 0;">
+                    See NFPA 70E for proper work practices.
+                </p>
+                <p style="margin: 5px 0; font-size: 0.9em;">
+                    <strong>Last Calculated:</strong> ${results.calculationDate}
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+// Export new arc flash function
+window.generateArcFlashDisplay = generateArcFlashDisplay;
+
+/**
  * Switch between calculation tabs
  */
 function switchCalcTab(calcType) {
@@ -748,6 +1112,10 @@ function showCalculationSteps(calcType) {
             steps = bus.results.voltageDrop?.calculationSteps || 'No steps available';
             title = 'Voltage Drop Calculation Steps';
             break;
+                      case 'arcflash':
+                                steps = bus.results.arcFlash?.calculationSteps || 'No steps available';
+                                title = 'Arc Flash Analysis Steps';
+                                break;
     }
     
     // Create modal
