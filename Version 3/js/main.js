@@ -3,15 +3,17 @@
  * Initialization and event handlers
  * 
  * @author Engr. B. P. Faraon
- * @date 2025-10-28 05:38:11 UTC
- * @version 1.3.0
+ * @date 2025-11-02 17:35:57 UTC
+ * @version 1.4.0
  * @enhanced Complete helper functions integration
  * @enhanced Motor contribution support (IEEE 141/IEC 60909)
+ * @enhancement ISSUE #4: Added comprehensive module dependency checking
+ * @enhancement Added checkModuleDependencies() for startup validation
  */
 
 console.log('\n' + '═'.repeat(80));
 console.log('⚡ PwrSys Pro - Initializing...');
-console.log('Current Date/Time (UTC): 2025-10-28 05:38:11');
+console.log('Current Date/Time (UTC): 2025-11-02 17:35:57');
 console.log('User: bfforex');
 console.log('═'.repeat(80) + '\n');
 

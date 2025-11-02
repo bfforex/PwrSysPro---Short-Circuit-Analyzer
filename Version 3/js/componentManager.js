@@ -3,19 +3,20 @@
  * Handles all component operations (add, edit, delete, display)
  * 
  * @author bfforex
- * @date 2025-10-29 14:14:42 UTC
- * @version 2.1.0 - Motor Contribution Support (Feature #1)
+ * @date 2025-11-02 17:35:57 UTC
+ * @version 2.2.0 - Enhanced Data Integrity (Issue #9)
  * 
  * FEATURES:
  * - Cable equipment tagging (Feature #7)
  * - From/To tracking with tags (Feature #8)
  * - Motor type selection for contribution calculations (Feature #1)
  * - Advanced motor parameters (efficiency, power factor)
- * - Duplicate tag detection
+ * - ✅ ISSUE #9: Enforced unique tag constraint (cables & transformers)
  * - Enhanced component details modal
  */
 
-console.log('🔧 Loading Component Manager v2.1 - Motor Contribution Support...');
+console.log('🔧 Loading Component Manager v2.2 - Enhanced Data Integrity...');
+console.log('   ✅ Unique tag enforcement enabled (Issue #9)');
 
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPONENT INPUT GENERATION
