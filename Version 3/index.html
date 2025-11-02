@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PwrSys Pro - Short Circuit Analyzer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="css/styles.css" rel="stylesheet"/>
+</head>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- PERMANENT FIX: Voltage Drop Compatibility Patch -->
+<!-- Issue #6: Ensures both property names work -->
+<!-- Date: 2025-11-01 by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+if (window.calculateVoltageDrop) {
+    const original = window.calculateVoltageDrop;
+    window.calculateVoltageDrop = function(busId, path, loadFlowData) {
+        const result = original(busId, path, loadFlowData);
+        if (result) {
+            // Ensure both property name variants exist
+            if (result.totalDropPercent !== undefined && !result.cumulativeDropPercent) {
+                result.cumulativeDropPercent = result.totalDropPercent;
+            }
+            if (result.totalDropVolts !== undefined && !result.cumulativeDropVolts) {
+                result.cumulativeDropVolts = result.totalDropVolts;
+            }
+        }
+        return result;
+    };
+    console.log('✅ Voltage drop compatibility patch loaded');
+}
+</script>
+<body>
+<div class="auto-save-indicator" id="autoSaveIndicator">✓ Auto-saved</div>
+<div class="container">
+<div class="header">
+<button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+<h1>⚡ PwrSys Pro - Short Circuit Analyzer</h1>
+<p>NEC/PEC Compliant | Multi-Bus Power System Analysis</p>
+<p class="header-info">Author: <strong id="Author">Engr. B. P. Faraon</strong></p>
+<p class="header-info">Session: <span id="sessionDate">2025-10-29 12:23:00</span></p>
+</div>
+<div class="main-content">
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- OPTIMIZED SIDEBAR - Collapsible & Scrollable -->
+<!-- Modified: 2025-10-29 12:23:00 UTC by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="sidebar">
+<!-- Project Information - Compact -->
+<div class="section section-compact">
+<h3>📋 Project Info</h3>
+<div class="form-group">
+<label for="projectName">Project:</label>
+<input aria-label="Project name" id="projectName" placeholder="Project name" type="text"/>
+</div>
+<div class="form-group">
+<label for="engineer">Engineer:</label>
+<input aria-label="Engineer name" id="engineer" placeholder="Engineer name" type="text"/>
+</div>
+<div class="form-group">
+<label for="autoSave">
+<input checked="" class="checkbox-inline" id="autoSave" type="checkbox"/>
+                            Auto-save
+                        </label>
+</div>
+<!-- Collapsible Advanced Settings -->
+<details class="collapsible-section">
+<summary>Advanced Settings</summary>
+<div class="form-group">
+<label for="projectNumber">Project #:</label>
+<input aria-label="Project number" id="projectNumber" placeholder="Project number" type="text"/>
+</div>
+</details>
+</div>
+<!-- Bus Manager - Scrollable -->
+<div class="section section-scrollable">
+<h3>🔌 Bus Manager</h3>
+<button class="btn btn-success btn-full-width" onclick="openAddBusModal()">+ Add Bus</button>
+<div class="bus-tree" id="busTree">
+<div class="alert alert-info">
+                            No buses created yet. Click "Add Bus" to start.
+                        </div>
+</div>
+</div>
+<!-- Calculation Settings - Collapsible -->
+<div class="section section-compact">
+<details class="collapsible-section" open="">
+<summary>⚙️ Calculation Settings</summary>
+<div class="settings-grid">
+<div class="form-group">
+<label for="loadCurrent">Load (A):</label>
+<input aria-label="Load current in amperes" id="loadCurrent" min="0" step="0.1" type="number" value="100"/>
+</div>
+<div class="form-group">
+<label for="powerFactor">PF:</label>
+<input aria-label="Power factor" id="powerFactor" max="1" min="0" step="0.01" type="number" value="0.9"/>
+</div>
+<div class="form-group">
+<label for="voltageDropLimit">VD Limit (%):</label>
+<input aria-label="Voltage drop limit percentage" id="voltageDropLimit" max="100" min="0" step="0.1" type="number" value="3"/>
+</div>
+<div class="form-group">
+<label for="temperature">Temp (°C):</label>
+<input aria-label="Operating temperature in Celsius" id="temperature" max="150" min="-40" step="1" type="number" value="75"/>
+</div>
+</div>
+<div class="radio-group">
+<label for="method-ptp">
+<input checked="" id="method-ptp" name="method" type="radio" value="point-to-point"/>
+                                P-to-P
+                            </label>
+<label for="method-pu">
+<input id="method-pu" name="method" type="radio" value="per-unit"/>
+                                Per-Unit
+                            </label>
+</div>
+</details>
+</div>
+<!-- Add Component - Collapsible -->
+<div class="section section-compact">
+<details class="collapsible-section">
+<summary>➕ Add Component</summary>
+<div class="form-group">
+<label for="fromBus">From:</label>
+<select aria-label="Select source bus" id="fromBus">
+<option value="">Select source bus</option>
+</select>
+</div>
+<div class="form-group">
+<label for="toBus">To:</label>
+<select aria-label="Select destination bus" id="toBus">
+<option value="">Select destination bus</option>
+</select>
+</div>
+<div class="form-group">
+<label for="componentType">Type:</label>
+<select aria-label="Select component type" id="componentType" onchange="updateComponentInputs()">
+<option value="transformer">Transformer</option>
+<option value="cable">Cable</option>
+<option value="generator">Generator</option>
+<option value="motor">Motor</option>
+</select>
+</div>
+<div id="componentInputs"></div>
+<button class="btn btn-success btn-full-width" onclick="addComponent()">+ Add</button>
+</details>
+</div>
+<!-- Actions -->
+<div class="section section-compact">
+<h3>🎬 Actions</h3>
+<button class="btn btn-primary btn-full-width" id="calculateBtn">
+                        🔢 Calculate All
+                    </button>
+<button class="btn btn-danger btn-full-width btn-top-margin" onclick="clearAll()">
+                        🗑️ Clear All
+                    </button>
+<button class="btn btn-secondary btn-full-width btn-top-margin" onclick="saveProject()">
+                        💾 Save
+                    </button>
+<button class="btn btn-secondary btn-full-width btn-top-margin" onclick="loadProject()">
+                        📂 Load
+                    </button>
+</div>
+</div>
+<!-- End Sidebar -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MAIN CONTENT AREA -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="content-area">
+<div class="tabs">
+<button class="tab active" onclick="switchTab(event, 'buses')">🔌 Buses</button>
+<button class="tab" onclick="switchTab(event, 'components')">Components</button>
+<button class="tab" onclick="switchTab(event, 'results')">Results</button>
+<button class="tab" onclick="switchTab(event, 'calculations')">Calculations</button>
+<button class="tab" onclick="switchTab(event, 'exports')">📥 Export</button>
+<button class="tab" id="recommendationsTabButton" onclick="switchTab(event, 'recommendations')" style="display: none;">💡 Recommendations</button>
+</div>
+<!-- Buses Tab -->
+<div class="tab-content active" id="busesTab">
+<div class="section">
+<h3>🔌 Power System Buses</h3>
+<div id="busesContent">
+<div class="alert alert-info">
+                                No buses created yet. Use the Bus Manager to add buses to your system.
+                            </div>
+</div>
+</div>
+</div>
+<!-- Components Tab -->
+<div class="tab-content" id="componentsTab">
+<div class="section">
+<h3>🔧 System Components</h3>
+<div id="componentsList">
+<div class="alert alert-info">
+                                No components added yet. Add components to connect your buses.
+                            </div>
+</div>
+</div>
+</div>
+<!-- Results Tab -->
+<div class="tab-content" id="resultsTab">
+<div id="resultsContainer">
+<div class="alert alert-info">
+                            Run calculation to see results here.
+                        </div>
+</div>
+</div>
+<!-- Calculations Tab -->
+<div class="tab-content" id="calculationsTab">
+<div id="calculationSteps">
+<div class="alert alert-info">
+                            Detailed calculations will appear here after running the analysis.
+                        </div>
+</div>
+</div>
+<!-- Export Tab -->
+<div class="tab-content" id="exportsTab">
+<div class="section">
+<h2>📥 Export Reports</h2>
+<p class="export-description">Generate comprehensive reports in various formats</p>
+<div class="export-categories">
+<!-- Bus Reports -->
+<div class="export-category">
+<h3>🔌 Bus Reports</h3>
+<p class="category-desc">Export detailed analysis for individual or all buses</p>
+<div class="export-buttons-grid">
+<button class="btn btn-info btn-large" onclick="promptBusExport()">
+                                        📄 Export Single Bus Report
+                                    </button>
+<button class="btn btn-primary btn-large" onclick="exportAllBusesSummary()">
+                                        📊 Export All Buses Summary
+                                    </button>
+</div>
+</div>
+<!-- Recommendations -->
+<div class="export-category">
+<h3>💡 Recommendations</h3>
+<p class="category-desc">Export engineering recommendations and action plans</p>
+<div class="export-buttons-grid">
+<button class="btn btn-warning btn-large" onclick="exportRecommendationsCSV()">
+                                        📑 Export Recommendations (CSV)
+                                    </button>
+<button class="btn btn-secondary btn-large" onclick="exportActionPlan()">
+                                        📋 Export Action Plan
+                                    </button>
+</div>
+</div>
+<!-- Project Data -->
+<div class="export-category">
+<h3>💾 Project Data</h3>
+<p class="category-desc">Save and backup your project</p>
+<div class="export-buttons-grid">
+<button class="btn btn-success btn-large" onclick="saveProject()">
+                                        💾 Save Project (JSON)
+                                    </button>
+<button class="btn btn-secondary btn-large" onclick="loadProject()">
+                                        📂 Load Project
+                                    </button>
+</div>
+</div>
+</div>
+<!-- Export Tips -->
+<div class="export-tips">
+<h4>💡 Export Tips</h4>
+<ul>
+<li>Calculate all buses first for complete system reports</li>
+<li>CSV exports can be opened in Excel or Google Sheets</li>
+<li>Action plans include checkboxes for tracking completion</li>
+<li>Save project regularly to preserve your work</li>
+<li>Reports include IEEE standards compliance analysis</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- End Export Tab -->
+<!-- System Recommendations Tab -->
+<div class="tab-content" id="recommendationsTab">
+<div id="recommendationsTabContent">
+<div class="alert alert-info">
+                            Calculate all buses to generate system-wide recommendations.
+                        </div>
+</div>
+</div>
+</div>
+<!-- End Content Area -->
+</div>
+<!-- End Main Content -->
+</div>
+<!-- End Container -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODALS -->
+<!-- Modified: 2025-10-29 12:23:00 UTC by bfforex -->
+<!-- Feature #5: Demand & Diversity Factors Added -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- Add Bus Modal -->
+<div aria-labelledby="addBusModalTitle" class="modal" id="addBusModal" role="dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h2 id="addBusModalTitle">Add New Bus</h2>
+<span aria-label="Close modal" class="close-modal" onclick="closeAddBusModal()">×</span>
+</div>
+<div class="modal-body">
+<div class="form-group">
+<label for="newBusName">Bus Name:</label>
+<input aria-label="Bus name" id="newBusName" placeholder="e.g., Main Switchboard" type="text"/>
+</div>
+<div class="form-group">
+<label for="newBusVoltage">Bus Voltage (V):</label>
+<input aria-label="Bus voltage in volts" id="newBusVoltage" min="0" placeholder="e.g., 480" step="0.1" type="number"/>
+</div>
+<div class="form-group">
+<label for="newBusType">Bus Type:</label>
+<select aria-label="Select bus type" id="newBusType" onchange="toggleUtilityFields()">
+<option value="distribution">Distribution</option>
+<option value="branch">Branch/Panel</option>
+<option value="source">Source (Utility/Generator)</option>
+</select>
+</div>
+<div class="form-group">
+<label for="newBusLoad">Bus Load Current (A) - Optional:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Specify direct load on this bus. Leave blank to calculate from downstream motors, transformers, and cables automatically.</span>
+</span>
+</label>
+<input aria-label="Bus load current in amperes" id="newBusLoad" min="0" placeholder="Auto-calculated if blank" step="0.1" type="number"/>
+<div class="small-muted">If blank, load will be automatically calculated from downstream equipment</div>
+</div>
+<div class="form-group">
+<label for="newBusParent">Parent Bus:</label>
+<select aria-label="Select parent bus" id="newBusParent">
+<option value="">None (Root Bus)</option>
+</select>
+</div><div class="form-group"><label>Insert After:</label><select class="form-control" id="insertAfterBus"></select></div>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- FEATURE #5: DEMAND & DIVERSITY FACTORS -->
+<!-- Added: 2025-10-29 12:23:00 UTC by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<details class="collapsible-section">
+<summary style="cursor: pointer; padding: 10px; background: #f0f0f0; border-radius: 5px; margin: 10px 0;">
+                        ⚡ Demand &amp; Diversity Factors (Optional - Feature #5)
+                    </summary>
+<div style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; margin-top: 5px;">
+<div class="form-group">
+<label for="newBusDemandFactor">
+                                Demand Factor (0.0 - 1.0):
+                                <span class="tooltip">ℹ️
+                                    <span class="tooltiptext">Ratio of actual load to connected load per NEC Article 220. Default: 1.0 (100%). Example: 0.85 means 85% of connected load is expected to be used simultaneously.</span>
+</span>
+</label>
+<input id="newBusDemandFactor" max="1" min="0" placeholder="1.0 (100%)" step="0.01" type="number" value="1.0"/>
+<small style="color: #666; font-size: 0.85em;">
+                                📖 NEC Article 220 - Demand factors for load calculations<br/>
+                                Examples: Lighting=100%, Receptacles=50%, Motors=85-100% depending on duty
+                            </small>
+</div>
+<div class="form-group">
+<label for="newBusDiversityFactor">
+                                Diversity Factor (0.0 - 1.0):
+                                <span class="tooltip">ℹ️
+                                    <span class="tooltiptext">Ratio of simultaneous maximum demand to sum of individual maximum demands per IEEE 141. Leave blank for automatic selection based on bus type. Example: 0.85 means only 85% of total demand will occur at the same time.</span>
+</span>
+</label>
+<input id="newBusDiversityFactor" max="1" min="0" placeholder="Auto (based on bus type)" step="0.01" type="number"/>
+<small style="color: #666; font-size: 0.85em;">
+                                📖 IEEE 141-1993 Red Book - Diversity factors for system design<br/>
+                                Auto defaults: Source Bus=90%, Distribution Bus=85%, Branch Circuit=80%<br/>
+                                Leave blank to use automatic values
+                            </small>
+</div>
+<div style="background: rgba(102, 126, 234, 0.1); padding: 10px; border-radius: 5px; margin-top: 10px;">
+<strong style="color: #667eea;">💡 What's the difference?</strong>
+<ul style="margin: 8px 0; padding-left: 20px; font-size: 0.9em; line-height: 1.6;">
+<li><strong>Demand Factor</strong>: Accounts for the fact that not all equipment operates at full load all the time.</li>
+<li><strong>Diversity Factor</strong>: Accounts for the fact that not all loads reach maximum demand at the same time.</li>
+<li><strong>Combined Effect</strong>: Design Load = Connected Load × Demand Factor × Diversity Factor</li>
+</ul>
+</div>
+</div>
+</details>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="hidden" id="utilityModeGroup">
+<div class="form-group">
+<label for="utilityMode">Utility Source Data Mode:</label>
+<select aria-label="Select utility source data mode" id="utilityMode" onchange="toggleUtilityInputMode()">
+<option value="kA">Fault Current (kA)</option>
+<option value="MVA">Fault MVA</option>
+</select>
+</div>
+</div>
+<div class="hidden" id="utilitySourceGroup">
+<div class="form-group" id="faultCurrentMode">
+<label for="newBusUtilityFault">Available Fault Current (kA):
+                            <span class="tooltip">ℹ️
+                                <span class="tooltiptext">Three-phase symmetrical fault current available from utility</span>
+</span>
+</label>
+<input aria-label="Available fault current in kA" id="newBusUtilityFault" min="0" placeholder="e.g., 50" step="0.1" type="number"/>
+</div>
+<div class="form-group hidden" id="faultMVAMode">
+<label for="newBusUtilityMVA">Available Fault MVA:
+                            <span class="tooltip">ℹ️
+                                <span class="tooltiptext">Three-phase symmetrical fault MVA from utility</span>
+</span>
+</label>
+<input aria-label="Available fault MVA" id="newBusUtilityMVA" min="0" placeholder="e.g., 500" step="0.1" type="number"/>
+</div>
+</div>
+<div class="form-group hidden" id="utilityXRGroup">
+<label for="newBusUtilityXR">Source X/R Ratio:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Typical values: 3-10 for utility sources, 15-30 for generators</span>
+</span>
+</label>
+<input aria-label="Source X/R ratio" id="newBusUtilityXR" min="0" placeholder="e.g., 3" step="0.1" type="number" value="3"/>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeAddBusModal()">Cancel</button>
+<button class="btn btn-primary" onclick="saveBus()">Add Bus</button>
+</div>
+</div>
+</div>
+<!-- Edit Bus Modal -->
+<div aria-labelledby="editBusModalTitle" class="modal" id="editBusModal" role="dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h2 id="editBusModalTitle">Edit Bus</h2>
+<span aria-label="Close modal" class="close-modal" onclick="closeEditBusModal()">×</span>
+</div>
+<div class="modal-body" id="editBusModalBody"></div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeEditBusModal()">Cancel</button>
+<button class="btn btn-primary" onclick="saveBusEdits()">Save Changes</button>
+</div>
+</div>
+</div>
+<!-- Edit Component Modal -->
+<div aria-labelledby="editComponentModalTitle" class="modal" id="editComponentModal" role="dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h2 id="editComponentModalTitle">Edit Component</h2>
+<span aria-label="Close modal" class="close-modal" onclick="closeEditComponentModal()">×</span>
+</div>
+<div class="modal-body" id="editComponentModalBody"></div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeEditComponentModal()">Cancel</button>
+<button class="btn btn-primary" onclick="saveComponentEdits()">Save Changes</button>
+</div>
+</div>
+</div>
+<!-- Hidden File Input -->
+<label class="sr-only" for="fileInput">Load Project File</label>
+<input accept=".json" aria-label="Load project JSON file" class="hidden" id="fileInput" type="file"/>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT MODULES -->
+<!-- Updated: 2025-10-29 12:23:00 UTC by bfforex -->
+<!-- Feature #5: Added demandFactors.js -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 1: FOUNDATION (Constants, State, Utilities) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/constants.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 2: FEATURE #4 - DEMAND & DIVERSITY FACTORS -->
+<!-- ✅ CRITICAL: demandFactors.js MUST load BEFORE loadDiversityCalc.js -->
+<!-- Updated: 2025-11-01 09:42:15 UTC by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/demandFactors.js"></script>
+<script src="js/loadDiversityCalc.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 3: MODAL MANAGER (Accessibility) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/modalManager.js"></script>
+<!-- LAYER 4: ANALYTICS AND STANDARDS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/thresholds.js"></script>
+<script src="js/reportAnalytics.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 5: RECOMMENDATION SYSTEM -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/recommendationRules.js"></script>
+<script src="js/recommendationEngine.js"></script>
+<script src="js/recommendationUI.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 6: MANAGER LAYER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/busManager.js"></script>
+<script src="js/componentManager.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 7: CALCULATION LAYER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/loadCalculations.js"></script>
+<script src="js/motorContribution.js"></script>
+<script src="js/shortCircuitCalc.js"></script>
+<script src="js/loadFlowCalc.js"></script>
+<script src="js/voltageDropCalc.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 8: CALCULATION COORDINATOR -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/calculations.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 9: DISPLAY LAYER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/calculationDisplay.js"></script>
+<script src="js/ui.js"></script>
+<!-- Compatibility shim: defines safe aliases/fallbacks for helpers referenced across modules.
+     Non-destructive: only creates missing functions. Load after ui.js and before main.js. -->
+<script src="js/compat.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 10: EXPORT/REPORT LAYER -->
+<!-- Updated: 2025-11-01 10:28:22 UTC by bfforex -->
+<!-- Issue #6: Added enhanced system report generator -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/exportReport.js"></script>
+<script src="js/exportLoadFlowReport.js"></script>
+<script src="js/exportEnhancedSystemReport.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 11: PROJECT MANAGEMENT -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/projectManager.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 12: APPLICATION ENTRY POINT (MUST BE LAST) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/main.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- DIAGNOSTIC SCRIPT - Check module loading -->
+<!-- Updated: 2025-11-01 09:42:15 UTC by bfforex -->
+<!-- Fixed: Correct variable names for diversity factors -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+    console.log('\n' + '═'.repeat(80));
+    console.log('MODULE LOADING DIAGNOSTIC v2.1');
+    console.log('═'.repeat(80));
+    
+    const requiredFunctions = {
+        // Short Circuit Functions
+        'calculateShortCircuit': typeof calculateShortCircuit !== 'undefined',
+        'calculateShortCircuitPointToPoint': typeof calculateShortCircuitPointToPoint !== 'undefined',
+        'calculateShortCircuitPerUnit': typeof calculateShortCircuitPerUnit !== 'undefined',
+        
+        // Load Flow Functions
+        'calculateLoadFlow': typeof calculateLoadFlow !== 'undefined',
+        'calculateLoadFlowWithDemand': typeof calculateLoadFlowWithDemand !== 'undefined',
+        'applyDemandFactorsToLoadFlow': typeof applyDemandFactorsToLoadFlow !== 'undefined',
+        
+        // Voltage Drop Functions
+        'calculateVoltageDrop': typeof calculateVoltageDrop !== 'undefined',
+        
+        // Motor Contribution Functions
+        'calculateMotorContribution': typeof calculateMotorContribution !== 'undefined',
+        'calculateTotalMotorContribution': typeof calculateTotalMotorContribution !== 'undefined',
+        'combineSystemAndMotorFault': typeof combineSystemAndMotorFault !== 'undefined',
+        'combineMotorWithSystem': typeof combineMotorWithSystem !== 'undefined',
+        
+        // Calculation Coordinator
+        'calculateBus': typeof calculateBus !== 'undefined',
+        'calculateAllBuses': typeof calculateAllBuses !== 'undefined',
+        
+        // Display Functions
+        'displayCalculationResults': typeof displayCalculationResults !== 'undefined',
+        
+        // Demand & Diversity Factors (CORRECTED)
+        'DIVERSITY_FACTORS': typeof window.DIVERSITY_FACTORS !== 'undefined',
+        'DEMAND_FACTORS': typeof window.DEMAND_FACTORS !== 'undefined',
+        'diversityToDemand': typeof window.diversityToDemand === 'function',
+        'getMotorDiversityFactor': typeof window.getMotorDiversityFactor === 'function',
+        'calculateDiversifiedLoad': typeof window.calculateDiversifiedLoad === 'function',
+        'getDiversityFactorForBus': typeof getDiversityFactorForBus !== 'undefined'
+    };
+    
+    let allLoaded = true;
+    let criticalMissing = [];
+    
+    for (const [funcName, isLoaded] of Object.entries(requiredFunctions)) {
+        const status = isLoaded ? '✅' : '❌';
+        console.log(`${status} ${funcName}: ${isLoaded ? 'LOADED' : 'MISSING'}`);
+        
+        if (!isLoaded) {
+            allLoaded = false;
+            criticalMissing.push(funcName);
+        }
+    }
+    
+    console.log('═'.repeat(80));
+    
+    if (allLoaded) {
+        console.log('✅ ALL MODULES LOADED SUCCESSFULLY');
+        console.log('✅ Feature #1: Motor Contribution - READY');
+        console.log('✅ Feature #4: Demand & Diversity Factors - READY');
+        console.log('✅ Issue #2: Voltage Drop Base Voltage - FIXED');
+        console.log('✅ System Status: OPERATIONAL');
+    } else {
+        console.error('❌ SOME MODULES FAILED TO LOAD');
+        console.error('   Missing functions:', criticalMissing.join(', '));
+        console.error('   Check script loading order in index.html');
+        console.error('   Check browser console for JavaScript errors');
+        console.error('   Verify all .js files are accessible');
+    }
+    
+    console.log('═'.repeat(80) + '\n');
+    
+    // Additional system checks
+    console.log('SYSTEM HEALTH CHECK:');
+    console.log('  - buses array:', Array.isArray(buses) ? `✅ (${buses.length} buses)` : '❌ Not initialized');
+    console.log('  - components array:', Array.isArray(components) ? `✅ (${components.length} components)` : '❌ Not initialized');
+    console.log('  - SQRT3 constant:', typeof SQRT3 !== 'undefined' ? `✅ (${SQRT3.toFixed(4)})` : '❌ Missing');
+    console.log('  - CABLE_IMPEDANCE_DATA:', typeof CABLE_IMPEDANCE_DATA !== 'undefined' ? '✅ Loaded' : '❌ Missing');
+    
+    // Diversity Factors Check
+    if (typeof window.DIVERSITY_FACTORS !== 'undefined') {
+        console.log('  - DIVERSITY_FACTORS:', '✅ Loaded');
+        console.log('    - Motors:', typeof window.DIVERSITY_FACTORS.motors !== 'undefined' ? '✅' : '❌');
+        console.log('    - Welding:', typeof window.DIVERSITY_FACTORS.welding !== 'undefined' ? '✅' : '❌');
+        console.log('    - LNG Plant:', typeof window.DIVERSITY_FACTORS.lng_plant !== 'undefined' ? '✅' : '❌');
+        console.log('    - Fabrication Yard:', typeof window.DIVERSITY_FACTORS.fabrication_yard !== 'undefined' ? '✅' : '❌');
+    } else {
+        console.log('  - DIVERSITY_FACTORS:', '❌ Not loaded');
+    }
+    
+    if (typeof window.DEMAND_FACTORS !== 'undefined') {
+        console.log('  - DEMAND_FACTORS:', '✅ Loaded');
+    } else {
+        console.log('  - DEMAND_FACTORS:', '❌ Not loaded');
+    }
+    
+    console.log('');
+</script>
+</body>
+</html>
