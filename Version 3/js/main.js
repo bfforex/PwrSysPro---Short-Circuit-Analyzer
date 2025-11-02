@@ -298,7 +298,8 @@ function checkModuleDependencies() {
     
     requiredModules.forEach(module => {
         try {
-            const value = eval(module.name);
+            // ✅ CODE REVIEW: Use window access instead of eval for safety
+            const value = window[module.name];
             
             if (value === undefined) {
                 missing.push(`${module.name} (${module.description})`);

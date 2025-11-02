@@ -17,6 +17,22 @@ console.log('🔧 Loading Project Manager v1.3.0...');
 console.log('   ✅ Input validation enabled (Issue #8)');
 console.log('   ✅ Data sanitization enabled (Issue #8)');
 
+// ✅ CODE REVIEW: Define version constant for consistency
+const PROJECT_MANAGER_VERSION = '1.3.0';
+
+// ✅ CODE REVIEW: ID generation counter for uniqueness
+let idGenerationCounter = 0;
+
+/**
+ * Generate unique ID with timestamp and counter
+ * More robust than Math.random() alone
+ * @returns {string} Unique identifier
+ */
+function generateUniqueId(prefix = 'item') {
+    idGenerationCounter++;
+    return `${prefix}_${Date.now()}_${idGenerationCounter}`;
+}
+
 /**
  * Save project to JSON file
  * Enhanced: Removes circular references before serialization
@@ -323,7 +339,8 @@ function sanitizeProjectData(data) {
             name: sanitizeString(data.projectInfo?.name, 'Untitled Project'),
             engineer: sanitizeString(data.projectInfo?.engineer, 'Unknown'),
             projectNumber: sanitizeString(data.projectInfo?.projectNumber, ''),
-            version: data.projectInfo?.version || '1.2.0'
+            // ✅ CODE REVIEW: Use version constant instead of hard-coded value
+            version: data.projectInfo?.version || PROJECT_MANAGER_VERSION
         },
         buses: [],
         components: [],
@@ -339,7 +356,8 @@ function sanitizeProjectData(data) {
     // Sanitize buses
     if (Array.isArray(data.buses)) {
         sanitized.buses = data.buses.map(bus => ({
-            id: sanitizeString(bus.id, `bus_${Date.now()}_${Math.random()}`),
+            // ✅ CODE REVIEW: Use counter-based ID generation for better uniqueness
+            id: sanitizeString(bus.id, generateUniqueId('bus')),
             name: sanitizeString(bus.name, 'Unnamed Bus'),
             voltage: sanitizeNumber(bus.voltage, 440, 1, 1000000),
             type: sanitizeString(bus.type, 'load'),
@@ -356,7 +374,8 @@ function sanitizeProjectData(data) {
     if (Array.isArray(data.components)) {
         sanitized.components = data.components.map(component => {
             const base = {
-                id: sanitizeString(component.id, `comp_${Date.now()}_${Math.random()}`),
+                // ✅ CODE REVIEW: Use counter-based ID generation for better uniqueness
+                id: sanitizeString(component.id, generateUniqueId('comp')),
                 type: sanitizeString(component.type, 'unknown'),
                 tag: sanitizeString(component.tag, ''),
                 description: sanitizeString(component.description, '')
@@ -407,14 +426,23 @@ function sanitizeProjectData(data) {
 
 /**
  * Sanitize a string value
+ * ✅ CODE REVIEW: Enhanced to remove more potentially dangerous characters
  * @param {*} value - Value to sanitize
  * @param {string} defaultValue - Default value if invalid
  * @returns {string} Sanitized string
  */
 function sanitizeString(value, defaultValue = '') {
     if (typeof value !== 'string') return defaultValue;
-    // Remove any potentially dangerous characters but preserve normal text
-    return value.replace(/[<>]/g, '').trim().substring(0, 1000);
+    
+    // Remove potentially dangerous characters:
+    // - HTML tags: < >
+    // - Script injection: quotes, semicolons, backslashes
+    // - Control characters
+    return value
+        .replace(/[<>'"`;\\]/g, '') // Remove dangerous characters
+        .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+        .trim()
+        .substring(0, 1000); // Limit length
 }
 
 /**
