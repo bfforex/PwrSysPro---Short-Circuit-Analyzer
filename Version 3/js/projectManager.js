@@ -17,8 +17,9 @@ console.log('🔧 Loading Project Manager v1.3.0...');
 console.log('   ✅ Input validation enabled (Issue #8)');
 console.log('   ✅ Data sanitization enabled (Issue #8)');
 
-// ✅ CODE REVIEW: Define version constant for consistency
+// ✅ CODE REVIEW: Define constants for consistency and maintainability
 const PROJECT_MANAGER_VERSION = '1.3.0';
+const MAX_STRING_LENGTH = 1000; // Maximum allowed string length for security
 
 // ✅ CODE REVIEW: ID generation counter for uniqueness
 let idGenerationCounter = 0;
@@ -26,11 +27,14 @@ let idGenerationCounter = 0;
 /**
  * Generate unique ID with timestamp and counter
  * More robust than Math.random() alone
- * @returns {string} Unique identifier
+ * Uses hyphen delimiter to avoid conflicts with underscores in prefixes
+ * @param {string} prefix - Prefix for the ID (default: 'item')
+ * @returns {string} Unique identifier in format: prefix-timestamp-counter
  */
 function generateUniqueId(prefix = 'item') {
     idGenerationCounter++;
-    return `${prefix}_${Date.now()}_${idGenerationCounter}`;
+    // ✅ CODE REVIEW: Use hyphen delimiter instead of underscore
+    return `${prefix}-${Date.now()}-${idGenerationCounter}`;
 }
 
 /**
@@ -442,7 +446,7 @@ function sanitizeString(value, defaultValue = '') {
         .replace(/[<>'"`;\\]/g, '') // Remove dangerous characters
         .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
         .trim()
-        .substring(0, 1000); // Limit length
+        .substring(0, MAX_STRING_LENGTH); // ✅ CODE REVIEW: Use constant instead of magic number
 }
 
 /**

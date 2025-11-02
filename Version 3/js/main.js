@@ -298,7 +298,13 @@ function checkModuleDependencies() {
     
     requiredModules.forEach(module => {
         try {
-            // ✅ CODE REVIEW: Use window access instead of eval for safety
+            // ✅ CODE REVIEW: Safe global access with validation
+            // Only check modules from our hard-coded whitelist
+            if (typeof module.name !== 'string' || module.name.length === 0) {
+                console.warn('⚠️ Invalid module name in dependency check');
+                return;
+            }
+            
             const value = window[module.name];
             
             if (value === undefined) {

@@ -503,7 +503,8 @@ function checkModuleDependencies() {
     
     const missing = [];
     requiredModules.forEach(module => {
-        if (typeof eval(module.name) === 'undefined') {
+        // Use safe window access instead of eval
+        if (typeof window[module.name] === 'undefined') {
             missing.push(module.name);
         }
     });
