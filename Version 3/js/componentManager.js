@@ -592,61 +592,125 @@ function addComponent() {
         };
         
     } else if (type === 'motor') {
-        // ═══════════════════════════════════════════════════════════════════
-        // FEATURE #1: MOTOR WITH TYPE AND PARAMETERS
-        // ═══════════════════════════════════════════════════════════════════
-        const hp = parseFloat(document.getElementById('motorHP').value);
-        
-        if (!hp || hp <= 0) {
-            alert('❌ Please enter a valid motor HP!');
-            return;
-        }
-        
-        // ✅ Get motor type
-        const motorType = document.getElementById('motorType').value || 'induction';
-        
-        // ✅ Get advanced parameters (optional with defaults)
-        const efficiencyInput = document.getElementById('motorEfficiency');
-        let efficiency = 0.90; // default
-        if (efficiencyInput && efficiencyInput.value) {
-            const eff = parseFloat(efficiencyInput.value);
-            if (eff >= 0.5 && eff <= 1.0) {
-                efficiency = eff;
-            }
-        }
-        
-        const powerFactorInput = document.getElementById('motorPowerFactor');
-        let powerFactor = 0.85; // default
-        if (powerFactorInput && powerFactorInput.value) {
-            const pf = parseFloat(powerFactorInput.value);
-            if (pf >= 0.5 && pf <= 1.0) {
-                powerFactor = pf;
-            }
-        }
-        
-        const motorNameInput = document.getElementById('motorName');
-        let motorName = '';
-        if (motorNameInput && motorNameInput.value.trim()) {
-            motorName = motorNameInput.value.trim();
-        } else {
-            motorName = `${hp} HP Motor (${motorType})`;
-        }
-        
-        component = {
-            ...component,
-            hp: hp,
-            motorType: motorType,
-            efficiency: efficiency,
-            powerFactor: powerFactor,
-            name: motorName
-        };
-        
-        console.log(`✅ Motor added: ${motorName}`);
-        console.log(`   HP: ${hp}`);
-        console.log(`   Type: ${motorType}`);
-        console.log(`   Efficiency: ${(efficiency * 100).toFixed(1)}%`);
-        console.log(`   Power Factor: ${powerFactor.toFixed(2)}`);
-    }
+                   // ═══════════════════════════════════════════════════════════════════
+            // MOTOR WITH AUTO-TAG GENERATION
+              // Format: M-{FROM_BUS}-{HP}-{SEQ}
+               // Enhanced: 2025-11-03 13:52:00 UTC by bfforex
+               // FIXED: Bus object reference (fromBus is already an object, not ID)
+               // ═══════════════════════════════════════════════════════════════════
+               const hp = parseFloat(document.getElementById('motorHP').value);
+    
+               if (!hp || hp <= 0) {
+                    alert('❌ Please enter a valid motor HP!');
+                      return;
+               }
+    
+               // ✅ Get motor type
+               const motorType = document.getElementById('motorType').value || 'induction';
+    
+               // ✅ Get advanced parameters (optional with defaults)
+               const efficiencyInput = document.getElementById('motorEfficiency');
+               let efficiency = 0.90; // default
+               if (efficiencyInput && efficiencyInput.value) {
+                       const eff = parseFloat(efficiencyInput.value);
+                      if (eff >= 0.5 && eff <= 1.0) {
+                              efficiency = eff;
+                          }
+                   }
+    
+               const powerFactorInput = document.getElementById('motorPowerFactor');
+               let powerFactor = 0.85; // default
+               if (powerFactorInput && powerFactorInput.value) {
+                       const pf = parseFloat(powerFactorInput.value);
+                       if (pf >= 0.5 && pf <= 1.0) {
+                               powerFactor = pf;
+                       }
+               }
+    
+               const motorNameInput = document.getElementById('motorName');
+               let motorName = '';
+               if (motorNameInput && motorNameInput.value.trim()) {
+                       motorName = motorNameInput.value.trim();
+               } else {
+                   motorName = `${hp} HP ${motorType} motor`;
+               }
+    
+               // ═══════════════════════════════════════════════════════════════════
+               // ✅ FIXED: Bus object references
+               // fromBus and toBus are ALREADY bus objects (from line 160-161)
+               // We don't need to find them again!
+               // ═══════════════════════════════════════════════════════════════════
+    
+               // ✅ Get FROM bus tag for auto-tag generation
+               // fromBus is ALREADY the bus object
+               const fromBusTag = fromBus.tag || fromBus.name;
+               const fromBusTagFormatted = fromBusTag.replace(/\s+/g, '-').toUpperCase();
+    
+               // Format HP (remove decimals if whole number)
+               const hpFormatted = hp % 1 === 0 ? hp.toString() : hp.toFixed(1).replace('.', 'P');
+    
+               // Generate base tag: M-{FROM_BUS}-{HP}
+               const baseTag = `M-${fromBusTagFormatted}-${hpFormatted}`;
+    
+               // ✅ Find next available sequence number
+               // Check existing motors with same base tag
+               const existingMotorsWithSameBase = components.filter(c => 
+                          c.type === 'motor' && 
+                          c.tag && 
+                          c.tag.startsWith(`${baseTag}-`)
+               );
+    
+               // Extract sequence numbers and find max
+               let maxSeq = 0;
+               existingMotorsWithSameBase.forEach(motor => {
+                          const parts = motor.tag.split('-');
+                          const seqNum = parseInt(parts[parts.length - 1]);
+                          if (!isNaN(seqNum) && seqNum > maxSeq) {
+                                  maxSeq = seqNum;
+                          }
+               });
+    
+               // Next sequence number
+               const nextSeq = maxSeq + 1;
+    
+               // Final tag: M-{FROM_BUS}-{HP}-{SEQ}
+               const finalTag = `${baseTag}-${nextSeq}`;
+    
+               // ✅ Build component with auto-tag
+               component = {
+                           ...component,
+                           hp: hp,
+                           motorType: motorType,
+                           efficiency: efficiency,
+                           powerFactor: powerFactor,
+                             name: motorName,
+                             tag: finalTag,  // ✅ Auto-generated tag
+                             fromBusTag: fromBusTagFormatted,
+                             fromBusName: fromBus.name,  // ✅ FIXED: Use fromBus.name directly
+                             toBusName: toBus.name,      // ✅ FIXED: Use toBus.name directly
+                             location: toBus.name,
+                             sequenceNumber: nextSeq
+                 };
+    
+                 // ✅ Enhanced logging
+                   console.log('\n' + '═'.repeat(70));               
+                   console.log('✅ MOTOR ADDED WITH AUTO-TAG'); 
+                   console.log('═'.repeat(70));
+                   console.log(`Tag:             ${finalTag}`);
+                   console.log(`  - Prefix:      M- (Motor)`);
+                   console.log(`  - Source Bus:  ${fromBusTagFormatted} (${fromBus.name})`);
+                   console.log(`  - HP Rating:   ${hpFormatted}`);
+                   console.log(`  - Sequence:    ${nextSeq}`);
+                   console.log('─'.repeat(70));
+                   console.log(`Motor Name:      ${motorName}`);
+                   console.log(`Type:            ${motorType}`);
+                   console.log(`From Bus:        ${fromBus.name} (${fromBus.tag || 'no tag'}) - source`);
+                   console.log(`To Bus:          ${toBus.name} (${toBus.tag || 'no tag'}) - location`);
+                   console.log(`HP:              ${hp}`);
+                   console.log(`Efficiency:      ${(efficiency * 100).toFixed(1)}%`);
+                   console.log(`Power Factor:    ${powerFactor.toFixed(2)}`);
+                   console.log('═'.repeat(70) + '\n');
+          }
 
         components.push(component);
     
@@ -661,8 +725,25 @@ function addComponent() {
                                        `From: ${fromBus.name}\n` +
                                        `To: ${toBus.name}\n` +
                                        `Rating: ${component.rating} kVA`);
+               } else if (type === 'motor') {
+                                          alert(`✅ Motor "${component.tag}" added successfully!\n\n` +
+                                                       `Name: ${component.name}\n` +
+                                                       `HP: ${component.hp}\n` +
+                                                       `Type: ${component.motorType}\n` +
+                                                       `Location: ${component.location}\n` +
+                                                       `Tag: ${component.tag}`);
+               } else if (type === 'motor') {
+                   alert(`✅ Motor "${component.tag}" added successfully!\n\n` +
+                         `Tag: ${component.tag}\n` +
+                         `  • Source Bus: ${component.fromBusName}\n` +
+                         `  • HP Rating: ${component.hp}\n` +
+                         `  • Sequence: ${component.sequenceNumber}\n\n` +
+                         `Motor Details:\n` +
+                         `  • Name: ${component.name}\n` +
+                         `  • Type: ${component.motorType}\n` +
+                         `  • Location: ${component.location}`);
                } else {
-                       alert(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} added successfully!`);
+                   alert(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} added successfully!`);
                }
     
     console.log('✅ Component added:', component);
@@ -855,30 +936,37 @@ function displayComponents() {
         }
         
         // ═══════════════════════════════════════════════════════════════════
-        // MOTOR COMPONENT (WITH TYPE INFO)
-        // ENHANCED: 2025-10-29 14:14:42 UTC by bfforex
+        // MOTOR COMPONENT (WITH TYPE INFO AND AUTO-TAG)
+        // ENHANCED: 2025-11-03 05:08:34 UTC by bfforex
         // ═══════════════════════════════════════════════════════════════════
         else if (comp.type === 'motor') {
             const motorTypeDisplay = comp.motorType ? 
                 ` (${comp.motorType.replace('_', ' ')})` : '';
-            
+    
             html += `
                 <div class="component-header">
                     <div class="component-type-section">
                         <span class="component-icon">⚙️</span>
-                        <span class="component-name"><strong>${comp.name}${motorTypeDisplay}</strong></span>
+                        <span class="component-tag-display">
+                            <strong>${comp.tag || 'N/A'}</strong>
+                            <span class="component-desc">- ${comp.name}${motorTypeDisplay}</span>
+                        </span>
                     </div>
                     <div class="component-controls">
-                        <button class="btn btn-secondary btn-small" onclick="editComponent(${comp.id})">
+                        <button class="btn btn-secondary btn-small" onclick="editComponent(${comp.id})" title="Edit motor">
                             ✏️ Edit
                         </button>
-                        <button class="btn btn-danger btn-small" onclick="deleteComponent(${comp.id})">
+                        <button class="btn btn-danger btn-small" onclick="deleteComponent(${comp.id})" title="Delete motor">
                             🗑️ Delete
                         </button>
                     </div>
                 </div>
                 <div class="component-details">
+                    <div class="component-tag-badge">🏷️ ${comp.tag || 'N/A'}</div>
                     <div class="component-info-grid">
+                        <div class="info-row">
+                            <strong>From:</strong> <span class="bus-name-highlight">${comp.fromBusName || comp.fromBus}</span>
+                        </div>
                         <div class="info-row">
                             <strong>Location:</strong> <span class="bus-name-highlight">${comp.toBusName || comp.toBus}</span>
                         </div>

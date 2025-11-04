@@ -1,11 +1,11 @@
 /**
  * Main Calculations Coordinator
- * Modified: 2025-11-02 16:43:15 UTC by bfforex
+ * Modified: 2025-11-03 02:22:52 UTC by bfforex
  * Enhanced: Feature #1 - Motor Contribution Integration
- * Enhanced: Feature #5 - Demand & Diversity Factors Integration
+ * Enhanced: Feature #5 - Demand & Diversity Factors Integration (FIXED)
  * Enhanced: Arc Flash Analysis Integration (IEEE 1584-2018 & NFPA 70E-2021)
- * FIXED: Error handling, optional chaining, safe property access
- * @version 1.3.3 - Arc Flash Integration
+ * FIXED: Demand factor application with comprehensive debugging
+ * @version 1.3.4 - Demand Factor Integration Fix
  */
 
 /**
@@ -59,7 +59,6 @@ function calculateBus(busId) {
         
         // ═══════════════════════════════════════════════════════════
         // 1B. MOTOR CONTRIBUTION ANALYSIS (Feature #1)
-        // ✅ NEW: 2025-10-30 02:10:26 UTC by bfforex
         // ═══════════════════════════════════════════════════════════
         console.log('⚡ Analyzing Motor Contribution...');
         
@@ -73,13 +72,7 @@ function calculateBus(busId) {
             console.log('✅ Motor Contribution module available');
             
             try {
-                // Calculate motor contribution (interrupting duty)
-                try {
-                    motorContributionResults = calculateTotalMotorContribution(busId, 'interrupting');
-                } catch (motorError) {
-                    console.error('❌ Error in calculateTotalMotorContribution:', motorError);
-                    motorContributionResults = null;
-                }
+                motorContributionResults = calculateTotalMotorContribution(busId, 'interrupting');
                 
                 if (motorContributionResults && motorContributionResults.motorCount > 0) {
                     console.log(`✅ ${motorContributionResults.motorCount} motor(s) found`);
@@ -116,93 +109,215 @@ function calculateBus(busId) {
         bus.xrRatio = shortCircuitResults.xrRatio;
         bus.totalZ = shortCircuitResults.totalImpedance?.magnitude || shortCircuitResults.totalZ;
         
-        // ═══════════════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════════════════
         // 2. LOAD FLOW ANALYSIS (WITH DEMAND & DIVERSITY FACTORS)
         // Feature #5: Applies demand and diversity factors
-        // ═══════════════════════════════════════════════════════════
+        // ENHANCED: 2025-11-03 02:22:52 UTC - Comprehensive debugging
+        // ════════════════════════════════════════════════════════════════
         console.log('🔌 Running Load Flow Analysis (with Demand & Diversity Factors)...');
         
-        var loadFlowResults = null;
-        
-        // ✅ DEFENSIVE CHECK: Verify function exists
-        if (typeof calculateLoadFlow !== 'function') {
-            console.warn('⚠️ WARNING: calculateLoadFlow function not found! Skipping load flow analysis.');
-        } else {
+        // Diagnostic logging
+        console.log('   🔍 Checking module availability:');
+        console.log(`      calculateLoadFlowWithDemand: ${typeof calculateLoadFlowWithDemand === 'function' ? '✅' : '❌'}`);
+        console.log(`      applyDemandFactorsToLoadFlow: ${typeof applyDemandFactorsToLoadFlow === 'function' ? '✅' : '❌'}`);
+        console.log(`      calculateLoadFlow: ${typeof calculateLoadFlow === 'function' ? '✅' : '❌'}`);
+        console.log(`      DemandFactors module: ${typeof window.DemandFactors !== 'undefined' ? '✅' : '❌'}`);
+        console.log(`      DEMAND_FACTORS data: ${typeof window.DEMAND_FACTORS !== 'undefined' ? '✅' : '❌'}`);
+        console.log(`      DIVERSITY_FACTORS data: ${typeof window.DIVERSITY_FACTORS !== 'undefined' ? '✅' : '❌'}`);
+
+        var loadFlowResult;
+        let demandFactorsAttempted = false;
+        let demandFactorsApplied = false;
+
+        // ────────────────────────────────────────────────────────────────
+        // ATTEMPT 1: Use integrated demand factor function
+        // ────────────────────────────────────────────────────────────────
+        if (typeof calculateLoadFlowWithDemand === 'function') {
+            console.log('   📊 Attempting Method 1: calculateLoadFlowWithDemand()...');
+            demandFactorsAttempted = true;
+            
             try {
-                // ✅ CHECK: Use enhanced version if available (Feature #5)
-                if (typeof calculateLoadFlowWithDemand === 'function' && typeof window.DemandFactors !== 'undefined') {
-                    console.log('✅ Using enhanced load flow with demand/diversity factors');
-                    loadFlowResults = calculateLoadFlowWithDemand(busId);
+                loadFlowResult = calculateLoadFlowWithDemand(busId);
+                
+                // Verify demand factors were actually applied
+                if (loadFlowResult && loadFlowResult.demandFactorsApplied === true) {
+                    demandFactorsApplied = true;
+                    console.log('   ✅ Method 1 SUCCESS: Demand factors applied!');
+                    console.log(`      Connected Load: ${loadFlowResult.summary?.connectedCurrent?.toFixed(2) || 'N/A'} A`);
                     
-                    // ✅ DEFENSIVE: Log demand factor application with null checks
-                    if (loadFlowResults && loadFlowResults.demandFactorsApplied) {
-                        try {
-                            // ✅ SAFE: Optional chaining for nested properties
-                            const demandFactor = loadFlowResults.demandSummary?.demandFactor;
-                            const diversityFactor = loadFlowResults.demandSummary?.diversityFactor;
-                            
-                            if (demandFactor !== undefined && demandFactor !== null) {
-                                console.log(`   📊 Demand Factor Applied: ${(demandFactor * 100).toFixed(1)}%`);
-                            }
-                            
-                            if (diversityFactor !== undefined && diversityFactor !== null) {
-                                console.log(`   📊 Diversity Factor Applied: ${(diversityFactor).toFixed(1)}%`);
-                            }
-                            
-                            // ✅ SAFE: Check nested properties exist before access
-                            const connectedCurrent = loadFlowResults.summary?.connectedCurrent;
-                            if (connectedCurrent !== undefined) {
-                                console.log(`   📊 Connected Load: ${connectedCurrent.toFixed(2)} A`);
-                            }
-                            
-                            const demandCurrent = loadFlowResults.demandSummary?.demandCurrent;
-                            if (demandCurrent !== undefined) {
-                                console.log(`   📊 Demand Load: ${demandCurrent.toFixed(2)} A`);
-                            }
-                            
-                            const diversityCurrent = loadFlowResults.demandSummary?.diversityCurrent;
-                            if (diversityCurrent !== undefined) {
-                                console.log(`   📊 Diversity Load: ${diversityCurrent.toFixed(2)} A`);
-                            }
-                            
-                            // ✅ SAFE: Calculate savings only if both values exist and are valid
-                            const connectedPower = loadFlowResults.summary?.connectedPowerKVA;
-                            const diversityPower = loadFlowResults.demandSummary?.diversityPowerKVA;
-                            
-                            if (connectedPower !== undefined && connectedPower !== null &&
-                                diversityPower !== undefined && diversityPower !== null &&
-                                typeof connectedPower === 'number' && typeof diversityPower === 'number') {
-                                const savings = connectedPower - diversityPower;
-                                console.log(`   💰 Power Savings: ${savings.toFixed(2)} kVA`);
-                            }
-                        } catch (logError) {
-                            console.warn('⚠️ Error logging demand factor details:', logError.message);
-                        }
+                    if (loadFlowResult.demandSummary) {
+                        console.log(`      Demand Load:    ${loadFlowResult.demandSummary.demandCurrent.toFixed(2)} A (${(loadFlowResult.demandSummary.demandFactor * 100).toFixed(1)}%)`);
+                        console.log(`      Diversity Load: ${loadFlowResult.demandSummary.diversityCurrent.toFixed(2)} A`);
+                        console.log(`      Demand Factor:  ${loadFlowResult.demandSummary.demandFactor.toFixed(3)}`);
+                        console.log(`      Diversity Factor: ${loadFlowResult.demandSummary.diversityFactor.toFixed(3)}`);
                     }
                 } else {
-                    // Fallback to standard load flow
-                    console.log('⚠️ Using standard load flow (demand factors not available)');
-                    loadFlowResults = calculateLoadFlow(busId);
+                    console.warn('   ⚠️ Method 1 PARTIAL: Function returned but demand factors not confirmed');
+                    console.log('      Result structure:', {
+                        hasResults: !!loadFlowResult,
+                        hasDemandFlag: loadFlowResult?.demandFactorsApplied,
+                        hasDemandSummary: !!loadFlowResult?.demandSummary
+                    });
+                    // Continue to next method
                 }
-            } catch (loadFlowError) {
-                console.error('❌ Error in load flow calculation:', loadFlowError);
-                console.warn('⚠️ Continuing without load flow analysis');
-                loadFlowResults = null;
+            } catch (error) {
+                console.error('   ❌ Method 1 ERROR:', error.message);
+                console.log('      Continuing to Method 2...');
             }
         }
+
+        // ────────────────────────────────────────────────────────────────
+        // ATTEMPT 2: Calculate standard then apply demand factors
+        // ────────────────────────────────────────────────────────────────
+        if (!demandFactorsApplied && typeof applyDemandFactorsToLoadFlow === 'function') {
+            console.log('   📊 Attempting Method 2: applyDemandFactorsToLoadFlow()...');
+            demandFactorsAttempted = true;
+            
+            try {
+                // Get standard load flow first
+                const standardLF = calculateLoadFlow(busId);
+                console.log(`      Standard load flow calculated: ${standardLF.summary?.totalCurrent?.toFixed(2) || 'N/A'} A`);
+                
+                // Apply demand factors
+                loadFlowResult = applyDemandFactorsToLoadFlow(standardLF);
+                
+                // Verify application
+                if (loadFlowResult && loadFlowResult.demandFactorsApplied === true) {
+                    demandFactorsApplied = true;
+                    console.log('   ✅ Method 2 SUCCESS: Demand factors applied!');
+                    
+                    if (loadFlowResult.demandSummary) {
+                        console.log(`      Connected Load: ${loadFlowResult.demandSummary.connectedCurrent.toFixed(2)} A`);
+                        console.log(`      Demand Load:    ${loadFlowResult.demandSummary.demandCurrent.toFixed(2)} A`);
+                        console.log(`      Diversity Load: ${loadFlowResult.demandSummary.diversityCurrent.toFixed(2)} A`);
+                        console.log(`      Savings:        ${(loadFlowResult.demandSummary.connectedCurrent - loadFlowResult.demandSummary.diversityCurrent).toFixed(2)} A (${((1 - loadFlowResult.demandSummary.diversityCurrent / loadFlowResult.demandSummary.connectedCurrent) * 100).toFixed(1)}%)`);
+                    }
+                } else {
+                    console.warn('   ⚠️ Method 2 FAILED: Could not apply demand factors');
+                }
+            } catch (error) {
+                console.error('   ❌ Method 2 ERROR:', error.message);
+                console.log('      Falling back to Method 3...');
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // FALLBACK: Use standard load flow only
+        // ────────────────────────────────────────────────────────────────
+        if (!demandFactorsApplied) {
+            if (!loadFlowResult || !loadFlowResult.summary) {
+                console.log('   📊 Using Method 3: Standard Load Flow (no demand factors)');
+                loadFlowResult = calculateLoadFlow(busId);
+            }
+            
+            console.warn('   ⚠️ DEMAND FACTORS NOT APPLIED');
+            console.log('      Possible reasons:');
+            console.log('      • Demand factor modules not loaded');
+            console.log('      • Functions exist but returned incomplete data');
+            console.log('      • Bus configuration incompatible with demand factors');
+            console.log('      Using connected load (100%) - CONSERVATIVE approach');
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // FINAL STATUS
+        // ────────────────────────────────────────────────────────────────
+        console.log('');
+        console.log('   📊 LOAD FLOW ANALYSIS COMPLETE:');
+        console.log(`      Total Load: ${loadFlowResult.summary?.totalCurrent?.toFixed(2) || 'N/A'} A`);
+        console.log(`      Total Power: ${loadFlowResult.summary?.totalPowerKVA?.toFixed(2) || 'N/A'} kVA`);
+        console.log(`      Demand Factors: ${demandFactorsApplied ? '✅ APPLIED' : '⚠️ NOT APPLIED'}`);
+        console.log('');
         
+        // ════════════════════════════════════════════════════════════════════════════
+        // DISPLAY DEMAND FACTOR CALCULATION STEPS IN UI
+        // Added: 2025-11-03 14:23:38 UTC by bfforex
+        // Priority 2: Show detailed demand/diversity calculations in Calculations tab
+        // ════════════════════════════════════════════════════════════════════════════
+        if (loadFlowResult && loadFlowResult.demandCalculationSteps) {
+            console.log('📊 Adding demand factor calculation steps to UI...');
+    
+            // Wait for DOM to be ready (displayCalculationResults may still be rendering)
+            setTimeout(() => {
+                const calcStepsContainer = document.getElementById('calculationSteps');
+        
+                if (calcStepsContainer) {
+                    // Check if demand section already exists (prevent duplicates)
+                    const existingDemandSection = calcStepsContainer.querySelector('.demand-calculation-section');
+                    if (existingDemandSection) {
+                        console.log('ℹ️  Demand section already exists, updating...');
+                        existingDemandSection.remove();
+                    }
+            
+                    // Create demand factor section
+                    const demandSection = document.createElement('div');
+                    demandSection.className = 'calculation-section demand-calculation-section';
+                    demandSection.style.marginTop = '30px';
+                    demandSection.style.borderTop = '3px solid #667eea';
+                    demandSection.style.paddingTop = '20px';
+                    demandSection.style.backgroundColor = '#f8f9ff';
+                    demandSection.style.padding = '20px';
+                    demandSection.style.borderRadius = '8px';
+                    demandSection.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.1)';
+            
+                    demandSection.innerHTML = `
+                        <h3 style="color: #667eea; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.5em;">📊</span>
+                            <span>Demand & Diversity Factor Calculations</span>
+                        </h3>
+                        <div style="background: white; border-left: 4px solid #667eea; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+                            <p style="margin: 0; color: #666; font-size: 0.95em;">
+                                <strong>💡 About Demand & Diversity Factors:</strong><br>
+                                These calculations apply NEC Article 220 and IEEE 141-1993 standards to determine realistic operating loads 
+                                based on equipment usage patterns. This ensures conservative design while accounting for actual system behavior.
+                            </p>
+                        </div>
+                        <pre class="calculation-steps" style="
+                            background: #ffffff; 
+                            padding: 20px; 
+                            border-radius: 8px; 
+                            overflow-x: auto; 
+                            line-height: 1.6; 
+                            font-size: 13px;
+                            font-family: 'Courier New', Courier, monospace;
+                            border: 1px solid #e0e0e0;
+                            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+                            white-space: pre-wrap;
+                            word-wrap: break-word;
+                        ">${loadFlowResult.demandCalculationSteps}</pre>
+                        <div style="background: #e8f5e9; border-left: 4px solid #4caf50; padding: 12px; border-radius: 4px; margin-top: 15px;">
+                            <p style="margin: 0; color: #2e7d32; font-size: 0.9em;">
+                                <strong>✅ Standards Applied:</strong> 
+                                NEC Article 220 (Demand Factors) | 
+                                NEC Article 430.24 (Motor Demand) | 
+                                IEEE 141-1993 (Diversity Factors)
+                            </p>
+                        </div>
+                    `;
+            
+                    // Append to calculation steps container
+                    calcStepsContainer.appendChild(demandSection);
+            
+                    console.log('✅ Demand factor calculation steps added to UI');
+                    console.log(`   Section ID: demand-calculation-section`);
+                    console.log(`   Steps length: ${loadFlowResult.demandCalculationSteps.length} characters`);
+                } else {
+                    console.warn('⚠️  calculationSteps container not found in DOM');
+                    console.warn('   Make sure displayCalculationResults() creates this container');
+                }
+            }, 500); // Wait 500ms for display to render
+        }
+
         // ═══════════════════════════════════════════════════════════
         // 3. VOLTAGE DROP ANALYSIS
         // ═══════════════════════════════════════════════════════════
         console.log('📉 Running Voltage Drop Analysis...');
         
-        // ✅ DEFENSIVE CHECK: Verify function exists
         let voltageDropResults = null;
         if (typeof calculateVoltageDrop !== 'function') {
             console.warn('⚠️ WARNING: calculateVoltageDrop function not found! Skipping voltage drop analysis.');
         } else {
             try {
-                voltageDropResults = calculateVoltageDrop(busId, path, loadFlowResults);
+                voltageDropResults = calculateVoltageDrop(busId, path, loadFlowResult);
             } catch (vdError) {
                 console.error('❌ Error in voltage drop calculation:', vdError);
                 console.warn('⚠️ Continuing without voltage drop analysis');
@@ -212,32 +327,25 @@ function calculateBus(busId) {
         
         // ═══════════════════════════════════════════════════════════
         // 4. ARC FLASH ANALYSIS (IEEE 1584-2018 & NFPA 70E-2021)
-        // Added: 2025-11-02 16:43:15 UTC by bfforex
         // ═══════════════════════════════════════════════════════════
         console.log('🔥 Running Arc Flash Analysis...');
         
         let arcFlashResults = null;
         
-        // ✅ DEFENSIVE CHECK: Verify function exists
         if (typeof calculateArcFlash !== 'function') {
             console.warn('⚠️ WARNING: calculateArcFlash function not found! Skipping arc flash analysis.');
         } else {
             try {
-                // Arc flash requires short circuit data
                 if (shortCircuitResults?.faultCurrents?.threePhaseSym) {
                     arcFlashResults = calculateArcFlash(busId, {
                         threePhaseFault: {
                             faultCurrent: shortCircuitResults.faultCurrents.threePhaseSym
                         }
                     }, {
-                        equipmentType: 'VCB',        // Vacuum Circuit Breaker (default)
-                        clearingTimeCycles: 2,        // Instantaneous breaker (default)
-                        // Optional overrides:
-                        // workingDistance: 18,       // inches (auto-calculated by voltage)
-                        // electrodeGap: 32,          // mm (auto-calculated by voltage)
+                        equipmentType: 'VCB',
+                        clearingTimeCycles: 2,
                     });
                     
-                    // ✅ Store globally
                     if (!window.arcFlashResults) window.arcFlashResults = {};
                     window.arcFlashResults[busId] = arcFlashResults;
                     
@@ -258,28 +366,19 @@ function calculateBus(busId) {
         
         // ═══════════════════════════════════════════════════════════
         // STORE ALL RESULTS WITH BASE VALUES
-        // Enhanced: 2025-11-01 13:00:01 UTC by bfforex
-        // Enhanced: 2025-11-02 16:43:15 UTC by bfforex
-        // Added: Base kVA, baseZ, baseCurrent for per-unit analysis
-        // Added: Arc flash results storage
         // ═══════════════════════════════════════════════════════════
         
-        // ✅ Calculate base values for per-unit system
-        const baseKVA = 10000;  // System-wide base (constant)
+        const baseKVA = 10000;
         const baseVoltage = bus.voltage;
         const baseZ = Math.pow(baseVoltage, 2) / (baseKVA * 1000);
         const baseCurrent = (baseKVA * 1000) / (Math.sqrt(3) * baseVoltage);
         
-        // ✅ Calculate per-unit impedances if available
         let totalRpu, totalXpu, totalZpu;
         
         if (shortCircuitResults?.totalImpedance) {
             const totalZ = shortCircuitResults.totalImpedance.magnitude || 0;
             const xrRatio = shortCircuitResults.xrRatio || 1;
             
-            // Calculate R and X from Z and X/R ratio
-            // Z = √(R² + X²), X/R = known
-            // Therefore: R = Z / √(1 + (X/R)²), X = R × (X/R)
             const r = totalZ / Math.sqrt(1 + Math.pow(xrRatio, 2));
             const x = r * xrRatio;
             
@@ -289,26 +388,22 @@ function calculateBus(busId) {
         }
         
         bus.results = {
-            // Separate result sets
             shortCircuit: shortCircuitResults,
             systemFault: systemFaultResults,
             motorContribution: motorContributionResults,
-            loadFlow: loadFlowResults,
+            loadFlow: loadFlowResult,
             voltageDrop: voltageDropResults,
             arcFlash: arcFlashResults,
             
-            // ✅ NEW: Base values for per-unit analysis
             baseKVA: baseKVA,
             baseVoltage: baseVoltage,
             baseZ: baseZ,
             baseCurrent: baseCurrent,
             
-            // ✅ NEW: Per-unit impedances
             totalRpu: totalRpu,
             totalXpu: totalXpu,
             totalZpu: totalZpu,
             
-            // Legacy compatibility (for existing code)
             faultCurrents: shortCircuitResults.faultCurrents,
             totalImpedance: shortCircuitResults.totalImpedance,
             xrRatio: shortCircuitResults.xrRatio,
@@ -316,22 +411,18 @@ function calculateBus(busId) {
             method: method,
             calculationDate: calculationDateStamp,
             
-            // Additional metadata
             analysisComplete: true,
             analysisTypes: ['shortCircuit', 'loadFlow', 'voltageDrop', 'arcFlash'],
             
-            // ✅ Feature #1 metadata
             includesMotorContribution: motorContributionResults?.motorCount > 0 || false,
             motorCount: motorContributionResults?.motorCount || 0,
             
-            // ✅ Feature #5 metadata
-            demandFactorsEnabled: loadFlowResults?.demandFactorsApplied || false,
+            demandFactorsEnabled: demandFactorsApplied,
+            demandFactorsAttempted: demandFactorsAttempted,
             
-            // ✅ Arc Flash metadata
             arcFlashAnalyzed: arcFlashResults !== null
         };
         
-        // ✅ LOG: Verify base values calculated
         console.log(`📊 Per-Unit Base Values for ${bus.name}:`);
         console.log(`   Base kVA: ${baseKVA} kVA`);
         console.log(`   Base Voltage: ${baseVoltage} V`);
@@ -341,7 +432,6 @@ function calculateBus(busId) {
             console.log(`   Per-Unit Impedance: ${totalZpu.toFixed(6)} pu`);
         }
         
-        // Store path components for analysis
         bus.pathComponents = path.map((segment, index) => ({
             sequence: index,
             bus: segment.bus,
@@ -353,9 +443,7 @@ function calculateBus(busId) {
         
         selectedBusId = busId;
         
-        // ═══════════════════════════════════════════════════════════
-        // GENERATE RECOMMENDATIONS
-        // ═══════════════════════════════════════════════════════════
+        // Generate recommendations
         if (typeof recommendationEngine !== 'undefined' && recommendationEngine?.analyzeBus) {
             try {
                 const busRecommendations = recommendationEngine.analyzeBus(bus);
@@ -365,12 +453,10 @@ function calculateBus(busId) {
             }
         }
         
-        // ═══════════════════════════════════════════════════════════
-        // DISPLAY RESULTS (NEW SEPARATED DISPLAY)
-        // ═══════════════════════════════════════════════════════════
+        // Display results
         if (typeof displayCalculationResults === 'function') {
             try {
-                displayCalculationResults(busId, shortCircuitResults, loadFlowResults, voltageDropResults, arcFlashResults);
+                displayCalculationResults(busId, shortCircuitResults, loadFlowResult, voltageDropResults, arcFlashResults);
             } catch (displayError) {
                 console.error('❌ Error displaying calculation results:', displayError);
                 console.warn('⚠️ Results calculated but display failed');
@@ -380,16 +466,15 @@ function calculateBus(busId) {
         }
         
         switchTab(null, 'results');
-        
         scheduleAutoSave();
         
         console.log('\n✅ ALL ANALYSES COMPLETE');
         console.log('   - Short Circuit: ✓');
         console.log('   - Motor Contribution: ' + (motorContributionResults?.motorCount > 0 ? `✓ (${motorContributionResults.motorCount} motors)` : '⚠️ No motors'));
-        console.log('   - Load Flow: ' + (loadFlowResults ? '✓' : '⚠️ Skipped'));
+        console.log('   - Load Flow: ' + (loadFlowResult ? '✓' : '⚠️ Skipped'));
         console.log('   - Voltage Drop: ' + (voltageDropResults ? '✓' : '⚠️ Skipped'));
         console.log('   - Arc Flash: ' + (arcFlashResults ? '✓' : '⚠️ Skipped'));
-        console.log('   - Demand Factors: ' + (loadFlowResults?.demandFactorsApplied ? '✓ Applied' : '⚠️ Not Applied'));
+        console.log('   - Demand Factors: ' + (demandFactorsApplied ? '✅ APPLIED' : '⚠️ NOT APPLIED'));
         console.log('═'.repeat(80) + '\n');
         
     } catch (error) {
@@ -401,7 +486,6 @@ function calculateBus(busId) {
 
 /**
  * Calculate arc flash for a bus (standalone function)
- * Can be called separately if needed
  */
 function performArcFlashAnalysis(busId) {
     try {
@@ -411,34 +495,29 @@ function performArcFlashAnalysis(busId) {
             return null;
         }
         
-        // Get short circuit data first
         const scResult = bus.results?.shortCircuit;
         if (!scResult) {
             alert('Please calculate short circuit first');
             return null;
         }
         
-        // Calculate arc flash
         const result = calculateArcFlash(busId, {
             threePhaseFault: {
                 faultCurrent: scResult.faultCurrents.threePhaseSym
             }
         }, {
             equipmentType: 'VCB',
-            clearingTimeCycles: 2 // Can be adjusted
+            clearingTimeCycles: 2
         });
         
-        // Store result
         if (!window.arcFlashResults) window.arcFlashResults = {};
         window.arcFlashResults[busId] = result;
         
-        // Store in bus results
         if (bus.results) {
             bus.results.arcFlash = result;
             bus.results.arcFlashAnalyzed = true;
         }
         
-        // Refresh display if display function exists
         if (typeof displayCalculationResults === 'function' && bus.results) {
             displayCalculationResults(
                 busId,
@@ -477,21 +556,18 @@ function calculateAllBuses() {
     console.log('═'.repeat(80));
     console.log(`Total buses: ${calculatedBuses.length}`);
     
-    // ✅ Feature #1 status check
     if (typeof calculateTotalMotorContribution === 'function') {
         console.log('✅ Feature #1: Motor Contribution ENABLED');
     } else {
         console.log('⚠️ Feature #1: Motor Contribution NOT AVAILABLE');
     }
     
-    // ✅ Feature #5 status check
-    if (typeof calculateLoadFlowWithDemand === 'function' && typeof window.DemandFactors !== 'undefined') {
+    if (typeof calculateLoadFlowWithDemand === 'function' && typeof window.DEMAND_FACTORS !== 'undefined') {
         console.log('✅ Feature #5: Demand & Diversity Factors ENABLED');
     } else {
         console.log('⚠️ Feature #5: Demand & Diversity Factors NOT AVAILABLE');
     }
     
-    // ✅ Arc Flash status check
     if (typeof calculateArcFlash === 'function') {
         console.log('✅ Arc Flash Analysis: ENABLED (IEEE 1584-2018)');
     } else {
@@ -513,17 +589,14 @@ function calculateAllBuses() {
             calculateBus(bus.id);
             successCount++;
             
-            // Count buses with motor contribution
             if (bus.results?.includesMotorContribution) {
                 motorsFoundCount++;
             }
             
-            // Count buses with demand factors applied
             if (bus.results?.demandFactorsEnabled) {
                 demandAppliedCount++;
             }
             
-            // Count buses with arc flash analysis
             if (bus.results?.arcFlash) {
                 arcFlashCount++;
             }
@@ -540,7 +613,6 @@ function calculateAllBuses() {
     console.log(`✅ Successful: ${successCount}`);
     console.log(`❌ Failed: ${errorCount}`);
     
-    // ✅ SAFE: Only show counts if any buses were successful
     if (successCount > 0) {
         console.log(`⚡ Motor Contribution: ${motorsFoundCount}/${successCount} buses`);
         console.log(`📊 Demand Factors Applied: ${demandAppliedCount}/${successCount} buses`);
@@ -570,21 +642,18 @@ function calculateAllBuses() {
     alert(message);
 }
 
-// ═══════════════════════════════════════════════════════════
-// EXPORT FUNCTIONS TO GLOBAL SCOPE
-// ═══════════════════════════════════════════════════════════
+// Export functions
 window.calculateBus = calculateBus;
 window.calculateAllBuses = calculateAllBuses;
 window.performArcFlashAnalysis = performArcFlashAnalysis;
 
-console.log('✅ Calculations coordinator v1.3.3 loaded - Arc Flash Integration');
+console.log('✅ Calculations coordinator v1.3.4 loaded - Demand Factor Integration Fixed');
 console.log('   - calculateBus: Available');
 console.log('   - calculateAllBuses: Available');
 console.log('   - performArcFlashAnalysis: Available');
 console.log('   - Feature #1 Integration: ' + (typeof calculateTotalMotorContribution === 'function' ? 'READY' : 'PENDING'));
 console.log('   - Feature #5 Integration: ' + (typeof calculateLoadFlowWithDemand === 'function' ? 'READY' : 'PENDING'));
 console.log('   - Arc Flash Integration: ' + (typeof calculateArcFlash === 'function' ? 'READY' : 'PENDING'));
-console.log('   - Dependencies check: Enabled');
-console.log('   - Defensive null checks: ENHANCED');
-console.log('   - Error handling: COMPREHENSIVE');
-console.log('   - Optional chaining: IMPLEMENTED');
+console.log('   - Demand Factor Debugging: COMPREHENSIVE');
+console.log('   - Multi-method attempt: ENABLED');
+console.log('   - Error handling: ENHANCED');

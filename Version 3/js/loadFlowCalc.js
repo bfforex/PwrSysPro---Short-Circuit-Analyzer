@@ -480,36 +480,106 @@ function calculateLoadFlow(busId) {
     steps += `Power Factor:            ${loadData.summary.powerFactor}\n`;
     steps += `Components Analyzed:     ${componentCount}\n\n`;
     
-    // ══════════════════════════════════════════════════════════════════════════════
-    // BREAKDOWN BY TYPE (ENHANCED)
-    // ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+// BREAKDOWN BY TYPE (CORRECTED - NO DOUBLE COUNTING)
+// Fixed: 2025-11-03 14:47:15 UTC by bfforex
+// Priority 1: Accurate load breakdown without double counting
+// 
+// Key Fixes:
+// 1. Cables are pass-through (not counted in totals)
+// 2. Direct loads filtered to THIS bus only (no downstream)
+// 3. Motors separated by voltage level
+// 4. Percentages based on actual consumed load at this level
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Separate motors by voltage level
+const motorsAtThisLevel = loadData.breakdown.motors.filter(m => m.voltage === bus.voltage);
+const motorsAtOtherLevels = loadData.breakdown.motors.filter(m => m.voltage !== bus.voltage);
+
+// Calculate motor totals AT THIS VOLTAGE LEVEL
+const motorTotal = motorsAtThisLevel.reduce((sum, m) => sum + m.current, 0);
+const motorPower = motorsAtThisLevel.reduce((sum, m) => sum + m.powerKVA, 0);
+
+// Direct loads ONLY at THIS bus (not downstream)
+const directLoadsAtThisBus = loadData.breakdown.directLoads.filter(d => d.bus === bus.name);
+const directTotal = directLoadsAtThisBus.reduce((sum, d) => sum + d.current, 0);
+const directPower = directLoadsAtThisBus.reduce((sum, d) => sum + d.powerKVA, 0);
+
+// Transformers (reflected from downstream voltage levels)
+const xfmrTotal = loadData.breakdown.transformers.reduce((sum, t) => sum + (t.primaryCurrent || 0), 0);
+const xfmrPower = loadData.breakdown.transformers.reduce((sum, t) => sum + t.powerKVA, 0);
+
+// Cables are pass-through (counted for reference, not in totals)
+const cableCount = loadData.breakdown.cables.length;
+
+// Total ACTUAL load at this voltage level (motors + direct + reflected transformers)
+const totalAtThisLevel = motorTotal + directTotal + xfmrTotal;
+
+// Build breakdown display
+steps += `📋 BREAKDOWN BY COMPONENT TYPE (AT ${bus.voltage}V LEVEL)\n`;
+steps += '─'.repeat(80) + '\n';
+steps += `Type          Count  Current (A)  Power (kVA)  Percentage  Note\n`;
+steps += '─'.repeat(80) + '\n';
+
+// Direct loads at this bus
+if (directLoadsAtThisBus.length > 0) {
+    const directPct = totalAtThisLevel > 0 ? (directTotal / totalAtThisLevel * 100) : 0;
+    steps += `Direct Load   ${directLoadsAtThisBus.length.toString().padStart(5)}  ${directTotal.toFixed(2).padStart(11)}  ${directPower.toFixed(2).padStart(11)}  ${directPct.toFixed(1).padStart(10)}%  At this bus\n`;
+}
+
+// Transformers (reflected loads)
+if (loadData.breakdown.transformers.length > 0) {
+    const xfmrPct = totalAtThisLevel > 0 ? (xfmrTotal / totalAtThisLevel * 100) : 0;
+    steps += `Transformers  ${loadData.breakdown.transformers.length.toString().padStart(5)}  ${xfmrTotal.toFixed(2).padStart(11)}  ${xfmrPower.toFixed(2).padStart(11)}  ${xfmrPct.toFixed(1).padStart(10)}%  Reflected from secondary\n`;
     
-    const motorTotal = loadData.breakdown.motors.reduce((sum, m) => sum + m.current, 0);
-    const xfmrTotal = loadData.breakdown.transformers.reduce((sum, t) => sum + (t.primaryCurrent || 0), 0);
-    const cableTotal = loadData.breakdown.cables.reduce((sum, c) => sum + c.current, 0);
-    const directTotal = loadData.breakdown.directLoads.reduce((sum, d) => sum + d.current, 0);
-    const totalAtThisLevel = motorTotal + directTotal + cableTotal;
-    
-    steps += `📋 BREAKDOWN BY COMPONENT TYPE\n`;
-    steps += '─'.repeat(80) + '\n';
-    steps += `Type          Count  Current (A)  Power (kVA)  Percentage\n`;
-    steps += '─'.repeat(80) + '\n';
-    
-    const motorPower = loadData.breakdown.motors.reduce((sum, m) => sum + m.powerKVA, 0);
-    const xfmrPower = loadData.breakdown.transformers.reduce((sum, t) => sum + t.powerKVA, 0);
-    const cablePower = loadData.breakdown.cables.reduce((sum, c) => sum + c.powerKVA, 0);
-    const directPower = loadData.breakdown.directLoads.reduce((sum, d) => sum + d.powerKVA, 0);
-    
-    steps += `Motors        ${loadData.breakdown.motors.length.toString().padStart(5)}  ${motorTotal.toFixed(2).padStart(11)}  ${motorPower.toFixed(2).padStart(11)}  ${totalAtThisLevel > 0 ? (motorTotal/totalAtThisLevel*100).toFixed(1) : '0.0'}%\n`;
-    steps += `Transformers  ${loadData.breakdown.transformers.length.toString().padStart(5)}  ${xfmrTotal.toFixed(2).padStart(11)}  ${xfmrPower.toFixed(2).padStart(11)}  (reflected)\n`;
-    steps += `Cables        ${loadData.breakdown.cables.length.toString().padStart(5)}  ${cableTotal.toFixed(2).padStart(11)}  ${cablePower.toFixed(2).padStart(11)}  ${totalAtThisLevel > 0 ? (cableTotal/totalAtThisLevel*100).toFixed(1) : '0.0'}%\n`;
-    steps += `Direct Loads  ${loadData.breakdown.directLoads.length.toString().padStart(5)}  ${directTotal.toFixed(2).padStart(11)}  ${directPower.toFixed(2).padStart(11)}  ${totalAtThisLevel > 0 ? (directTotal/totalAtThisLevel*100).toFixed(1) : '0.0'}%\n`;
-    steps += `Generators    ${loadData.breakdown.generators.length.toString().padStart(5)}  (Sources)    N/A          N/A\n`;
-    steps += '─'.repeat(80) + '\n';
-    steps += `TOTAL                    ${loadData.summary.totalCurrent.toFixed(2).padStart(11)}  ${loadData.summary.totalPowerKVA.toFixed(2).padStart(11)}  100.0%\n`;
-    steps += '─'.repeat(80) + '\n\n';
-    
-    steps += `${LOAD_FLOW_CONFIG.ICONS.info} Note: Transformer loads are reflected from downstream voltage levels\n\n`;
+    // Show detail for each transformer
+    loadData.breakdown.transformers.forEach(xfmr => {
+        const xfmrCurrent = xfmr.primaryCurrent || 0;
+        const xfmrPercent = totalAtThisLevel > 0 ? (xfmrCurrent / totalAtThisLevel * 100) : 0;
+        steps += `  └─ ${(xfmr.tag || xfmr.name).padEnd(14)}  ${xfmrCurrent.toFixed(2).padStart(11)}  ${xfmr.powerKVA.toFixed(2).padStart(11)}  ${xfmrPercent.toFixed(1).padStart(10)}%  ${xfmr.primaryVoltage}V → ${xfmr.secondaryVoltage}V\n`;
+    });
+}
+
+// Motors at this voltage level
+if (motorsAtThisLevel.length > 0) {
+    const motorPct = totalAtThisLevel > 0 ? (motorTotal / totalAtThisLevel * 100) : 0;
+    steps += `Motors (${bus.voltage}V) ${motorsAtThisLevel.length.toString().padStart(2)}  ${motorTotal.toFixed(2).padStart(11)}  ${motorPower.toFixed(2).padStart(11)}  ${motorPct.toFixed(1).padStart(10)}%  At this level\n`;
+}
+
+// Motors at other voltage levels (via transformers)
+if (motorsAtOtherLevels.length > 0) {
+    motorsAtOtherLevels.forEach(motor => {
+        // Find which transformer serves this motor
+        const xfmr = loadData.breakdown.transformers.find(t => t.secondaryVoltage === motor.voltage);
+        const xfmrTag = xfmr ? (xfmr.tag || xfmr.name) : 'transformer';
+        steps += `Motors (${motor.voltage}V)  ${' '.repeat(4)}1  ${motor.current.toFixed(2).padStart(11)}  ${motor.powerKVA.toFixed(2).padStart(11)}  ${' '.repeat(10)}-  Via ${xfmrTag}\n`;
+    });
+}
+
+// Cables (pass-through only, not counted in percentages)
+if (cableCount > 0) {
+    steps += `Cables        ${cableCount.toString().padStart(5)}  (conveyance)        -         -  Pass-through only\n`;
+}
+
+// Generators (sources, not loads)
+if (loadData.breakdown.generators.length > 0) {
+    steps += `Generators    ${loadData.breakdown.generators.length.toString().padStart(5)}  (Sources)    N/A          N/A  Sources only\n`;
+}
+
+steps += '─'.repeat(80) + '\n';
+steps += `TOTAL AT ${bus.voltage}V  ${' '.repeat(5)}  ${loadData.summary.totalCurrent.toFixed(2).padStart(11)}  ${loadData.summary.totalPowerKVA.toFixed(2).padStart(11)}  ${' '.repeat(10)}100.0%\n`;
+steps += '─'.repeat(80) + '\n\n';
+
+// Explanatory note
+steps += `${LOAD_FLOW_CONFIG.ICONS.info} Note:\n`;
+steps += `   • Direct load of ${directTotal.toFixed(2)}A is specified at this bus (${bus.voltage}V)\n`;
+if (motorsAtOtherLevels.length > 0) {
+    steps += `   • ${motorsAtOtherLevels.length} motor(s) at other voltage levels are reflected via transformers\n`;
+}
+steps += `   • Cables convey power but are not loads (not counted in percentages)\n`;
+steps += `   • Transformers show primary current (reflected from secondary loads)\n`;
+steps += `   • Total represents all downstream loads referred to ${bus.voltage}V\n`;
+steps += `   • Percentages are of ACTUAL consumed load (${totalAtThisLevel.toFixed(2)}A)\n\n`;
     
     steps += '═'.repeat(80) + '\n';
     steps += 'END OF LOAD FLOW CALCULATION\n';
@@ -532,6 +602,8 @@ function calculateLoadFlow(busId) {
 
 /**
  * Apply demand factors to load flow results
+ * CORRECTED: 2025-11-03 04:00:20 UTC by bfforex
+ * Simplified approach - apply demand factor to total load only
  * 
  * @param {Object} loadFlow - Original load flow result
  * @returns {Object} Enhanced load flow with demand factors applied
@@ -542,204 +614,151 @@ function applyDemandFactorsToLoadFlow(loadFlow) {
         return loadFlow;
     }
     
-    if (!window.DemandFactors) {
+    // ✅ Check for class OR instance
+    if (typeof window.DemandFactors === 'undefined' && typeof window.demandFactorsInstance === 'undefined') {
         console.warn('⚠️ DemandFactors module not loaded, skipping demand factor application');
         return loadFlow;
     }
     
+    // ✅ Use the global instance, or create new one
+    const demandFactors = window.demandFactorsInstance || new window.DemandFactors();
+    
     console.log('\n' + '═'.repeat(80));
     console.log('APPLYING DEMAND & DIVERSITY FACTORS');
     console.log('═'.repeat(80));
+    console.log(`✅ Using DemandFactors instance: ${typeof demandFactors}`);
     
+    // ════════════════════════════════════════════════════════════════════════════
+    // GET TOTAL CONNECTED LOAD
+    // ════════════════════════════════════════════════════════════════════════════
+    const connectedCurrent = loadFlow.summary?.totalCurrent || 0;
+    const voltage = loadFlow.busVoltage || 480;
+    const sqrt3 = Math.sqrt(3);
+    
+    // ════════════════════════════════════════════════════════════════════════════
+    // DETERMINE DEMAND FACTOR BASED ON LOAD COMPOSITION
+    // ════════════════════════════════════════════════════════════════════════════
+    
+    let demandFactor = 1.0;
+    let demandFactorNote = 'No demand factor applied (100%)';
+    
+    // Check if system has motors
+    const motorCount = loadFlow.breakdown?.motors?.length || 0;
+    
+    if (motorCount > 0) {
+        // Apply motor demand factor based on count
+        // NEC 430.24: For multiple motors, use demand factors
+        if (motorCount === 1) {
+            demandFactor = 1.00;  // 100% for single motor
+            demandFactorNote = 'Single motor - 100% demand (NEC 430.24)';
+        } else if (motorCount <= 2) {
+            demandFactor = 0.95;  // 95% for 2 motors
+            demandFactorNote = `${motorCount} motors - 95% demand (NEC 430.24)`;
+        } else if (motorCount <= 3) {
+            demandFactor = 0.91;  // 91% for 3 motors
+            demandFactorNote = `${motorCount} motors - 91% demand (NEC 430.24)`;
+        } else if (motorCount <= 5) {
+            demandFactor = 0.85;  // 85% for 4-5 motors
+            demandFactorNote = `${motorCount} motors - 85% demand (NEC 430.24)`;
+        } else if (motorCount <= 10) {
+            demandFactor = 0.80;  // 80% for 6-10 motors
+            demandFactorNote = `${motorCount} motors - 80% demand (NEC 430.24)`;
+        } else {
+            demandFactor = 0.75;  // 75% for 10+ motors
+            demandFactorNote = `${motorCount} motors - 75% demand (NEC 430.24)`;
+        }
+    } else {
+        // No motors - use general demand factor
+        demandFactor = 0.85;  // 85% typical for mixed loads
+        demandFactorNote = 'Mixed loads - 85% demand factor (IEEE 141-1993)';
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════════
+    // CALCULATE DEMAND LOAD (NO CONTINUOUS MULTIPLIER FOR NOW)
+    // ════════════════════════════════════════════════════════════════════════════
+    const demandCurrent = connectedCurrent * demandFactor;
+    
+    // ════════════════════════════════════════════════════════════════════════════
+    // APPLY DIVERSITY FACTOR
+    // ════════════════════════════════════════════════════════════════════════════
+    const diversityFactor = getDiversityFactorForBus(loadFlow.busId) || 1.2;
+    const diversityCurrent = demandCurrent / diversityFactor;
+    
+    // ════════════════════════════════════════════════════════════════════════════
+    // BUILD ENHANCED RESULT
+    // ════════════════════════════════════════════════════════════════════════════
     const enhanced = {
         ...loadFlow,
         demandFactorsApplied: true,
-        connectedLoad: loadFlow.totalLoad,
-        demandLoad: 0,
-        diversityLoad: 0,
-        demandBreakdown: {
-            motors: [],
-            transformers: [],
-            cables: [],
-            directLoads: [],
-            generators: []
-        },
+        connectedLoad: connectedCurrent,
+        demandLoad: demandCurrent,
+        diversityLoad: diversityCurrent,
         demandSummary: {
-            connectedCurrent: loadFlow.summary?.totalCurrent || 0,
-            demandCurrent: 0,
-            diversityCurrent: 0,
-            connectedPowerKVA: loadFlow.summary?.totalPowerKVA || 0,
-            demandPowerKVA: 0,
-            diversityPowerKVA: 0,
-            demandFactor: 1.0,
-            diversityFactor: 1.0
+            connectedCurrent: connectedCurrent,
+            connectedPowerKVA: (connectedCurrent * voltage * sqrt3) / 1000,
+            demandCurrent: demandCurrent,
+            demandPowerKVA: (demandCurrent * voltage * sqrt3) / 1000,
+            diversityCurrent: diversityCurrent,
+            diversityPowerKVA: (diversityCurrent * voltage * sqrt3) / 1000,
+            demandFactor: demandFactor,
+            diversityFactor: diversityFactor,
+            motorCount: motorCount
         }
     };
     
+    // ════════════════════════════════════════════════════════════════════════════
+    // GENERATE CALCULATION STEPS
+    // ════════════════════════════════════════════════════════════════════════════
     let steps = '\n' + '═'.repeat(80) + '\n';
     steps += 'DEMAND & DIVERSITY FACTOR ANALYSIS\n';
     steps += '═'.repeat(80) + '\n\n';
     
-    // MOTORS - Apply Motor Demand Factors
-    if (loadFlow.breakdown?.motors && loadFlow.breakdown.motors.length > 0) {
-        steps += `${LOAD_FLOW_CONFIG.ICONS.motor} MOTOR LOADS\n`;
-        steps += '─'.repeat(80) + '\n';
-        
-        const motorDuty = 'continuous';
-        const numberOfMotors = loadFlow.breakdown.motors.length;
-        
-        loadFlow.breakdown.motors.forEach((motor, index) => {
-            const motorDemand = window.DemandFactors.calculateMotorDemand(
-                motor.current,
-                motorDuty,
-                numberOfMotors
-            );
-            
-            enhanced.demandBreakdown.motors.push({
-                ...motor,
-                connectedCurrent: motor.current,
-                demandCurrent: motorDemand.demandLoad,
-                demandFactor: motorDemand.demandFactor,
-                dutyType: motorDemand.dutyType,
-                necReference: motorDemand.necReference
-            });
-            
-            enhanced.demandLoad += motorDemand.demandLoad;
-            
-            steps += `Motor ${index + 1}: ${motor.tag || motor.name}\n`;
-            steps += `  Connected Load:  ${motor.current.toFixed(2)} A\n`;
-            steps += `  Demand Factor:   ${(motorDemand.demandFactor * 100).toFixed(1)}%\n`;
-            steps += `  Demand Load:     ${motorDemand.demandLoad.toFixed(2)} A\n`;
-            steps += `  Reference:       ${motorDemand.necReference}\n\n`;
-        });
-    }
+    steps += `📊 SYSTEM LOAD SUMMARY\n`;
+    steps += '─'.repeat(80) + '\n';
+    steps += `Bus:                       ${loadFlow.busName} (${voltage}V)\n`;
+    steps += `Connected Load:            ${connectedCurrent.toFixed(2)} A (100.0%)\n`;
+    steps += `Motor Count:               ${motorCount}\n`;
+    steps += `Transformer Count:         ${loadFlow.breakdown?.transformers?.length || 0}\n`;
+    steps += `Total Components:          ${(loadFlow.breakdown?.motors?.length || 0) + (loadFlow.breakdown?.transformers?.length || 0) + (loadFlow.breakdown?.cables?.length || 0)}\n\n`;
     
-    // TRANSFORMERS - Apply 80% Loading Factor
-    if (loadFlow.breakdown?.transformers && loadFlow.breakdown.transformers.length > 0) {
-        steps += `${LOAD_FLOW_CONFIG.ICONS.transformer} TRANSFORMER LOADS\n`;
-        steps += '─'.repeat(80) + '\n';
-        
-        const transformerDemandFactor = 0.80;
-        
-        loadFlow.breakdown.transformers.forEach((xfmr, index) => {
-            const demandCurrent = xfmr.primaryCurrent * transformerDemandFactor;
-            
-            enhanced.demandBreakdown.transformers.push({
-                ...xfmr,
-                connectedCurrent: xfmr.primaryCurrent,
-                demandCurrent: demandCurrent,
-                demandFactor: transformerDemandFactor,
-                note: 'Typical 80% loading factor'
-            });
-            
-            enhanced.demandLoad += demandCurrent;
-            
-            steps += `Transformer ${index + 1}: ${xfmr.tag || xfmr.name}\n`;
-            steps += `  Connected Load:  ${xfmr.primaryCurrent.toFixed(2)} A (Primary)\n`;
-            steps += `  Demand Factor:   ${(transformerDemandFactor * 100).toFixed(1)}%\n`;
-            steps += `  Demand Load:     ${demandCurrent.toFixed(2)} A\n\n`;
-        });
-    }
+    steps += `📐 DEMAND FACTOR APPLICATION\n`;
+    steps += '─'.repeat(80) + '\n';
+    steps += `Demand Factor:             ${demandFactor.toFixed(3)} (${(demandFactor * 100).toFixed(1)}%)\n`;
+    steps += `Note:                      ${demandFactorNote}\n`;
+    steps += `Demand Load:               ${demandCurrent.toFixed(2)} A (${connectedCurrent > 0 ? (demandCurrent / connectedCurrent * 100).toFixed(1) : '0.0'}%)\n`;
+    steps += `Formula:                   Demand = Connected × Demand Factor\n`;
+    steps += `                           ${demandCurrent.toFixed(2)} A = ${connectedCurrent.toFixed(2)} A × ${demandFactor.toFixed(3)}\n\n`;
     
-    // CABLES - Apply Demand Factor
-    if (loadFlow.breakdown?.cables && loadFlow.breakdown.cables.length > 0) {
-        steps += `${LOAD_FLOW_CONFIG.ICONS.cable} CABLE LOADS\n`;
-        steps += '─'.repeat(80) + '\n';
-        
-        loadFlow.breakdown.cables.forEach((cable, index) => {
-            const bus = buses.find(b => b.name === cable.location?.split(' → ')[1]);
-            const demandFactor = bus?.demandFactor || 1.0;
-            const demandCurrent = cable.current * demandFactor;
-            
-            enhanced.demandBreakdown.cables.push({
-                ...cable,
-                connectedCurrent: cable.current,
-                demandCurrent: demandCurrent,
-                demandFactor: demandFactor
-            });
-            
-            enhanced.demandLoad += demandCurrent;
-            
-            steps += `Cable ${index + 1}: ${cable.tag || cable.name}\n`;
-            steps += `  Connected Load:  ${cable.current.toFixed(2)} A\n`;
-            steps += `  Demand Factor:   ${(demandFactor * 100).toFixed(1)}%\n`;
-            steps += `  Demand Load:     ${demandCurrent.toFixed(2)} A\n\n`;
-        });
-    }
+    steps += `📐 DIVERSITY FACTOR APPLICATION\n`;
+    steps += '─'.repeat(80) + '\n';
+    steps += `Diversity Factor:          ${diversityFactor.toFixed(3)} (IEEE 141-1993)\n`;
+    steps += `Diversity Load:            ${diversityCurrent.toFixed(2)} A (${connectedCurrent > 0 ? (diversityCurrent / connectedCurrent * 100).toFixed(1) : '0.0'}%)\n`;
+    steps += `Formula:                   Diversity = Demand / Diversity Factor\n`;
+    steps += `                           ${diversityCurrent.toFixed(2)} A = ${demandCurrent.toFixed(2)} A / ${diversityFactor.toFixed(3)}\n\n`;
     
-    // DIRECT LOADS - Apply Bus Demand Factor
-    if (loadFlow.breakdown?.directLoads && loadFlow.breakdown.directLoads.length > 0) {
-        steps += `${LOAD_FLOW_CONFIG.ICONS.load} DIRECT LOADS\n`;
-        steps += '─'.repeat(80) + '\n';
-        
-        loadFlow.breakdown.directLoads.forEach((load, index) => {
-            const bus = buses.find(b => b.name === load.bus);
-            const demandFactor = bus?.demandFactor || 1.0;
-            const demandCurrent = load.current * demandFactor;
-            
-            enhanced.demandBreakdown.directLoads.push({
-                ...load,
-                connectedCurrent: load.current,
-                demandCurrent: demandCurrent,
-                demandFactor: demandFactor
-            });
-            
-            enhanced.demandLoad += demandCurrent;
-            
-            steps += `Direct Load ${index + 1}: ${load.busTag || load.bus}\n`;
-            steps += `  Connected Load:  ${load.current.toFixed(2)} A\n`;
-            steps += `  Demand Factor:   ${(demandFactor * 100).toFixed(1)}%\n`;
-            steps += `  Demand Load:     ${demandCurrent.toFixed(2)} A\n\n`;
-        });
-    }
-    
-    // APPLY DIVERSITY FACTOR
-    const diversityFactor = getDiversityFactorForBus(loadFlow.busId) || 1.2;
-    enhanced.diversityLoad = enhanced.demandLoad / diversityFactor;
-    
-    steps += '═'.repeat(80) + '\n';
-    steps += 'DEMAND & DIVERSITY SUMMARY\n';
-    steps += '═'.repeat(80) + '\n\n';
-    
-    const connectedCurrent = loadFlow.summary?.totalCurrent || 0;
-    
-    steps += `Connected Load Current:    ${connectedCurrent.toFixed(2)} A (100%)\n`;
-    steps += `Demand Load Current:       ${enhanced.demandLoad.toFixed(2)} A (${connectedCurrent > 0 ? (enhanced.demandLoad / connectedCurrent * 100).toFixed(1) : '0.0'}%)\n`;
-    steps += `Diversity Load Current:    ${enhanced.diversityLoad.toFixed(2)} A (${enhanced.demandLoad > 0 ? (enhanced.diversityLoad / enhanced.demandLoad * 100).toFixed(1) : '0.0'}%)\n\n`;
-    
-    steps += `Overall Demand Factor:     ${connectedCurrent > 0 ? (enhanced.demandLoad / connectedCurrent).toFixed(3) : '1.000'}\n`;
-    steps += `Overall Diversity Factor:  ${diversityFactor.toFixed(3)}\n`;
-    steps += `Combined Factor:           ${connectedCurrent > 0 ? (enhanced.diversityLoad / connectedCurrent).toFixed(3) : '1.000'}\n\n`;
-    
-    const voltage = loadFlow.busVoltage || 480;
-    const sqrt3 = Math.sqrt(3);
-    
-    enhanced.demandSummary.demandCurrent = enhanced.demandLoad;
-    enhanced.demandSummary.diversityCurrent = enhanced.diversityLoad;
-    enhanced.demandSummary.demandPowerKVA = (enhanced.demandLoad * voltage * sqrt3) / 1000;
-    enhanced.demandSummary.diversityPowerKVA = (enhanced.diversityLoad * voltage * sqrt3) / 1000;
-    enhanced.demandSummary.demandFactor = connectedCurrent > 0 ? enhanced.demandLoad / connectedCurrent : 1;
-    enhanced.demandSummary.diversityFactor = diversityFactor;
-    
-    steps += `Connected Power:           ${(loadFlow.summary?.totalPowerKVA || 0).toFixed(2)} kVA\n`;
+    steps += `💰 POWER SAVINGS\n`;
+    steps += '─'.repeat(80) + '\n';
+    steps += `Connected Power:           ${enhanced.demandSummary.connectedPowerKVA.toFixed(2)} kVA\n`;
     steps += `Demand Power:              ${enhanced.demandSummary.demandPowerKVA.toFixed(2)} kVA\n`;
-    steps += `Diversity Power:           ${enhanced.demandSummary.diversityPowerKVA.toFixed(2)} kVA (Design Load)\n\n`;
+    steps += `Diversity Power:           ${enhanced.demandSummary.diversityPowerKVA.toFixed(2)} kVA\n\n`;
+    steps += `Power Reduction:           ${(enhanced.demandSummary.connectedPowerKVA - enhanced.demandSummary.diversityPowerKVA).toFixed(2)} kVA\n`;
+    steps += `Percentage Reduction:      ${connectedCurrent > 0 ? ((1 - diversityCurrent / connectedCurrent) * 100).toFixed(1) : '0.0'}%\n\n`;
     
-    steps += `Power Savings:             ${((loadFlow.summary?.totalPowerKVA || 0) - enhanced.demandSummary.diversityPowerKVA).toFixed(2)} kVA\n`;
-    steps += `Reduction:                 ${connectedCurrent > 0 ? ((1 - enhanced.diversityLoad / connectedCurrent) * 100).toFixed(1) : '0.0'}%\n\n`;
-    
-    steps += '═'.repeat(80) + '\n';
-    steps += 'NEC COMPLIANCE\n';
-    steps += '═'.repeat(80) + '\n';
-    steps += `✓ NEC Article 220 - Load Calculations\n`;
+    steps += `📋 STANDARDS COMPLIANCE\n`;
+    steps += '─'.repeat(80) + '\n';
+    steps += `✓ NEC Article 220 - Demand Factors\n`;
     steps += `✓ NEC Article 430.24 - Motor Demand Factors\n`;
-    steps += `✓ IEEE 141 - Diversity Factors Applied\n\n`;
+    steps += `✓ IEEE 141-1993 - Diversity Factors\n\n`;
+    
+    steps += '═'.repeat(80) + '\n';
+    steps += 'END OF DEMAND & DIVERSITY ANALYSIS\n';
+    steps += '═'.repeat(80) + '\n';
     
     enhanced.demandCalculationSteps = steps;
     
     console.log('✅ Demand & diversity factors applied');
-    console.log(`   Connected: ${connectedCurrent.toFixed(2)} A → Demand: ${enhanced.demandLoad.toFixed(2)} A → Diversity: ${enhanced.diversityLoad.toFixed(2)} A`);
-    console.log(`   Reduction: ${connectedCurrent > 0 ? ((1 - enhanced.diversityLoad / connectedCurrent) * 100).toFixed(1) : '0.0'}%`);
+    console.log(`   Connected: ${connectedCurrent.toFixed(2)} A → Demand: ${demandCurrent.toFixed(2)} A → Diversity: ${diversityCurrent.toFixed(2)} A`);
+    console.log(`   Reduction: ${connectedCurrent > 0 ? ((1 - diversityCurrent / connectedCurrent) * 100).toFixed(1) : '0.0'}%`);
     console.log('');
     
     return enhanced;

@@ -273,6 +273,178 @@ if (typeof window.DEMAND_FACTORS === 'undefined') {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// DemandFactors CLASS - MOTOR DEMAND CALCULATIONS
+// Required by loadFlowCalc.js
+// Added: 2025-11-03 03:26:54 UTC by bfforex
+// ═══════════════════════════════════════════════════════════════════════
+
+if (typeof window.DemandFactors === 'undefined') {
+    
+    /**
+     * DemandFactors Class
+     * Handles motor demand factor calculations per NEC Article 430
+     */
+    class DemandFactors {
+        constructor() {
+            console.log('🔧 DemandFactors instance created');
+        }
+        
+        /**
+         * Calculate motor demand per NEC Article 430.24
+         * 
+         * @param {Number} fullLoadCurrent - Motor FLC in amperes
+         * @param {String} dutyType - 'continuous' or 'intermittent'
+         * @param {Number} motorCount - Number of motors in group
+         * @returns {Object} Demand calculation result
+         */
+        calculateMotorDemand(fullLoadCurrent, dutyType = 'continuous', motorCount = 1) {
+            let demandFactor = 1.0;
+            let necReference = 'NEC 430.24';
+            let multiplier = 1.0;
+            
+            // Continuous duty requires 125% multiplier
+            if (dutyType === 'continuous') {
+                multiplier = 1.25;
+                necReference = 'NEC 430.24 (continuous duty)';
+            }
+            
+            // Group motor demand factors (from DEMAND_FACTORS)
+            if (motorCount === 1) {
+                demandFactor = 1.00;
+            } else if (motorCount === 2) {
+                demandFactor = 0.95;
+            } else if (motorCount <= 3) {
+                demandFactor = 0.91;
+            } else if (motorCount <= 5) {
+                demandFactor = 0.85;
+            } else if (motorCount <= 10) {
+                demandFactor = 0.80;
+            } else if (motorCount <= 15) {
+                demandFactor = 0.77;
+            } else {
+                demandFactor = 0.74;
+            }
+            
+            // Calculate demand load
+            const demandLoad = fullLoadCurrent * demandFactor * multiplier;
+            
+            return {
+                fullLoadCurrent: fullLoadCurrent,
+                demandFactor: demandFactor,
+                multiplier: multiplier,
+                demandLoad: demandLoad,
+                dutyType: dutyType,
+                motorCount: motorCount,
+                necReference: necReference,
+                formula: `I_demand = FLC × ${demandFactor.toFixed(3)} × ${multiplier.toFixed(2)} = ${demandLoad.toFixed(2)} A`
+            };
+        }
+        
+        /**
+         * Calculate demand for lighting loads per NEC Article 220.42
+         * 
+         * @param {Number} connectedLoad - Connected lighting load in VA
+         * @param {String} buildingType - 'dwelling', 'office', 'industrial', 'storage'
+         * @returns {Object} Demand calculation result
+         */
+        calculateLightingDemand(connectedLoad, buildingType = 'industrial') {
+            let demandFactor = 1.0;
+            let necReference = 'NEC 220.42';
+            
+            switch (buildingType.toLowerCase()) {
+                case 'dwelling':
+                    // Dwelling units use tiered demand
+                    if (connectedLoad <= 3000) {
+                        demandFactor = 1.0;
+                    } else if (connectedLoad <= 120000) {
+                        const first3000 = 3000;
+                        const next = connectedLoad - 3000;
+                        demandFactor = (first3000 + next * 0.35) / connectedLoad;
+                    } else {
+                        const first3000 = 3000;
+                        const next117000 = 117000;
+                        const remainder = connectedLoad - 120000;
+                        demandFactor = (first3000 + next117000 * 0.35 + remainder * 0.25) / connectedLoad;
+                    }
+                    necReference = 'NEC 220.42 (dwelling)';
+                    break;
+                    
+                case 'office':
+                    demandFactor = 1.0;
+                    necReference = 'NEC 220.42 (office)';
+                    break;
+                    
+                case 'storage':
+                    demandFactor = 0.7;
+                    necReference = 'NEC 220.42 (storage)';
+                    break;
+                    
+                case 'industrial':
+                default:
+                    demandFactor = 0.8;
+                    necReference = 'NEC 220.42 (industrial)';
+                    break;
+            }
+            
+            const demandLoad = connectedLoad * demandFactor;
+            
+            return {
+                connectedLoad: connectedLoad,
+                demandFactor: demandFactor,
+                demandLoad: demandLoad,
+                buildingType: buildingType,
+                necReference: necReference,
+                formula: `Demand = ${connectedLoad.toFixed(0)} VA × ${demandFactor.toFixed(3)} = ${demandLoad.toFixed(0)} VA`
+            };
+        }
+        
+        /**
+         * Calculate receptacle demand per NEC Article 220.44
+         * 
+         * @param {Number} connectedLoad - Connected receptacle load in VA
+         * @returns {Object} Demand calculation result
+         */
+        calculateReceptacleDemand(connectedLoad) {
+            let demandLoad = 0;
+            const necReference = 'NEC 220.44';
+            
+            if (connectedLoad <= 10000) {
+                demandLoad = connectedLoad; // 100%
+            } else {
+                const first10kVA = 10000;
+                const remainder = connectedLoad - 10000;
+                demandLoad = first10kVA + (remainder * 0.5); // 50% on remainder
+            }
+            
+            const demandFactor = connectedLoad > 0 ? demandLoad / connectedLoad : 1.0;
+            
+            return {
+                connectedLoad: connectedLoad,
+                demandFactor: demandFactor,
+                demandLoad: demandLoad,
+                necReference: necReference,
+                formula: connectedLoad <= 10000 
+                    ? `Demand = ${connectedLoad.toFixed(0)} VA (100%)`
+                    : `Demand = 10,000 VA + (${(connectedLoad - 10000).toFixed(0)} VA × 50%) = ${demandLoad.toFixed(0)} VA`
+            };
+        }
+    }
+    
+    // Export class to global scope
+    window.DemandFactors = DemandFactors;
+    
+    // Create global instance for convenience
+    window.demandFactorsInstance = new DemandFactors();
+    
+    console.log('✅ DemandFactors class initialized');
+    console.log('   - window.DemandFactors: Available');
+    console.log('   - window.demandFactorsInstance: Created');
+    
+} else {
+    console.log('ℹ️ DemandFactors class already loaded');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // Conditional initialization to prevent redeclaration errors
 // ═══════════════════════════════════════════════════════════════════════
@@ -345,10 +517,28 @@ if (typeof window.getMotorDiversityFactor !== 'function') {
     };
 }
 
-console.log('✅ Demand & Diversity Factors Module v2.0.2 loaded');
-console.log('   - Diversity Factors (DF ≥ 1.0): READY');
-console.log('   - Demand Factors (Kd ≤ 1.0): READY');
+// ═══════════════════════════════════════════════════════════════════════
+// FINAL MODULE STATUS
+// ═══════════════════════════════════════════════════════════════════════
+
+console.log('✅ Demand & Diversity Factors Module v2.0.3 loaded');
+console.log('   - DIVERSITY_FACTORS (DF ≥ 1.0): ✅');
+console.log('   - DEMAND_FACTORS (Kd ≤ 1.0): ✅');
+console.log('   - DemandFactors class: ✅');
+console.log('   - demandFactorsInstance: ✅');
 console.log('   - IEEE 141-1993: COMPLIANT');
 console.log('   - NEC Article 220: COMPLIANT');
 console.log('   - Heavy Industry: LNG, Fabrication');
 console.log('');
+
+// Verification check
+if (typeof window.DemandFactors === 'function' && 
+    typeof window.DEMAND_FACTORS === 'object' && 
+    typeof window.DIVERSITY_FACTORS === 'object') {
+    console.log('🎉 ALL DEMAND FACTOR COMPONENTS VERIFIED');
+} else {
+    console.error('❌ MISSING COMPONENTS:');
+    if (typeof window.DemandFactors !== 'function') console.error('   - DemandFactors class');
+    if (typeof window.DEMAND_FACTORS !== 'object') console.error('   - DEMAND_FACTORS data');
+    if (typeof window.DIVERSITY_FACTORS !== 'object') console.error('   - DIVERSITY_FACTORS data');
+}

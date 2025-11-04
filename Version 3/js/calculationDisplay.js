@@ -326,7 +326,202 @@ function generateMotorDetailsTable(results) {
 }
 
 /**
+ * Display demand factor analysis
+ * Complete function with error handling
+ * Updated: 2025-11-03 02:53:31 UTC by bfforex
+ * 
+ * @param {Object} bus - Bus object
+ * @param {HTMLElement} container - Container element
+ */
+function displayDemandFactorAnalysis(bus, container) {
+    // ✅ ADDED: Error boundary
+    try {
+        if (!bus.results || !bus.results.loadFlow) {
+            console.log('ℹ️ No load flow results for demand factor display');
+            return;
+        }
+        
+        const lf = bus.results.loadFlow;
+        
+        // Create section
+        const section = document.createElement('div');
+        section.className = 'result-section demand-diversity-section';
+        section.style.marginTop = '20px';
+        
+        let html = '<h3>📊 Demand & Diversity Factor Analysis</h3>';
+        
+        if (lf.demandFactorsApplied && lf.demandSummary) {
+            const ds = lf.demandSummary;
+            const reductionPercent = ds.connectedCurrent > 0 
+                ? ((1 - ds.diversityCurrent / ds.connectedCurrent) * 100) 
+                : 0;
+            
+            html += '<div class="demand-summary">';
+            html += '<table class="result-table">';
+            html += '<thead>';
+            html += '<tr>';
+            html += '<th>Load Type</th>';
+            html += '<th>Current (A)</th>';
+            html += '<th>Power (kVA)</th>';
+            html += '<th>Percentage</th>';
+            html += '</tr>';
+            html += '</thead>';
+            html += '<tbody>';
+            
+            // Connected Load
+            html += '<tr>';
+            html += '<td><strong>Connected Load</strong></td>';
+            html += `<td>${ds.connectedCurrent.toFixed(2)}</td>`;
+            html += `<td>${ds.connectedPowerKVA.toFixed(2)}</td>`;
+            html += '<td>100.0%</td>';
+            html += '</tr>';
+            
+            // Demand Load
+            html += '<tr>';
+            html += `<td><strong>Demand Load</strong> <span class="info-badge" title="NEC Article 220">Kd=${ds.demandFactor.toFixed(3)}</span></td>`;
+            html += `<td>${ds.demandCurrent.toFixed(2)}</td>`;
+            html += `<td>${ds.demandPowerKVA.toFixed(2)}</td>`;
+            html += `<td>${(ds.demandFactor * 100).toFixed(1)}%</td>`;
+            html += '</tr>';
+            
+            // Diversified Load
+            html += '<tr class="highlight-row">';
+            html += `<td><strong>Diversified Load</strong> <span class="info-badge" title="IEEE 141-1993">DF=${ds.diversityFactor.toFixed(3)}</span></td>`;
+            html += `<td><strong>${ds.diversityCurrent.toFixed(2)}</strong></td>`;
+            html += `<td><strong>${ds.diversityPowerKVA.toFixed(2)}</strong></td>`;
+            html += `<td><strong>${((ds.diversityCurrent / ds.connectedCurrent) * 100).toFixed(1)}%</strong></td>`;
+            html += '</tr>';
+            
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+            
+            // Savings display
+            html += '<div class="savings-display" style="margin-top: 15px; padding: 15px; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;">';
+            html += '<div style="display: flex; justify-content: space-around; text-align: center;">';
+            html += '<div>';
+            html += '<div style="font-size: 24px; font-weight: bold; color: #2e7d32;">' + (ds.connectedPowerKVA - ds.diversityPowerKVA).toFixed(2) + ' kVA</div>';
+            html += '<div style="font-size: 12px; color: #666;">Power Savings</div>';
+            html += '</div>';
+            html += '<div>';
+            html += '<div style="font-size: 24px; font-weight: bold; color: #2e7d32;">' + (ds.connectedCurrent - ds.diversityCurrent).toFixed(2) + ' A</div>';
+            html += '<div style="font-size: 12px; color: #666;">Current Reduction</div>';
+            html += '</div>';
+            html += '<div>';
+            html += '<div style="font-size: 24px; font-weight: bold; color: #2e7d32;">' + reductionPercent.toFixed(1) + '%</div>';
+            html += '<div style="font-size: 12px; color: #666;">Load Reduction</div>';
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            
+            // ═══════════════════════════════════════════════════════════════
+            // VOLTAGE DROP COMPARISON
+            // Enhanced: 2025-11-03 02:53:31 UTC by bfforex
+            // Fixed: Property compatibility for v1.2.2 and v2.0.0
+            // ═══════════════════════════════════════════════════════════════
+            
+            if (bus.results.voltageDrop) {
+                const vd = bus.results.voltageDrop;
+                
+                // ✅ FIXED: Compatible with both versions
+                const vdPercent = vd.totalDropPercent || vd.cumulativeDropPercent || 0;
+                const vdVolts = vd.totalDropVolts || vd.cumulativeDropVolts || 0;
+                
+                // Calculate diversity voltage drop
+                const diversityVD = vdPercent * (ds.diversityCurrent / ds.connectedCurrent);
+                const vdReduction = ((1 - diversityVD / vdPercent) * 100);
+                
+                html += '<div class="voltage-drop-comparison" style="margin-top: 15px; padding: 15px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 4px;">';
+                html += '<h4 style="margin-top: 0;">⚡ Voltage Drop Analysis</h4>';
+                html += '<table class="result-table" style="font-size: 13px;">';
+                
+                html += '<tr>';
+                html += '<td><strong>Method:</strong></td>';
+                html += '<td>Full Load Current (Conservative)</td>';
+                html += '</tr>';
+                
+                html += '<tr>';
+                html += '<td><strong>Calculated Drop:</strong></td>';
+                html += `<td>${vdPercent.toFixed(3)}% (${vdVolts.toFixed(2)}V)</td>`;
+                html += '</tr>';
+                
+                html += '<tr>';
+                html += '<td><strong>With Diversity:</strong></td>';
+                html += `<td>${diversityVD.toFixed(3)}% (${(diversityVD * bus.voltage / 100).toFixed(2)}V) - Estimated Operating</td>`;
+                html += '</tr>';
+                
+                html += '<tr>';
+                html += '<td><strong>Improvement:</strong></td>';
+                html += `<td><strong>${vdReduction.toFixed(1)}% lower</strong> voltage drop in normal operation</td>`;
+                html += '</tr>';
+                
+                html += '<tr>';
+                html += '<td colspan="2" style="padding-top: 10px; font-size: 11px; color: #666;">';
+                html += 'ℹ️ Voltage drop calculated using FLC ensures conservative cable sizing. ';
+                html += 'Actual operating conditions will have lower voltage drop due to demand/diversity factors.';
+                html += '</td>';
+                html += '</tr>';
+                
+                html += '</table>';
+                html += '</div>';
+            }
+            
+            // Standards compliance
+            html += '<div class="standards-compliance" style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px; font-size: 12px;">';
+            html += '<strong>📋 Standards Applied:</strong><br>';
+            html += '✓ NEC Article 220 - Demand Factors<br>';
+            html += '✓ NEC Article 430.24 - Motor Demand Factors<br>';
+            html += '✓ IEEE 141-1993 - Diversity Factors';
+            html += '</div>';
+            
+        } else {
+            // Demand factors not applied
+            html += '<div class="warning-box" style="padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">';
+            html += '<h4 style="margin-top: 0;">⚠️ Demand Factors Not Applied</h4>';
+            html += '<p><strong>Load Used:</strong> Connected Load (100%) - Conservative Approach</p>';
+            html += '<p><strong>Reason:</strong> Demand factor modules not available or bus configuration does not support automatic application.</p>';
+            html += '<p><strong>Impact:</strong> Calculations use full connected load (most conservative). This ensures adequate sizing but may result in over-capacity in actual operating conditions.</p>';
+            html += '<p style="margin-bottom: 0;"><strong>Status:</strong> ';
+            
+            if (lf.summary) {
+                html += `Total Load: ${lf.summary.totalCurrent.toFixed(2)} A | ${lf.summary.totalPowerKVA.toFixed(2)} kVA`;
+            } else {
+                html += 'Load data available';
+            }
+            html += '</p>';
+            html += '</div>';
+        }
+        
+        section.innerHTML = html;
+        container.appendChild(section);
+        
+        console.log(`✅ Demand factor analysis displayed for bus: ${bus.name}`);
+        
+    } catch (error) {
+        console.error('❌ Error in displayDemandFactorAnalysis:', error);
+        console.error('Stack trace:', error.stack);
+        
+        // Display error message to user
+        if (container) {
+            container.innerHTML = `
+                <div class="alert alert-danger" style="margin-top: 15px;">
+                    <h4>⚠️ Display Error</h4>
+                    <p>Could not display demand factor analysis.</p>
+                    <details>
+                        <summary>Error Details</summary>
+                        <pre style="font-size: 11px; margin-top: 10px;">${error.message}\n\n${error.stack}</pre>
+                    </details>
+                </div>
+            `;
+        }
+    }
+}
+
+/**
  * Generate load flow display HTML
+ * Updated: 2025-11-03 02:53:31 UTC by bfforex
+ * Fixed: DOM timing and demand factor integration
+ * 
  * @param {String} busId - Bus identifier
  * @param {Object} results - Load flow results
  */
@@ -361,8 +556,9 @@ function generateLoadFlowDisplay(busId, results) {
                 Per IEEE 141-1993 & NEC Article 220 | Diversity Factor: ${results.overallDiversityFactor.toFixed(3)}
             </small>
         </div>
-    ` : '';   
-    return `
+    ` : '';
+    
+    const htmlContent = `
         <div class="results-section">
             <h3>🔌 Load Flow Summary</h3>
             ${diversityInfo}
@@ -431,6 +627,9 @@ function generateLoadFlowDisplay(busId, results) {
             
             ${generateLoadFlowBreakdowns(results)}
             
+            <!-- ✅ FIXED: Demand factor container without inline script -->
+            <div id="demand-factor-container-${busId}"></div>
+            
             <div class="button-group">
                 <button class="btn btn-info" onclick="showCalculationSteps('loadflow')">
                     📝 View Detailed Calculations
@@ -441,6 +640,33 @@ function generateLoadFlowDisplay(busId, results) {
             </div>
         </div>
     `;
+    
+    // ✅ FIXED: Schedule demand factor display after DOM update
+    // Using requestAnimationFrame ensures DOM is ready
+    if (typeof displayDemandFactorAnalysis === 'function') {
+        requestAnimationFrame(() => {
+            const bus = buses.find(b => b.id === busId);
+            const container = document.getElementById(`demand-factor-container-${busId}`);
+            
+            if (container && bus && bus.results && bus.results.loadFlow) {
+                try {
+                    displayDemandFactorAnalysis(bus, container);
+                    console.log(`✅ Demand factor display injected for bus: ${busId}`);
+                } catch (error) {
+                    console.error('❌ Error displaying demand factors:', error);
+                    container.innerHTML = `
+                        <div class="alert alert-warning" style="margin-top: 15px;">
+                            <strong>⚠️ Display Error:</strong> Could not show demand factor analysis.
+                        </div>
+                    `;
+                }
+            } else {
+                console.log(`ℹ️ Demand factor display skipped for bus: ${busId} (container or data not available)`);
+            }
+        });
+    }
+    
+    return htmlContent;
 }
 
 /**
@@ -1162,9 +1388,11 @@ window.generateVoltageDropDisplay = generateVoltageDropDisplay;
 window.switchCalcTab = switchCalcTab;
 window.showCalculationSteps = showCalculationSteps;
 window.copyToClipboard = copyToClipboard;
+window.displayDemandFactorAnalysis = displayDemandFactorAnalysis;
 
-console.log('✅ Calculation Display Module v1.2.0 loaded');
+console.log('✅ Calculation Display Module v1.3.0 loaded');
+console.log('   - Demand factor display: ADDED');
 console.log('   - Voltage drop v2.0.0 compatibility: FIXED');
 console.log('   - Motor contribution display: WORKING');
+console.log('   - Arc Flash display: WORKING');
 console.log('   - Defensive checks: ENABLED');
-console.log('   - Load voltage display: ADDED');

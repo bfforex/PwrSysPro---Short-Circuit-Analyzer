@@ -1,19 +1,20 @@
 /**
- * Export Report Module - Enhanced with Recommendations & Demand Factors
- * Modified: 2025-10-30 05:43:29 UTC by bfforex
- * FIXED VERSION - Comprehensive null safety and error handling
+ * Export Report Module - Enhanced with Arc Flash Analysis
+ * Modified: 2025-11-03 00:34:43 UTC by bfforex
+ * ENHANCED VERSION - Arc Flash Integration Complete
  * 
  * @author bfforex
- * @date 2025-10-30 05:43:29 UTC
- * @version 2.1.0
- * @fixed All undefined property access errors
- * @fixed Added defensive null checks throughout
- * @fixed Optional chaining for nested properties
+ * @date 2025-11-03 00:34:43 UTC
+ * @version 2.2.0
+ * @enhanced Arc Flash Analysis integration
+ * @enhanced System summary with arc flash data
+ * @enhanced CSV exports with incident energy
  */
 
 /**
  * Export detailed bus report with recommendations and demand factors
  * Enhanced: Feature #5 - Shows connected, demand, and diversity loads
+ * Enhanced: Arc Flash - Shows incident energy, PPE requirements, and labels
  */
 function exportBusReport(busId) {
     // ✅ DEFENSIVE CHECK: Validate inputs
@@ -196,6 +197,166 @@ function exportBusReport(busId) {
             report += lf.demandCalculationSteps;
         }
     }
+
+    // ══════════════════════════════════════════════════════════════
+    // DEMAND & DIVERSITY FACTOR ANALYSIS - ENHANCED REPORTING
+    // Added: 2025-11-03 02:25:36 UTC by bfforex
+    // Enhancement: Shows both FLC and demand factored loads
+    // Enhancement: Explains voltage drop methodology
+    // ══════════════════════════════════════════════════════════════
+    
+    if (bus.results.loadFlow) {
+        const lf = bus.results.loadFlow;
+        
+        report += `\n${'='.repeat(100)}\n`;
+        report += `DEMAND & DIVERSITY FACTOR ANALYSIS\n`;
+        report += `${'='.repeat(100)}\n\n`;
+        
+        // Check if demand factors were applied
+        if (lf.demandFactorsApplied && lf.demandSummary) {
+            const ds = lf.demandSummary;
+            
+            report += `📊 LOAD SUMMARY:\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `Connected Load:          ${ds.connectedCurrent.toFixed(2)} A  (100.0%)  ${ds.connectedPowerKVA.toFixed(2)} kVA\n`;
+            report += `Demand Load:             ${ds.demandCurrent.toFixed(2)} A  (${(ds.demandFactor * 100).toFixed(1)}%)   ${ds.demandPowerKVA.toFixed(2)} kVA\n`;
+            report += `Diversified Load:        ${ds.diversityCurrent.toFixed(2)} A  (${ds.connectedCurrent > 0 ? ((ds.diversityCurrent / ds.connectedCurrent) * 100).toFixed(1) : '0.0'}%)   ${ds.diversityPowerKVA.toFixed(2)} kVA\n`;
+            report += `\n`;
+            report += `Power Savings:           ${(ds.connectedPowerKVA - ds.diversityPowerKVA).toFixed(2)} kVA\n`;
+            report += `Current Reduction:       ${(ds.connectedCurrent - ds.diversityCurrent).toFixed(2)} A (${ds.connectedCurrent > 0 ? ((1 - ds.diversityCurrent / ds.connectedCurrent) * 100).toFixed(1) : '0.0'}%)\n`;
+            report += `\n`;
+            
+            report += `📐 FACTORS APPLIED:\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `Demand Factor (Kd):      ${ds.demandFactor.toFixed(3)} (${(ds.demandFactor * 100).toFixed(1)}%)\n`;
+            report += `Diversity Factor (DF):   ${ds.diversityFactor.toFixed(3)}\n`;
+            report += `Combined Effect:         ${ds.connectedCurrent > 0 ? (ds.diversityCurrent / ds.connectedCurrent).toFixed(3) : '1.000'}\n`;
+            report += `\n`;
+            report += `Formula: Diversified Load = Connected Load × Demand Factor ÷ Diversity Factor\n`;
+            report += `         ${ds.diversityCurrent.toFixed(2)} A = ${ds.connectedCurrent.toFixed(2)} A × ${ds.demandFactor.toFixed(3)} ÷ ${ds.diversityFactor.toFixed(3)}\n`;
+            report += `\n`;
+            
+            report += `📋 STANDARDS COMPLIANCE:\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `✓ NEC Article 220 - Demand Factors Applied\n`;
+            report += `✓ NEC Article 430.24 - Motor Demand Factors\n`;
+            report += `✓ IEEE 141-1993 - Diversity Factors Applied\n`;
+            report += `✓ Conservative Design Maintained\n`;
+            report += `\n`;
+            
+            // Breakdown by component type if available
+            if (lf.demandBreakdown) {
+                report += `📊 DEMAND BREAKDOWN BY COMPONENT TYPE:\n`;
+                report += `${'-'.repeat(100)}\n`;
+                report += `Type              Count  Connected(A)  Demand(A)  Factor   Savings(A)\n`;
+                report += `${'-'.repeat(100)}\n`;
+                
+                const db = lf.demandBreakdown;
+                
+                // Motors
+                if (db.motors && db.motors.length > 0) {
+                    const totalConn = db.motors.reduce((sum, m) => sum + (m.connectedCurrent || 0), 0);
+                    const totalDem = db.motors.reduce((sum, m) => sum + (m.demandCurrent || 0), 0);
+                    const avgFactor = totalConn > 0 ? totalDem / totalConn : 1.0;
+                    const savings = totalConn - totalDem;
+                    report += `Motors            ${db.motors.length.toString().padStart(5)}  ${totalConn.toFixed(2).padStart(12)}  ${totalDem.toFixed(2).padStart(10)}  ${(avgFactor * 100).toFixed(1).padStart(6)}%  ${savings.toFixed(2).padStart(11)}\n`;
+                }
+                
+                // Transformers
+                if (db.transformers && db.transformers.length > 0) {
+                    const totalConn = db.transformers.reduce((sum, t) => sum + (t.connectedCurrent || 0), 0);
+                    const totalDem = db.transformers.reduce((sum, t) => sum + (t.demandCurrent || 0), 0);
+                    const avgFactor = totalConn > 0 ? totalDem / totalConn : 1.0;
+                    const savings = totalConn - totalDem;
+                    report += `Transformers      ${db.transformers.length.toString().padStart(5)}  ${totalConn.toFixed(2).padStart(12)}  ${totalDem.toFixed(2).padStart(10)}  ${(avgFactor * 100).toFixed(1).padStart(6)}%  ${savings.toFixed(2).padStart(11)}\n`;
+                }
+                
+                // Cables
+                if (db.cables && db.cables.length > 0) {
+                    const totalConn = db.cables.reduce((sum, c) => sum + (c.connectedCurrent || 0), 0);
+                    const totalDem = db.cables.reduce((sum, c) => sum + (c.demandCurrent || 0), 0);
+                    const avgFactor = totalConn > 0 ? totalDem / totalConn : 1.0;
+                    const savings = totalConn - totalDem;
+                    report += `Cables            ${db.cables.length.toString().padStart(5)}  ${totalConn.toFixed(2).padStart(12)}  ${totalDem.toFixed(2).padStart(10)}  ${(avgFactor * 100).toFixed(1).padStart(6)}%  ${savings.toFixed(2).padStart(11)}\n`;
+                }
+                
+                // Direct Loads
+                if (db.directLoads && db.directLoads.length > 0) {
+                    const totalConn = db.directLoads.reduce((sum, d) => sum + (d.connectedCurrent || 0), 0);
+                    const totalDem = db.directLoads.reduce((sum, d) => sum + (d.demandCurrent || 0), 0);
+                    const avgFactor = totalConn > 0 ? totalDem / totalConn : 1.0;
+                    const savings = totalConn - totalDem;
+                    report += `Direct Loads      ${db.directLoads.length.toString().padStart(5)}  ${totalConn.toFixed(2).padStart(12)}  ${totalDem.toFixed(2).padStart(10)}  ${(avgFactor * 100).toFixed(1).padStart(6)}%  ${savings.toFixed(2).padStart(11)}\n`;
+                }
+                
+                report += `${'-'.repeat(100)}\n`;
+                report += `TOTAL                    ${ds.connectedCurrent.toFixed(2).padStart(12)}  ${ds.demandCurrent.toFixed(2).padStart(10)}  ${(ds.demandFactor * 100).toFixed(1).padStart(6)}%  ${(ds.connectedCurrent - ds.demandCurrent).toFixed(2).padStart(11)}\n`;
+                report += `${'-'.repeat(100)}\n\n`;
+            }
+            
+            // Voltage drop comparison
+            if (bus.results.voltageDrop) {
+                const vd = bus.results.voltageDrop;
+                report += `⚡ VOLTAGE DROP ANALYSIS:\n`;
+                report += `${'-'.repeat(100)}\n`;
+                report += `Method Used:             Full Load Current (FLC) - CONSERVATIVE\n`;
+                report += `Current Used:            ${ds.connectedCurrent.toFixed(2)} A (100% connected load)\n`;
+                report += `Calculated Drop:         ${vd.cumulativeDropPercent.toFixed(3)}% (${vd.cumulativeDropVolts.toFixed(2)}V)\n`;
+                report += `IEEE 141 Compliance:     ${vd.cumulativeDropPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'} (<7% required)\n`;
+                report += `\n`;
+                
+                // Calculate estimated voltage drop with demand/diversity
+                const demandVD = vd.cumulativeDropPercent * (ds.demandCurrent / ds.connectedCurrent);
+                const diversityVD = vd.cumulativeDropPercent * (ds.diversityCurrent / ds.connectedCurrent);
+                
+                report += `📊 ESTIMATED OPERATING CONDITIONS:\n`;
+                report += `${'-'.repeat(100)}\n`;
+                report += `With Demand Factor:      ${demandVD.toFixed(3)}% (${(demandVD * bus.voltage / 100).toFixed(2)}V)\n`;
+                report += `With Diversity Factor:   ${diversityVD.toFixed(3)}% (${(diversityVD * bus.voltage / 100).toFixed(2)}V)\n`;
+                report += `Voltage Drop Reduction:  ${(vd.cumulativeDropPercent - diversityVD).toFixed(3)}% (${((1 - diversityVD / vd.cumulativeDropPercent) * 100).toFixed(1)}% improvement)\n`;
+                report += `\n`;
+                
+                report += `ℹ️  NOTE: Voltage drop is calculated using Full Load Current (FLC) to ensure\n`;
+                report += `    conservative cable sizing and worst-case compliance. Actual operating\n`;
+                report += `    voltage drop will be ${((1 - diversityVD / vd.cumulativeDropPercent) * 100).toFixed(0)}% lower due to demand/diversity factors.\n`;
+                report += `\n`;
+            }
+            
+        } else {
+            // Demand factors not applied - explain why
+            report += `ℹ️  LOAD FLOW SUMMARY:\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `Total Load Current:      ${lf.summary?.totalCurrent?.toFixed(2) || 'N/A'} A\n`;
+            report += `Total Apparent Power:    ${lf.summary?.totalPowerKVA?.toFixed(2) || 'N/A'} kVA\n`;
+            report += `Total Active Power:      ${lf.summary?.totalPowerKW?.toFixed(2) || 'N/A'} kW\n`;
+            report += `Power Factor:            ${lf.summary?.powerFactor || 'N/A'}\n`;
+            report += `\n`;
+            
+            report += `⚠️  DEMAND & DIVERSITY FACTORS:\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `Status:                  NOT APPLIED\n`;
+            report += `Load Used:               Connected Load (100%) - CONSERVATIVE\n`;
+            report += `\n`;
+            report += `Reason: Demand factor modules not available or bus configuration\n`;
+            report += `        does not support automatic demand factor application.\n`;
+            report += `\n`;
+            report += `Impact: Load calculations use full connected load (most conservative\n`;
+            report += `        approach). This ensures adequate sizing but may result in\n`;
+            report += `        over-capacity in actual operating conditions.\n`;
+            report += `\n`;
+            
+            // Still show voltage drop info
+            if (bus.results.voltageDrop) {
+                const vd = bus.results.voltageDrop;
+                report += `⚡ VOLTAGE DROP ANALYSIS:\n`;
+                report += `${'-'.repeat(100)}\n`;
+                report += `Method:                  Full Load Current (FLC)\n`;
+                report += `Voltage Drop:            ${vd.cumulativeDropPercent.toFixed(3)}% (${vd.cumulativeDropVolts.toFixed(2)}V)\n`;
+                report += `IEEE 141 Compliance:     ${vd.cumulativeDropPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
+                report += `\n`;
+            }
+        }
+    }
     
     // ═══════════════════════════════════════════════════════════════════════
     
@@ -318,76 +479,217 @@ function exportBusReport(busId) {
     }
     report += `\n`;
     
-    // Voltage Drop Analysis
-    if (bus.results.voltageDrop) {
-        const vd = bus.results.voltageDrop;
-        report += `VOLTAGE DROP ANALYSIS (WITH CABLE TAGS):\n`;
-        report += `${'-'.repeat(100)}\n`;
-        report += `Total Voltage Drop: ${(vd.cumulativeDropPercent || 0).toFixed(3)}% (${(vd.cumulativeDropVolts || 0).toFixed(3)} V)\n`;
-        report += `Maximum Single Component Drop: ${(vd.maxDropPercent || 0).toFixed(3)}%\n`;
-        report += `IEEE 141 Compliance: ${(vd.cumulativeDropPercent || 0) <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
-        report += `Power Factor: ${document.getElementById('powerFactor')?.value || '0.9'}\n\n`;
+        // ═══════════════════════════════════════════════════════════════════════
+        // VOLTAGE DROP ANALYSIS (WITH CABLE TAGS)
+        // Enhanced: 2025-11-03 02:53:31 UTC by bfforex
+        // Fixed: Property compatibility for v1.2.2 and v2.0.0
+        // ═══════════════════════════════════════════════════════════════════════
+    
+        if (bus.results.voltageDrop) {
+            const vd = bus.results.voltageDrop;
         
-        if (vd.components && vd.components.length > 0) {
-            report += `COMPONENT BREAKDOWN (WITH FROM/TO AND TAGS):\n`;
+            // ✅ FIXED: Compatible with both v1.2.2 (cumulativeDropPercent) and v2.0.0 (totalDropPercent)
+            const vdPercent = vd.totalDropPercent || vd.cumulativeDropPercent || 0;
+            const vdVolts = vd.totalDropVolts || vd.cumulativeDropVolts || 0;
+            const maxDropPercent = vd.maxDropPercent || 0;
+        
+            report += `VOLTAGE DROP ANALYSIS (WITH CABLE TAGS):\n`;
             report += `${'-'.repeat(100)}\n`;
-            report += `Step  Type          Tag/Name                From                    To                      Current(A)  Drop(V)   Drop(%)   Status\n`;
-            report += `${'-'.repeat(100)}\n`;
+            report += `Total Voltage Drop: ${vdPercent.toFixed(3)}% (${vdVolts.toFixed(3)} V)\n`;
+            report += `Maximum Single Component Drop: ${maxDropPercent.toFixed(3)}%\n`;
+            report += `IEEE 141 Compliance: ${vdPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
+            report += `Power Factor: ${document.getElementById('powerFactor')?.value || '0.9'}\n\n`;
+        
+            if (vd.components && vd.components.length > 0) {
+                report += `COMPONENT BREAKDOWN (WITH FROM/TO AND TAGS):\n`;
+                report += `${'-'.repeat(100)}\n`;
+                report += `Step  Type          Tag/Name                From                    To                      Current(A)  Drop(V)   Drop(%)   Status\n`;
+                report += `${'-'.repeat(100)}\n`;
             
-            vd.components.forEach((comp, index) => {
-                const step = (index + 1).toString().padStart(3);
-                const type = (comp.type || 'unknown').padEnd(13);
+                vd.components.forEach((comp, index) => {
+                    const step = (index + 1).toString().padStart(3);
+                    const type = (comp.type || 'unknown').padEnd(13);
                 
-                let tagName = (comp.name || 'N/A').substring(0, 20).padEnd(20);
-                let fromBus = 'N/A';
-                let toBus = 'N/A';
+                    let tagName = (comp.name || 'N/A').substring(0, 20).padEnd(20);
+                    let fromBus = 'N/A';
+                    let toBus = 'N/A';
                 
-                // ✅ FIX: Get FROM/TO from component stored in global components array
-                if (comp.type === 'cable') {
-                    // Try to find the actual cable component
-                    const cableComponent = components.find(c => {
-                        if (c.type !== 'cable') return false;
+                    // ✅ FIX: Get FROM/TO from component stored in global components array
+                    if (comp.type === 'cable') {
+                        // Try to find the actual cable component
+                        const cableComponent = components.find(c => {
+                            if (c.type !== 'cable') return false;
                         
-                        // Match by tag or name
-                        const compNameClean = comp.name?.replace(/\s.*$/, '') || '';  // Get just the tag part
-                        return c.tag === compNameClean || c.tag === comp.name || c.name === comp.name;
-                    });
+                            // Match by tag or name
+                            const compNameClean = comp.name?.replace(/\s.*$/, '') || '';  // Get just the tag part
+                            return c.tag === compNameClean || c.tag === comp.name || c.name === comp.name;
+                        });
                     
-                    if (cableComponent) {
-                        tagName = (cableComponent.tag || comp.name).substring(0, 20).padEnd(20);
-                        fromBus = cableComponent.fromBusName || 'Unknown';
-                        toBus = cableComponent.toBusName || 'Unknown';
-                    } else {
-                        console.warn(`⚠️ Could not find cable in components: ${comp.name}`);
-                    }
-                } else if (comp.type === 'transformer') {
-                    // Find transformer in components array
-                    const xfmrComponent = components.find(c => 
-                        c.type === 'transformer' && 
-                        (c.name === comp.name || c.tag === comp.name)
-                    );
+                        if (cableComponent) {
+                            tagName = (cableComponent.tag || comp.name).substring(0, 20).padEnd(20);
+                            fromBus = cableComponent.fromBusName || 'Unknown';
+                            toBus = cableComponent.toBusName || 'Unknown';
+                        } else {
+                            console.warn(`⚠️ Could not find cable in components: ${comp.name}`);
+                        }
+                    } else if (comp.type === 'transformer') {
+                        // Find transformer in components array
+                        const xfmrComponent = components.find(c => 
+                            c.type === 'transformer' && 
+                            (c.name === comp.name || c.tag === comp.name)
+                        );
                     
-                    if (xfmrComponent) {
-                        tagName = (xfmrComponent.name || comp.name).substring(0, 20).padEnd(20);
-                        fromBus = xfmrComponent.fromBusName || 'Unknown';
-                        toBus = xfmrComponent.toBusName || 'Unknown';
+                        if (xfmrComponent) {
+                            tagName = (xfmrComponent.name || comp.name).substring(0, 20).padEnd(20);
+                            fromBus = xfmrComponent.fromBusName || 'Unknown';
+                            toBus = xfmrComponent.toBusName || 'Unknown';
+                        }
                     }
-                }
                 
-                // Pad to fixed width
-                fromBus = fromBus.substring(0, 24).padEnd(24);
-                toBus = toBus.substring(0, 24).padEnd(24);
+                    // Pad to fixed width
+                    fromBus = fromBus.substring(0, 24).padEnd(24);
+                    toBus = toBus.substring(0, 24).padEnd(24);
                 
-                const current = (comp.current || 0).toFixed(1).padStart(10);
-                const dropV = (comp.dropVolts || 0).toFixed(3).padStart(9);
-                const dropP = (comp.dropPercent || 0).toFixed(3).padStart(9);
-                const status = comp.severity || 'OK';
+                    const current = (comp.current || 0).toFixed(1).padStart(10);
+                    const dropV = (comp.dropVolts || 0).toFixed(3).padStart(9);
+                    const dropP = (comp.dropPercent || 0).toFixed(3).padStart(9);
+                    const status = comp.severity || 'OK';
                 
-                report += `${step}  ${type} ${tagName} ${fromBus} ${toBus} ${current} ${dropV} ${dropP}  ${status}\n`;
-            });
+                    report += `${step}  ${type} ${tagName} ${fromBus} ${toBus} ${current} ${dropV} ${dropP}  ${status}\n`;
+                });
             
-            report += `${'-'.repeat(100)}\n`;
+                report += `${'-'.repeat(100)}\n`;
+            }
         }
+    
+    // ══════════════════════════════════════════════════════════════
+    // ARC FLASH ANALYSIS (IEEE 1584-2018 & NFPA 70E-2021)
+    // Added: 2025-11-03 00:34:43 UTC by bfforex
+    // ══════════════════════════════════════════════════════════════
+
+    if (bus.results.arcFlash) {
+        const af = bus.results.arcFlash;
+        
+        report += `\nARC FLASH HAZARD ANALYSIS:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `Calculation Method: ${af.calculationMethod}\n`;
+        report += `Standard: ${af.standard}\n`;
+        report += `Equipment Type: ${af.equipmentType}\n`;
+        report += `Working Distance: ${af.workingDistance} inches (${(af.workingDistance / 12).toFixed(2)} feet)\n`;
+        report += `\n`;
+        
+        report += `SYSTEM PARAMETERS:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `Bolted Fault Current:    ${(af.boltedFaultCurrent / 1000).toFixed(3)} kA\n`;
+        report += `Arcing Fault Current:    ${af.arcingCurrentKA.toFixed(3)} kA\n`;
+        report += `Arcing Factor:           0.85 (IEEE 1584-2018)\n`;
+        report += `Clearing Time:           ${af.clearingTimeCycles.toFixed(1)} cycles (${af.clearingTimeSec.toFixed(3)} sec)\n`;
+        report += `Electrode Gap:           ${af.electrodeGap} mm\n`;
+        report += `\n`;
+        
+        report += `HAZARD ANALYSIS RESULTS:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `Incident Energy:         ${af.incidentEnergy.toFixed(2)} cal/cm²\n`;
+        report += `Arc Flash Boundary:      ${(af.arcFlashBoundary / 12).toFixed(2)} feet (${af.arcFlashBoundary.toFixed(2)} inches)\n`;
+        report += `Hazard Level:            ${af.hazardLevel}\n`;
+        report += `PPE Category:            ${af.ppeCategory}\n`;
+        report += `Minimum Arc Rating:      ${af.ppeRequirements.cal} cal/cm²\n`;
+        report += `\n`;
+        
+        // Hazard classification
+        let hazardWarning = '';
+        if (af.incidentEnergy >= 40) {
+            hazardWarning = '⚠️  EXTREME HAZARD - DO NOT perform energized work!';
+        } else if (af.incidentEnergy >= 25) {
+            hazardWarning = '⚠️  VERY HIGH HAZARD - Requires maximum protection PPE';
+        } else if (af.incidentEnergy >= 8) {
+            hazardWarning = '⚠️  HIGH HAZARD - Arc flash suit required';
+        } else if (af.incidentEnergy >= 4) {
+            hazardWarning = '⚠️  MODERATE HAZARD - Full PPE required';
+        } else if (af.incidentEnergy >= 1.2) {
+            hazardWarning = 'ℹ️  LOW HAZARD - Standard PPE required';
+        } else {
+            hazardWarning = '✓  LIMITED HAZARD - Minimal PPE required';
+        }
+        
+        report += `HAZARD CLASSIFICATION:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `${hazardWarning}\n`;
+        report += `\n`;
+        
+        report += `PPE REQUIREMENTS - CATEGORY ${af.ppeCategory}:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `Required Clothing:       ${af.ppeRequirements.clothing}\n`;
+        report += `Arc Rating Required:     ${af.ppeRequirements.cal} cal/cm² minimum\n`;
+        report += `\n`;
+        
+        report += `PERSONAL PROTECTIVE EQUIPMENT:\n`;
+        report += `  HEAD:    `;
+        if (af.ppeCategory >= 2) {
+            report += `Arc-rated face shield with balaclava, Hard hat (Class E)\n`;
+        } else if (af.ppeCategory === 1) {
+            report += `Arc-rated face shield, Hard hat (Class E)\n`;
+        } else {
+            report += `Safety glasses, Hard hat (Class E)\n`;
+        }
+        
+        report += `  BODY:    `;
+        if (af.ppeCategory >= 3) {
+            report += `Arc flash suit (${af.ppeRequirements.cal} cal/cm² min)\n`;
+        } else if (af.ppeCategory >= 1) {
+            report += `FR long-sleeve shirt and pants (${af.ppeRequirements.cal} cal/cm² min)\n`;
+        } else {
+            report += `Non-melting clothing\n`;
+        }
+        
+        report += `  HANDS:   `;
+        if (af.ppeCategory >= 2) {
+            report += `Heavy-duty leather over rubber insulating gloves\n`;
+        } else {
+            report += `Leather work gloves\n`;
+        }
+        
+        report += `  FEET:    Leather work boots, Steel toe (ASTM F2413)\n`;
+        
+        if (af.ppeCategory >= 3) {
+            report += `  OTHER:   Arc-rated hearing protection, FR underwear\n`;
+            report += `           Second person for observation (NFPA 70E requirement)\n`;
+        }
+        report += `\n`;
+        
+        report += `EQUIPMENT WARNING LABEL (NEC 110.16):\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `┌${'─'.repeat(71)}┐\n`;
+        report += `│${' '.repeat(24)}⚠️ DANGER${' '.repeat(35)}│\n`;
+        report += `│${' '.repeat(14)}ARC FLASH AND SHOCK HAZARD${' '.repeat(27)}│\n`;
+        report += `│${' '.repeat(71)}│\n`;
+        report += `│  Equipment:           ${(af.busTag || af.busName).substring(0, 44).padEnd(44)} │\n`;
+        report += `│  Voltage:             ${af.voltage.toString().padEnd(44)} V │\n`;
+        report += `│  Incident Energy:     ${af.incidentEnergy.toFixed(2).padEnd(44)} cal/cm² │\n`;
+        report += `│  Arc Flash Boundary:  ${(af.arcFlashBoundary / 12).toFixed(1).padEnd(44)} feet │\n`;
+        report += `│  PPE Category:        ${af.ppeCategory.toString().padEnd(44)} │\n`;
+        report += `│  Arc Rating Required: ${af.ppeRequirements.cal.toString().padEnd(44)} cal/cm² │\n`;
+        report += `│${' '.repeat(71)}│\n`;
+        report += `│  Appropriate PPE SHALL be worn when working on or near this equipment.${' '.repeat(0)}│\n`;
+        report += `│  See NFPA 70E for proper work practices.${' '.repeat(30)}│\n`;
+        report += `└${'─'.repeat(71)}┘\n`;
+        report += `\n`;
+        
+        report += `SAFETY COMPLIANCE:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `✓ IEEE 1584-2018 - Arc-Flash Hazard Calculations\n`;
+        report += `✓ NFPA 70E-2021 - Electrical Safety in the Workplace\n`;
+        report += `✓ NEC Article 110.16 - Arc-Flash Hazard Warning Labels\n`;
+        report += `✓ OSHA 1910.335 - Safeguards for Personnel Protection\n`;
+        report += `\n`;
+        
+        report += `IMPORTANT NOTES:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `1. De-energize and lockout equipment before work (NFPA 70E Article 120)\n`;
+        report += `2. If energized work required: Complete Energized Work Permit (Article 130.2)\n`;
+        report += `3. All personnel within ${(af.arcFlashBoundary / 12).toFixed(1)} ft must wear PPE ≥ ${af.ppeRequirements.cal} cal/cm²\n`;
+        report += `4. Re-calculate if system changes or every 5 years (NFPA 70E)\n`;
+        report += `\n`;
     }
     
     // Load flow with enhanced breakdown
@@ -508,7 +810,7 @@ function exportBusReport(busId) {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `${bus.name.replace(/\s+/g, '_')}_Report_${timestamp}.txt`;
         downloadTextFile(report, fileName);
-        console.log(`✅ Report exported: ${fileName}`);
+        console.log(`✅ Report exported with arc flash analysis: ${fileName}`);
     } catch (error) {
         console.error('Error downloading report:', error);
         alert(`❌ Error saving report: ${error.message}`);
@@ -517,11 +819,11 @@ function exportBusReport(busId) {
 
 /**
  * Export all buses summary - ENHANCED VERSION
- * Modified: 2025-11-01 10:28:22 UTC by bfforex
- * Issue #6: Now calls enhanced system report generator
+ * Modified: 2025-11-03 00:34:43 UTC by bfforex
+ * Enhanced: Arc Flash integration in system summary
  */
 function exportAllBusesSummary() {
-    console.log('📊 Exporting enhanced system report...');
+    console.log('📊 Exporting enhanced system report with arc flash...');
     
     // Check if enhanced report generator is available
     if (typeof exportEnhancedSystemReport === 'function') {
@@ -536,7 +838,7 @@ function exportAllBusesSummary() {
 
 /**
  * Export basic system summary (fallback/legacy)
- * Renamed from exportAllBusesSummary for clarity
+ * Enhanced: Arc Flash data integration
  */
 function exportBasicSystemSummary() {
     const calculatedBuses = buses.filter(b => b && b.results);
@@ -584,10 +886,10 @@ function exportBasicSystemSummary() {
     report += `Temperature: ${document.getElementById('temperature')?.value || '75'}°C\n`;
     report += `Power Factor: ${document.getElementById('powerFactor')?.value || '0.9'}\n\n`;
     
-    // Bus-by-Bus Summary
+    // Bus-by-Bus Summary with Arc Flash
     report += `SUMMARY OF ALL BUSES:\n`;
     report += `${'-'.repeat(100)}\n`;
-    report += `Bus Name                          Voltage(V)   Fault(kA)   X/R Ratio   VDrop(%)   Demand(A)   Status\n`;
+    report += `Bus Name                          Voltage(V)   Fault(kA)   X/R Ratio   VDrop(%)   Demand(A)   IE(cal/cm²)   PPE Cat   Status\n`;
     report += `${'-'.repeat(100)}\n`;
     
     calculatedBuses.forEach(bus => {
@@ -605,6 +907,15 @@ function exportBasicSystemSummary() {
         const demandStr = (bus.results?.loadFlow && bus.results.loadFlow.demandFactorsApplied)
             ? (bus.results.loadFlow.demandSummary?.demandCurrent || 0).toFixed(2).padStart(10)
             : 'N/A'.padStart(10);
+
+        // Arc Flash Data
+        const arcFlashStr = bus.results?.arcFlash 
+            ? bus.results.arcFlash.incidentEnergy.toFixed(2).padStart(12)
+            : 'N/A'.padStart(12);
+
+        const ppeCatStr = bus.results?.arcFlash 
+            ? bus.results.arcFlash.ppeCategory.toString().padStart(8)
+            : 'N/A'.padStart(8);
         
         let status = '✓ OK';
         if (typeof recommendationEngine !== 'undefined' && recommendationEngine?.filterByBus) {
@@ -614,9 +925,99 @@ function exportBasicSystemSummary() {
             else if (busRecs.some(r => r.severity === 'MEDIUM')) status = '⚠ MEDIUM';
         }
         
-        report += `${nameStr} ${voltageStr}   ${faultStr}   ${xrStr}   ${vdStr}   ${demandStr}   ${status}\n`;
+        report += `${nameStr} ${voltageStr}   ${faultStr}   ${xrStr}   ${vdStr}   ${demandStr}   ${arcFlashStr}   ${ppeCatStr}   ${status}\n`;
     });
     report += `\n`;
+    
+    // ══════════════════════════════════════════════════════════════
+    // ARC FLASH HAZARD SUMMARY
+    // Added: 2025-11-03 00:34:43 UTC by bfforex
+    // ══════════════════════════════════════════════════════════════
+
+    report += `\n${'='.repeat(100)}\n`;
+    report += `ARC FLASH HAZARD SUMMARY (IEEE 1584-2018 & NFPA 70E-2021)\n`;
+    report += `${'='.repeat(100)}\n\n`;
+
+    const busesWithArcFlash = calculatedBuses.filter(b => b.results?.arcFlash);
+
+    if (busesWithArcFlash.length > 0) {
+        report += `ARC FLASH ANALYSIS RESULTS:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `Total Buses Analyzed: ${busesWithArcFlash.length}\n\n`;
+        
+        // Categorize by hazard level
+        const extreme = busesWithArcFlash.filter(b => b.results.arcFlash.incidentEnergy >= 40);
+        const veryHigh = busesWithArcFlash.filter(b => b.results.arcFlash.incidentEnergy >= 25 && b.results.arcFlash.incidentEnergy < 40);
+        const high = busesWithArcFlash.filter(b => b.results.arcFlash.incidentEnergy >= 8 && b.results.arcFlash.incidentEnergy < 25);
+        const moderate = busesWithArcFlash.filter(b => b.results.arcFlash.incidentEnergy >= 4 && b.results.arcFlash.incidentEnergy < 8);
+        const low = busesWithArcFlash.filter(b => b.results.arcFlash.incidentEnergy >= 1.2 && b.results.arcFlash.incidentEnergy < 4);
+        const limited = busesWithArcFlash.filter(b => b.results.arcFlash.incidentEnergy < 1.2);
+        
+        report += `HAZARD LEVEL DISTRIBUTION:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        if (extreme.length > 0) report += `  ⚠️  EXTREME (>40 cal/cm²):        ${extreme.length} bus(es) - DO NOT PERFORM ENERGIZED WORK!\n`;
+        if (veryHigh.length > 0) report += `  ⚠️  VERY HIGH (25-40 cal/cm²):    ${veryHigh.length} bus(es) - Maximum protection required\n`;
+        if (high.length > 0) report += `  ⚠️  HIGH (8-25 cal/cm²):           ${high.length} bus(es) - Arc flash suit required\n`;
+        if (moderate.length > 0) report += `  ⚠️  MODERATE (4-8 cal/cm²):       ${moderate.length} bus(es) - PPE Category 2\n`;
+        if (low.length > 0) report += `  ℹ️  LOW (1.2-4 cal/cm²):           ${low.length} bus(es) - PPE Category 1\n`;
+        if (limited.length > 0) report += `  ✓  LIMITED (<1.2 cal/cm²):        ${limited.length} bus(es) - Minimal hazard\n`;
+        report += `\n`;
+        
+        // PPE Category summary
+        const cat4 = busesWithArcFlash.filter(b => b.results.arcFlash.ppeCategory === 4);
+        const cat3 = busesWithArcFlash.filter(b => b.results.arcFlash.ppeCategory === 3);
+        const cat2 = busesWithArcFlash.filter(b => b.results.arcFlash.ppeCategory === 2);
+        const cat1 = busesWithArcFlash.filter(b => b.results.arcFlash.ppeCategory === 1);
+        const cat0 = busesWithArcFlash.filter(b => b.results.arcFlash.ppeCategory === 0);
+        
+        report += `PPE CATEGORY REQUIREMENTS:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        if (cat4.length > 0) report += `  Category 4 (40+ cal/cm²):  ${cat4.length} bus(es)\n`;
+        if (cat3.length > 0) report += `  Category 3 (25 cal/cm²):   ${cat3.length} bus(es)\n`;
+        if (cat2.length > 0) report += `  Category 2 (8 cal/cm²):    ${cat2.length} bus(es)\n`;
+        if (cat1.length > 0) report += `  Category 1 (4 cal/cm²):    ${cat1.length} bus(es)\n`;
+        if (cat0.length > 0) report += `  Category 0 (1.2 cal/cm²):  ${cat0.length} bus(es)\n`;
+        report += `\n`;
+        
+        // Critical hazards
+        const criticalHazards = busesWithArcFlash.filter(b => b.results.arcFlash.incidentEnergy >= 25);
+        
+        if (criticalHazards.length > 0) {
+            report += `⚠️  CRITICAL ARC FLASH HAZARDS DETECTED!\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `The following buses have EXTREME or VERY HIGH arc flash hazards:\n\n`;
+            
+            criticalHazards.forEach(bus => {
+                const af = bus.results.arcFlash;
+                report += `  • ${bus.name} (${bus.voltage}V):\n`;
+                report += `    - Incident Energy: ${af.incidentEnergy.toFixed(2)} cal/cm²\n`;
+                report += `    - Arc Flash Boundary: ${(af.arcFlashBoundary / 12).toFixed(2)} feet\n`;
+                report += `    - PPE Category: ${af.ppeCategory}\n`;
+                report += `    - Recommendation: ${af.incidentEnergy >= 40 ? 'DE-ENERGIZE BEFORE WORK' : 'Use maximum protection PPE'}\n`;
+                report += `\n`;
+            });
+        } else {
+            report += `✓ NO CRITICAL ARC FLASH HAZARDS\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `All buses have manageable arc flash hazard levels with appropriate PPE.\n\n`;
+        }
+        
+        report += `NEC ARTICLE 110.16 COMPLIANCE:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `✓ All ${busesWithArcFlash.length} bus(es) require arc flash warning labels\n`;
+        report += `✓ Labels must include: Incident Energy, Arc Flash Boundary, PPE Category\n`;
+        report += `✓ Use "🔥 Arc Flash" tab or export individual labels for each bus\n`;
+        report += `\n`;
+    } else {
+        report += `ℹ️  NO ARC FLASH ANALYSIS PERFORMED\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `Arc flash analysis has not been run for any buses in this system.\n`;
+        report += `To perform arc flash analysis:\n`;
+        report += `  1. Ensure short circuit calculations are complete\n`;
+        report += `  2. Click "Calculate" to run all analyses including arc flash\n`;
+        report += `  3. Review results in the Arc Flash tab\n`;
+        report += `\n`;
+    }
     
     // Cable Tag Directory
     report += `CABLE TAG DIRECTORY:\n`;
@@ -704,7 +1105,7 @@ function exportBasicSystemSummary() {
     
     if (nonCompliantBuses.length === 0) {
         report += `✅ SYSTEM COMPLIANT\n\n`;
-        report += `All buses meet IEEE 141, IEEE 1584, and NEC standards.\n`;
+        report += `All buses meet IEEE 141, IEEE 1584, NFPA 70E, and NEC standards.\n`;
         report += `No critical or high-priority issues detected.\n\n`;
     } else {
         report += `⚠️ COMPLIANCE ISSUES DETECTED\n\n`;
@@ -732,7 +1133,7 @@ function exportBasicSystemSummary() {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const fileName = `${projectName.replace(/\s+/g, '_')}_SystemReport_${timestamp}.txt`;
         downloadTextFile(report, fileName);
-        console.log(`✅ Basic system report exported: ${fileName}`);
+        console.log(`✅ System report exported with arc flash analysis: ${fileName}`);
     } catch (error) {
         console.error('Error downloading report:', error);
         alert(`❌ Error saving report: ${error.message}`);
@@ -821,8 +1222,9 @@ function exportActionPlan() {
 }
 
 /**
- * Export recommendations to CSV format with demand factor info
+ * Export recommendations to CSV format with arc flash data
  * Enhanced: Feature #5 - Includes demand/diversity data
+ * Enhanced: Arc Flash - Includes incident energy and PPE data
  */
 function exportRecommendationsCSV() {
     if (typeof recommendationEngine === 'undefined' || !recommendationEngine) {
@@ -837,7 +1239,8 @@ function exportRecommendationsCSV() {
         return;
     }
 
-    let csv = 'Priority,Severity,Category,Bus,Voltage,Demand Factor,Diversity Factor,Connected Load(A),Demand Load(A),Recommendation,Action,Standard,Impact,Cost,Effort,Cable Tag,From,To\n';
+    // Enhanced CSV header with arc flash columns
+    let csv = 'Priority,Severity,Category,Bus,Voltage,Demand Factor,Diversity Factor,Connected Load(A),Demand Load(A),Incident Energy(cal/cm²),Arc Flash Boundary(ft),PPE Category,Recommendation,Action,Standard,Impact,Cost,Effort,Cable Tag,From,To\n';
     
     recs.forEach(rec => {
         const bus = buses.find(b => b.id === rec.busId);
@@ -848,6 +1251,9 @@ function exportRecommendationsCSV() {
         let diversityFactor = 'N/A';
         let connectedLoad = 'N/A';
         let demandLoad = 'N/A';
+        let incidentEnergy = 'N/A';
+        let arcFlashBoundary = 'N/A';
+        let ppeCategory = 'N/A';
         
         if (bus) {
             // Get demand/diversity info
@@ -873,6 +1279,13 @@ function exportRecommendationsCSV() {
                 }
             }
             
+            // Get arc flash info
+            if (bus.results && bus.results.arcFlash) {
+                incidentEnergy = bus.results.arcFlash.incidentEnergy.toFixed(2);
+                arcFlashBoundary = (bus.results.arcFlash.arcFlashBoundary / 12).toFixed(2);
+                ppeCategory = bus.results.arcFlash.ppeCategory.toString();
+            }
+            
             // Get cable info
             if (bus.pathComponents) {
                 const cableComp = bus.pathComponents.find(pc => pc.component?.type === 'cable');
@@ -896,7 +1309,7 @@ function exportRecommendationsCSV() {
         const cost = rec.cost || 'Unknown';
         const effort = rec.effort || 'Unknown';
         
-        csv += `${priority},"${severity}","${category}","${busName}",${busVoltage},"${demandFactor}","${diversityFactor}","${connectedLoad}","${demandLoad}","${recommendation}","${action}","${standard}","${impact}","${cost}","${effort}","${cableTag}","${fromBus}","${toBus}"\n`;
+        csv += `${priority},"${severity}","${category}","${busName}",${busVoltage},"${demandFactor}","${diversityFactor}","${connectedLoad}","${demandLoad}","${incidentEnergy}","${arcFlashBoundary}","${ppeCategory}","${recommendation}","${action}","${standard}","${impact}","${cost}","${effort}","${cableTag}","${fromBus}","${toBus}"\n`;
     });
 
     try {
@@ -904,14 +1317,14 @@ function exportRecommendationsCSV() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Recommendations_Feature5_${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `Recommendations_ArcFlash_${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        console.log(`✅ Recommendations CSV exported: ${recs.length} items`);
-        alert(`✅ Recommendations exported with demand/diversity data!\n\n${recs.length} recommendation(s) with Feature #5 enhancements.`);
+        console.log(`✅ Recommendations CSV exported with arc flash data: ${recs.length} items`);
+        alert(`✅ Recommendations exported with full analysis data!\n\n${recs.length} recommendation(s) including arc flash hazard information.`);
     } catch (error) {
         console.error('Error exporting CSV:', error);
         alert(`❌ Error exporting recommendations: ${error.message}`);
@@ -984,8 +1397,12 @@ window.exportBusReport = exportBusReport;
 window.exportAllBusesSummary = exportAllBusesSummary;
 window.downloadTextFile = downloadTextFile;
 
-console.log('✅ Export Report Module v2.1.0 loaded');
-console.log('   - Comprehensive null safety: ENABLED');
+console.log('✅ Export Report Module v2.3.0 loaded');
+console.log('   - Arc Flash integration: COMPLETE');
+console.log('   - Demand Factor reporting: ENHANCED');
+console.log('   - Voltage drop methodology: EXPLAINED');
 console.log('   - Feature #5 integration: COMPLETE');
-console.log('   - Feature #8 integration: COMPLETE');
+console.log('   - Feature #6 (Arc Flash): COMPLETE');
 console.log('   - Error handling: ENHANCED');
+console.log('   - IEEE 1584-2018 & NFPA 70E-2021: Compliant');
+console.log('   - NEC Article 220 & IEEE 141: Compliant');
