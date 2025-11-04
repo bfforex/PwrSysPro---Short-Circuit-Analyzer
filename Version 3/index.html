@@ -235,6 +235,19 @@ if (window.calculateVoltageDrop) {
                                     </button>
 </div>
 </div>
+<!-- Bus Tie Reports -->
+<div class="export-category">
+<h3>🔌 Bus Tie Reports</h3>
+<p class="category-desc">Generate scenario comparison reports for bus tie configurations</p>
+<div class="export-buttons-grid">
+<button class="btn btn-info btn-large" onclick="exportBusTieReport()">
+                                        📊 Export Bus Tie Analysis
+                                    </button>
+<button class="btn btn-primary btn-large" onclick="exportAllBusTiesReport()">
+                                        📋 Export All Bus Ties Report
+                                    </button>
+</div>
+</div>
 <!-- Recommendations -->
 <div class="export-category">
 <h3>💡 Recommendations</h3>
@@ -528,6 +541,8 @@ if (window.calculateVoltageDrop) {
 <script src="js/exportReport.js"></script>
 <script src="js/exportLoadFlowReport.js"></script>
 <script src="js/exportEnhancedSystemReport.js"></script>
+<!-- Bus Tie Reports Module -->
+<script src="js/busTieReports.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- LAYER 11: PROJECT MANAGEMENT -->
 <!-- ═══════════════════════════════════════════════════════════ -->
