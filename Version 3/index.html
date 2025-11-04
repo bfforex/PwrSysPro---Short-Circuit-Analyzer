@@ -371,26 +371,42 @@ if (window.calculateVoltageDrop) {
 </div>
 <div class="form-group">
 <label for="newBusDiversityFactor">
-                                Diversity Factor (0.0 - 1.0):
-                                <span class="tooltip">ℹ️
-                                    <span class="tooltiptext">Ratio of simultaneous maximum demand to sum of individual maximum demands per IEEE 141. Leave blank for automatic selection based on bus type. Example: 0.85 means only 85% of total demand will occur at the same time.</span>
-</span>
-</label>
-<input id="newBusDiversityFactor" max="1" min="0" placeholder="Auto (based on bus type)" step="0.01" type="number"/>
-<small style="color: #666; font-size: 0.85em;">
-                                📖 IEEE 141-1993 Red Book - Diversity factors for system design<br/>
-                                Auto defaults: Source Bus=90%, Distribution Bus=85%, Branch Circuit=80%<br/>
-                                Leave blank to use automatic values
-                            </small>
+                                Diversity Factor (≥ 1.0):
+                                <span class="tooltip" tabindex="0" aria-label="Info about diversity factor">
+                                    ℹ️
+                                    <span class="tooltiptext">
+                                        Per IEEE 141: Diversity Factor = (Sum of individual maximum demands) ÷ (Maximum demand of the whole system).
+                                        This value is always ≥ 1. Example: If feeders total 240 kW and system peak is 150 kW, DF = 1.6.
+                                        Leave blank for automatic selection based on bus type.
+                                    </span>
+                                </span>
+                                </label>
+                                <input id="newBusDiversityFactor" name="diversityFactor" type="number" min="1" step="0.01"
+                                       placeholder="Auto (based on bus type)" aria-describedby="diversityHelp"/>
+                                <small id="diversityHelp" style="color: #666; font-size: 0.85em;">
+                                    📖 IEEE 141-1993 Red Book - Diversity Factor for system design<br/>
+                                    Auto defaults: Source Bus = 1.10, Distribution Bus = 1.15, Branch Circuit = 1.20<br/>
+                                    Leave blank to use automatic values
+                                </small>
+
 </div>
+
 <div style="background: rgba(102, 126, 234, 0.1); padding: 10px; border-radius: 5px; margin-top: 10px;">
-<strong style="color: #667eea;">💡 What's the difference?</strong>
-<ul style="margin: 8px 0; padding-left: 20px; font-size: 0.9em; line-height: 1.6;">
-<li><strong>Demand Factor</strong>: Accounts for the fact that not all equipment operates at full load all the time.</li>
-<li><strong>Diversity Factor</strong>: Accounts for the fact that not all loads reach maximum demand at the same time.</li>
-<li><strong>Combined Effect</strong>: Design Load = Connected Load × Demand Factor × Diversity Factor</li>
-</ul>
+    <strong style="color: #667eea;">💡 What's the difference?</strong>
+    <ul style="margin: 8px 0; padding-left: 20px; font-size: 0.9em; line-height: 1.6;">
+        <li><strong>Demand Factor (Kd)</strong>: Used for an individual load or a small group. Formula:
+            <br/><code>Maximum Demand (individual) = Connected Load × Demand Factor</code>
+            <br/>Demand Factor ≤ 1.0 (reduces connected load).</li>
+        <li><strong>Diversity Factor (DF)</strong>: Used when combining multiple load groups at system level. Formula:
+            <br/><code>Maximum System Demand = (Sum of Individual Maximum Demands) ÷ Diversity Factor</code>
+            <br/>Diversity Factor ≥ 1.0 (accounts for non-simultaneous peaks).</li>
+        <li><strong>Relationship</strong>: Kd = 1 ÷ DF (they are inverses, do NOT multiply both).</li>
+        <li><strong>Calculation Flow</strong>:
+            <br/>Step 1: Apply Demand Factor to each load → Individual Maximum Demands.
+            <br/>Step 2: Sum all individual demands and apply Diversity Factor → System Maximum Demand.</li>
+    </ul>
 </div>
+
 </div>
 </details>
 <!-- ═══════════════════════════════════════════════════════════ -->
