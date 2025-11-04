@@ -141,6 +141,7 @@ if (window.calculateVoltageDrop) {
 <option value="cable">Cable</option>
 <option value="generator">Generator</option>
 <option value="motor">Motor</option>
+<option value="bus-tie">Bus Tie (Circuit Breaker)</option>
 </select>
 </div>
 <div id="componentInputs"></div>
@@ -231,6 +232,19 @@ if (window.calculateVoltageDrop) {
                                     </button>
 <button class="btn btn-primary btn-large" onclick="exportAllBusesSummary()">
                                         📊 Export All Buses Summary
+                                    </button>
+</div>
+</div>
+<!-- Bus Tie Reports -->
+<div class="export-category">
+<h3>🔌 Bus Tie Reports</h3>
+<p class="category-desc">Generate scenario comparison reports for bus tie configurations</p>
+<div class="export-buttons-grid">
+<button class="btn btn-info btn-large" onclick="exportBusTieReport()">
+                                        📊 Export Bus Tie Analysis
+                                    </button>
+<button class="btn btn-primary btn-large" onclick="exportAllBusTiesReport()">
+                                        📋 Export All Bus Ties Report
                                     </button>
 </div>
 </div>
@@ -489,6 +503,8 @@ if (window.calculateVoltageDrop) {
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script src="js/busManager.js"></script>
 <script src="js/componentManager.js"></script>
+<!-- Bus Tie Mesh Detection Module -->
+<script src="js/meshDetection.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- LAYER 7: CALCULATION LAYER -->
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -502,6 +518,8 @@ if (window.calculateVoltageDrop) {
 <!-- Arc Flash Analysis -->
 <script src="js/arcFlashCalc.js"></script>
 <script src="js/exportArcFlashReport.js"></script>
+<!-- Bus Tie Calculation Module -->
+<script src="js/busTieCalculations.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- LAYER 8: CALCULATION COORDINATOR -->
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -523,6 +541,8 @@ if (window.calculateVoltageDrop) {
 <script src="js/exportReport.js"></script>
 <script src="js/exportLoadFlowReport.js"></script>
 <script src="js/exportEnhancedSystemReport.js"></script>
+<!-- Bus Tie Reports Module -->
+<script src="js/busTieReports.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- LAYER 11: PROJECT MANAGEMENT -->
 <!-- ═══════════════════════════════════════════════════════════ -->

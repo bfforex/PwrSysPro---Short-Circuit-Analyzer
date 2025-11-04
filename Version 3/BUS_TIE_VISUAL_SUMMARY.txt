@@ -1,0 +1,327 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    BUS TIE FEATURE - VISUAL SUMMARY                           ║
+║                         PwrSys Pro Version 3                                  ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ 1. COMPONENT TYPE DROPDOWN (Modified)                                        │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+Component Type: [▼ Dropdown]
+  ├─ Transformer
+  ├─ Cable
+  ├─ Generator  
+  ├─ Motor
+  └─ Bus Tie (Circuit Breaker)  ← NEW!
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ 2. BUS TIE INPUT FORM (When "Bus Tie" Selected)                              │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+╭─────────────────────────────────────────────────────────────────────────────╮
+│ 🔌 Bus Tie Identification                                                  │
+│ ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│ Equipment Tag: [BT-BUS1-BUS2-1          ] (auto-generated, read-only)     │
+│ Description:   [Main tie between...     ] (optional)                       │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────────────────────╮
+│ ⚡ Electrical Ratings                                                       │
+│ ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│ Rating (A):     [1600      ] *required                                     │
+│                 Typical: 800A, 1600A, 2000A, 3200A, 4000A                 │
+│                                                                             │
+│ Breaker Type:   [ACB - Air Circuit Breaker ▼] *required                   │
+│                 ├─ ACB - Air Circuit Breaker                              │
+│                 ├─ MCCB - Molded Case Circuit Breaker                     │
+│                 ├─ VCB - Vacuum Circuit Breaker                           │
+│                 └─ OCB - Oil Circuit Breaker                              │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────────────────────╮
+│ 📏 Physical Configuration                                                   │
+│ ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│ Bus Length (ft): [10        ] *required                                    │
+│                  Typical bus tie lengths: 5-50 feet                        │
+│                                                                             │
+│ Conductor Size:  [500 kcmil ▼] *required                                  │
+│                  250, 300, 350, 400, 500, 600, 750, 1000, 1250, 1500...  │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────────────────────╮
+│ ⚙️ Operating Configuration                                                  │
+│ ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│ Normal Operating State: [🔌 OPEN (Normal - Isolated) ▼] *required        │
+│                         ├─ 🔌 OPEN (Normal - Isolated)                    │
+│                         └─ ⚡ CLOSED (Paralleled)                          │
+│                         IEEE 141: Ties normally operate OPEN              │
+│                                                                             │
+│ Source Interlock:       [Yes - Interlocked (Recommended) ▼]              │
+│                         ├─ Yes - Interlocked (Recommended)                │
+│                         └─ No - Not interlocked                           │
+│                         Prevents simultaneous closure of source breakers   │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+📖 IEEE 141-1993 Bus Tie Guidance:
+  • Bus ties normally operate OPEN for fault isolation
+  • Closing tie increases fault current by 30-40% typically
+  • Improves voltage regulation and load sharing when closed
+  • Must verify breaker ratings for both operating modes
+  • Arc flash hazard increases significantly when closed
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ 3. BUS TIE DISPLAY IN COMPONENTS LIST                                        │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+Components List:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Component 1: Transformer                                                    │
+│ 🔧 XFMR-LCA1-1000 - 1000kVA (13200V/440V)                                 │
+│ [✏️ Edit]  [🗑️ Delete]                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Component 2: Bus Tie (NEW!)                              [OPEN - Gray BG]  │
+│ 🔌 BT-LCA1-4-LCB1-4-1                                                      │
+│ Main tie between LCA1-4 and LCB1-4                                         │
+│ [⚡ 🔌 OPEN (Isolated)]  [🗑️ Delete]                                        │
+│                                                                             │
+│ 🏷️ BT-LCA1-4-LCB1-4-1 - OPEN (Isolated)                                   │
+│ Between: LCA1-4 (440V) ↔ LCB1-4 (440V)                                    │
+│ Rating: 1600 A | Type: ACB                                                 │
+│ Bus Length: 10 ft | Size: 500 kcmil                                        │
+│ Normal State: OPEN | Interlock: YES                                        │
+│ Impedance: 0.000100 Ω                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Component 2: Bus Tie (CLOSED STATE)                    [CLOSED - Green BG] │
+│ ⚡ BT-LCA1-4-LCB1-4-1                                                       │
+│ Main tie between LCA1-4 and LCB1-4                                         │
+│ [⚡ ⚡ CLOSED (Operating)]  [🗑️ Delete]                                     │
+│                                                                             │
+│ 🏷️ BT-LCA1-4-LCB1-4-1 - CLOSED (Operating)                                │
+│ Between: LCA1-4 (440V) ↔ LCB1-4 (440V)                                    │
+│ Rating: 1600 A | Type: ACB                                                 │
+│ Bus Length: 10 ft | Size: 500 kcmil                                        │
+│ Normal State: OPEN | Interlock: YES                                        │
+│ Impedance: 0.000100 Ω                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ 4. STATE TOGGLE CONFIRMATION DIALOG                                          │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+When clicking "🔌 OPEN" button to close:
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  ⚠️ CLOSE BUS TIE: BT-LCA1-4-LCB1-4-1                                     ║
+║                                                                            ║
+║  This will PARALLEL the following buses:                                  ║
+║    • LCA1-4 (440V)                                                        ║
+║    • LCB1-4 (440V)                                                        ║
+║                                                                            ║
+║  WARNINGS:                                                                 ║
+║    ⚠️ Fault current will INCREASE by ~30-40%                              ║
+║    ⚠️ Arc flash hazard will INCREASE significantly                        ║
+║    ⚠️ Verify all breaker ratings are adequate                             ║
+║    ⚠️ Check source interlock if applicable                                ║
+║                                                                            ║
+║  Per IEEE 141: Ensure protection coordination is valid.                   ║
+║                                                                            ║
+║  Proceed with CLOSING bus tie?                                            ║
+║                                                                            ║
+║              [  OK  ]         [ Cancel ]                                  ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ 5. EXPORTS TAB - NEW BUS TIE REPORTS SECTION                                 │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+📥 Export Reports
+═════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔌 Bus Tie Reports (NEW!)                                                  │
+│ Generate scenario comparison reports for bus tie configurations            │
+│                                                                             │
+│  [📊 Export Bus Tie Analysis]    [📋 Export All Bus Ties Report]          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔌 Bus Reports                                                              │
+│ Export detailed analysis for individual or all buses                       │
+│                                                                             │
+│  [📄 Export Single Bus Report]    [📊 Export All Buses Summary]           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ 6. SAMPLE REPORT OUTPUT                                                      │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
+BUS TIE ANALYSIS REPORT
+════════════════════════════════════════════════════════════════════════════════
+Generated: 2025-11-04 12:30:00
+Analysis Method: Scenario Comparison (Open vs Closed)
+════════════════════════════════════════════════════════════════════════════════
+
+A. BUS TIE SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+
+Tie Tag:           BT-LCA1-4-LCB1-4-1
+  • Between:       LCA1-4 (440V) and LCB1-4 (440V)
+  • Rating:        1600 A
+  • Type:          ACB (Air Circuit Breaker)
+  • Bus Length:    10 ft
+  • Conductor:     500 kcmil
+  • Impedance:     0.000100 Ω
+  • Normal State:  OPEN
+  • Current State: OPEN
+  • Interlock:     YES
+
+B. SHORT CIRCUIT COMPARISON (3-Phase Symmetrical)
+────────────────────────────────────────────────────────────────────────────────
+
+                    Tie OPEN      Tie CLOSED    Increase    Impact
+────────────────────────────────────────────────────────────────────────────────
+LCA1-4              31.16 kA      42.35 kA      +36.0%      ⚠️ Critical
+LCB1-4              39.17 kA      51.23 kA      +30.8%      ⚠️ Critical
+
+KEY FINDINGS:
+  • Average fault current increase: 33.4%
+  • ⚠️ CRITICAL: Fault current increase exceeds 30%
+  • Action Required: Verify all breaker interrupting ratings
+  • Action Required: Review protection coordination
+
+C. VOLTAGE DROP COMPARISON
+────────────────────────────────────────────────────────────────────────────────
+
+                    Tie OPEN      Tie CLOSED    Improvement
+────────────────────────────────────────────────────────────────────────────────
+LCA1-4              2.50%         2.00%         -0.50%      ✓ Better
+LCB1-4              2.50%         2.00%         -0.50%      ✓ Better
+
+KEY FINDINGS:
+  • Average voltage drop improvement: 0.50%
+  • ✓ Closing tie provides significant voltage regulation improvement
+
+D. LOAD SHARING ANALYSIS (Tie CLOSED)
+────────────────────────────────────────────────────────────────────────────────
+
+LCA1-4 Load:            900 A
+LCB1-4 Load:            850 A
+Load Imbalance:         50 A
+
+Tie Current:            25.0 A (from LCA1-4 to LCB1-4)
+Tie Utilization:        1.6% of 1600A rating
+Load Sharing:           Balanced load sharing
+
+✓ Tie is lightly loaded - good load balance between buses
+
+BENEFITS (Tie Closed):
+  • Equalizes load between buses
+  • Improves transformer loading balance
+  • Provides redundancy for maintenance
+  • Allows load transfer during emergencies
+
+E. ARC FLASH COMPARISON (IEEE 1584-2018)
+────────────────────────────────────────────────────────────────────────────────
+
+                    Tie OPEN              Tie CLOSED            Impact
+────────────────────────────────────────────────────────────────────────────────
+LCA1-4 Incident E   4.2 cal/cm²          6.8 cal/cm²          +61.9%
+PPE Category        2                     3                     Higher PPE
+
+LCB1-4 Incident E   5.1 cal/cm²          7.9 cal/cm²          +54.9%
+PPE Category        2                     3                     Higher PPE
+
+KEY FINDINGS:
+  • Average incident energy increase: 58.4%
+  • ⚠️ CRITICAL: Arc flash hazard increased significantly
+  • Action Required: Update arc flash labels for both scenarios
+  • Action Required: Review PPE requirements
+
+F. OPERATING RECOMMENDATIONS
+────────────────────────────────────────────────────────────────────────────────
+
+NORMAL OPERATION (Tie OPEN):
+  ✓ Higher reliability (fault isolation)
+  ✓ Lower fault currents (easier to interrupt)
+  ✓ Lower arc flash hazard
+  ✓ Independent protection coordination
+  ⚠️ Higher voltage drop on heavily loaded bus
+  ⚠️ No load sharing capability
+  ⚠️ Limited redundancy
+
+EMERGENCY/MAINTENANCE (Tie CLOSED):
+  ✓ Load transfer capability
+  ✓ Improved voltage regulation
+  ✓ Load sharing between buses
+  ✓ Increased system redundancy
+  ⚠️ Significantly higher fault currents (+33%)
+  ⚠️ Higher arc flash hazard (PPE category may increase)
+  ⚠️ Must verify breaker interrupting ratings
+  ⚠️ Protection coordination more complex
+
+IEEE 141-1993 RECOMMENDATION:
+  "Bus ties should normally be operated open unless load sharing or
+   voltage support is required. When operated closed, verify all
+   protective devices are rated for increased fault current."
+
+ACTION ITEMS:
+  1. Verify breaker ratings adequate for tie-closed fault current
+  2. Update arc flash labels for both operating modes
+  3. Review protection coordination with tie closed
+  4. Update operating procedures with tie operating limits
+  5. Consider interlock to prevent paralleling utility sources
+
+  ✓ Interlock is installed - prevents source paralleling
+
+════════════════════════════════════════════════════════════════════════════════
+END OF BUS TIE ANALYSIS REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ KEY VISUAL ELEMENTS                                                           │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+1. State Indicators:
+   - 🔌 OPEN: Gray background (#f5f5f5), gray text (#9e9e9e)
+   - ⚡ CLOSED: Green background (#e8f5e9), green text (#4caf50)
+
+2. Icons:
+   - 🔌 = Open/Isolated state
+   - ⚡ = Closed/Operating state
+   - 🔧 = Transformer
+   - 🔗 = Cable
+   - ⚙️ = Motor
+   - 📊 = Report/Analysis
+   - ⚠️ = Warning
+   - ✓ = Success/OK
+
+3. Button States:
+   - OPEN state button: Gray with 🔌 icon
+   - CLOSED state button: Green with ⚡ icon
+   - Hover effect: Slight brightness change
+
+4. Color Coding:
+   - Normal/Safe: Green (#4caf50)
+   - Warning: Orange (#ff9800)
+   - Critical/Danger: Red (#dc3545)
+   - Info: Blue (#2196f3)
+   - Neutral: Gray (#9e9e9e)
+
+═══════════════════════════════════════════════════════════════════════════════
+                              END OF VISUAL SUMMARY
+═══════════════════════════════════════════════════════════════════════════════

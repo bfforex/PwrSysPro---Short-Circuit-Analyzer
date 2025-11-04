@@ -19,6 +19,28 @@ console.log('🔧 Loading Component Manager v2.2 - Enhanced Data Integrity...');
 console.log('   ✅ Unique tag enforcement enabled (Issue #9)');
 
 // ═══════════════════════════════════════════════════════════════════════════
+// BUS TIE CONFIGURATION
+// Added: 2025-11-04 by bfforex - Feature: Bus Tie Circuit Breaker Analysis
+// ═══════════════════════════════════════════════════════════════════════════
+
+const BUS_TIE_CONFIG = {
+    TYPES: {
+        CIRCUIT_BREAKER: 'circuit-breaker',
+        BUS_COUPLER: 'bus-coupler'
+    },
+    STATES: {
+        OPEN: 'open',
+        CLOSED: 'closed'
+    },
+    DEFAULT_IMPEDANCE: 0.0001,
+    DEFAULT_RATING: 1600,
+    AUTO_TAG_PREFIX: 'BT'
+};
+window.BUS_TIE_CONFIG = BUS_TIE_CONFIG;
+
+console.log('🔌 Bus Tie Configuration loaded');
+
+// ═══════════════════════════════════════════════════════════════════════════
 // COMPONENT INPUT GENERATION
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -392,6 +414,160 @@ function updateComponentInputs() {
                 </div>
             </details>
         `;
+    } else if (type === 'bus-tie') {
+        // ═══════════════════════════════════════════════════════════════════════
+        // BUS TIE (CIRCUIT BREAKER) COMPONENT
+        // Added: 2025-11-04 by bfforex - Feature: Bus Tie Circuit Breaker Analysis
+        // ═══════════════════════════════════════════════════════════════════════
+        html = `
+            <!-- ✅ Bus Tie Identification Section -->
+            <div style="margin-bottom: 15px; padding: 10px; background: #fff3e0; border-left: 4px solid #ff9800;">
+                <h4 style="margin-top: 0; color: #ff6f00;">🔌 Bus Tie Identification</h4>
+                
+                <div class="form-group">
+                    <label for="busTieTag">
+                        Equipment Tag:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Auto-generated tag format: BT-{BUS1}-{BUS2}-{SEQ}</span>
+                        </span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="busTieTag" 
+                        placeholder="Auto-generated: BT-BUS1-BUS2-1"
+                        readonly
+                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background-color: #f5f5f5;">
+                    <small style="display: block; margin-top: 5px; color: #666;">
+                        Tag is automatically generated based on connected buses
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="busTieDescription">Description (Optional):</label>
+                    <input 
+                        type="text" 
+                        id="busTieDescription" 
+                        placeholder="e.g., Main tie between LCA1-4 and LCB1-4"
+                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+            </div>
+            
+            <!-- ✅ Electrical Ratings -->
+            <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-left: 4px solid #2196f3;">
+                <h4 style="margin-top: 0; color: #1976d2;">⚡ Electrical Ratings</h4>
+                
+                <div class="form-group">
+                    <label for="busTieRating">
+                        Rating (A): <span style="color: red;">*</span>
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Continuous current rating of circuit breaker</span>
+                        </span>
+                    </label>
+                    <input type="number" id="busTieRating" placeholder="e.g., 1600" min="0" step="100" value="1600" required>
+                    <small style="color: #666; font-size: 0.85em;">
+                        Typical: 800A, 1600A, 2000A, 3200A, 4000A
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="busTieBreakerType">
+                        Breaker Type: <span style="color: red;">*</span>
+                    </label>
+                    <select id="busTieBreakerType" required>
+                        <option value="ACB">ACB - Air Circuit Breaker</option>
+                        <option value="MCCB">MCCB - Molded Case Circuit Breaker</option>
+                        <option value="VCB">VCB - Vacuum Circuit Breaker</option>
+                        <option value="OCB">OCB - Oil Circuit Breaker</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- ✅ Physical Configuration -->
+            <div style="margin-bottom: 15px; padding: 10px; background: #f3e5f5; border-left: 4px solid #9c27b0;">
+                <h4 style="margin-top: 0; color: #7b1fa2;">📏 Physical Configuration</h4>
+                
+                <div class="form-group">
+                    <label for="busTieLength">
+                        Bus Length (ft): <span style="color: red;">*</span>
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Length of bus bar connecting the two buses</span>
+                        </span>
+                    </label>
+                    <input type="number" id="busTieLength" placeholder="e.g., 10" min="0" step="0.1" value="10" required>
+                    <small style="color: #666; font-size: 0.85em;">
+                        Typical bus tie lengths: 5-50 feet
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="busTieSize">
+                        Conductor Size (kcmil): <span style="color: red;">*</span>
+                    </label>
+                    <select id="busTieSize" required>
+                        <option value="250">250 kcmil</option>
+                        <option value="300">300 kcmil</option>
+                        <option value="350">350 kcmil</option>
+                        <option value="400">400 kcmil</option>
+                        <option value="500" selected>500 kcmil</option>
+                        <option value="600">600 kcmil</option>
+                        <option value="750">750 kcmil</option>
+                        <option value="1000">1000 kcmil</option>
+                        <option value="1250">1250 kcmil</option>
+                        <option value="1500">1500 kcmil</option>
+                        <option value="2000">2000 kcmil</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- ✅ Operating Configuration -->
+            <div style="margin-bottom: 15px; padding: 10px; background: #e8f5e9; border-left: 4px solid #4caf50;">
+                <h4 style="margin-top: 0; color: #388e3c;">⚙️ Operating Configuration</h4>
+                
+                <div class="form-group">
+                    <label for="busTieNormalState">
+                        Normal Operating State: <span style="color: red;">*</span>
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Normal operating position of breaker. Per IEEE 141, bus ties typically operate OPEN.</span>
+                        </span>
+                    </label>
+                    <select id="busTieNormalState" required>
+                        <option value="open" selected>🔌 OPEN (Normal - Isolated)</option>
+                        <option value="closed">⚡ CLOSED (Paralleled)</option>
+                    </select>
+                    <small style="color: #666; font-size: 0.85em;">
+                        IEEE 141-1993: Bus ties normally operate OPEN for fault isolation
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="busTieInterlock">
+                        Source Interlock:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Prevents paralleling of utility sources (recommended per NEC)</span>
+                        </span>
+                    </label>
+                    <select id="busTieInterlock">
+                        <option value="yes" selected>Yes - Interlocked (Recommended)</option>
+                        <option value="no">No - Not interlocked</option>
+                    </select>
+                    <small style="color: #666; font-size: 0.85em;">
+                        Interlock prevents simultaneous closure of source breakers
+                    </small>
+                </div>
+            </div>
+            
+            <!-- ✅ IEEE 141 Guidance -->
+            <div style="background: rgba(33, 150, 243, 0.1); padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <strong style="color: #1976d2;">📖 IEEE 141-1993 Bus Tie Guidance:</strong>
+                <ul style="margin: 8px 0; padding-left: 20px; font-size: 0.85em; line-height: 1.6;">
+                    <li>Bus ties normally operate <strong>OPEN</strong> for fault isolation</li>
+                    <li>Closing tie increases fault current by 30-40% typically</li>
+                    <li>Improves voltage regulation and load sharing when closed</li>
+                    <li>Must verify breaker ratings for both operating modes</li>
+                    <li>Arc flash hazard increases significantly when closed</li>
+                </ul>
+            </div>
+        `;
     }
 
     container.innerHTML = html;
@@ -710,7 +886,135 @@ function addComponent() {
                    console.log(`Efficiency:      ${(efficiency * 100).toFixed(1)}%`);
                    console.log(`Power Factor:    ${powerFactor.toFixed(2)}`);
                    console.log('═'.repeat(70) + '\n');
-          }
+          } else if (type === 'bus-tie') {
+        // ═══════════════════════════════════════════════════════════════════
+        // BUS TIE WITH AUTO-TAG GENERATION
+        // Format: BT-{BUS1}-{BUS2}-{SEQ}
+        // Added: 2025-11-04 by bfforex - Feature: Bus Tie Circuit Breaker Analysis
+        // ═══════════════════════════════════════════════════════════════════
+        
+        // ✅ Validate voltage compatibility
+        if (fromBus.voltage !== toBus.voltage) {
+            alert(
+                `❌ VOLTAGE MISMATCH ERROR!\n\n` +
+                `Bus ties can only connect buses at the same voltage level.\n\n` +
+                `From Bus: ${fromBus.name} (${fromBus.voltage}V)\n` +
+                `To Bus: ${toBus.name} (${toBus.voltage}V)\n\n` +
+                `Please select buses with matching voltages.`
+            );
+            return;
+        }
+        
+        // ✅ Check for existing bus tie between same buses
+        const existingTie = components.find(c => 
+            c.type === 'bus-tie' && 
+            ((c.fromBus === fromBusId && c.toBus === toBusId) ||
+             (c.fromBus === toBusId && c.toBus === fromBusId))
+        );
+        
+        if (existingTie) {
+            alert(
+                `❌ DUPLICATE BUS TIE ERROR!\n\n` +
+                `A bus tie already exists between these buses:\n` +
+                `  ${existingTie.fromBusName} ↔ ${existingTie.toBusName}\n` +
+                `  Tag: ${existingTie.tag}\n\n` +
+                `Only one tie can exist between two buses.\n` +
+                `To modify the existing tie, delete it first and create a new one.`
+            );
+            return;
+        }
+        
+        // ✅ Get input values
+        const rating = parseFloat(document.getElementById('busTieRating').value);
+        const breakerType = document.getElementById('busTieBreakerType').value;
+        const length = parseFloat(document.getElementById('busTieLength').value);
+        const size = parseFloat(document.getElementById('busTieSize').value);
+        const normalState = document.getElementById('busTieNormalState').value;
+        const interlock = document.getElementById('busTieInterlock').value;
+        const description = document.getElementById('busTieDescription')?.value.trim() || '';
+        
+        if (!rating || !breakerType || !length || !size || !normalState) {
+            alert('❌ Please fill in all required bus tie fields!');
+            return;
+        }
+        
+        // ✅ Generate auto-tag: BT-{BUS1}-{BUS2}-{SEQ}
+        const bus1Tag = (fromBus.tag || fromBus.name).replace(/\s+/g, '-').toUpperCase();
+        const bus2Tag = (toBus.tag || toBus.name).replace(/\s+/g, '-').toUpperCase();
+        
+        // Alphabetically sort bus tags for consistency
+        const [busA, busB] = [bus1Tag, bus2Tag].sort();
+        const baseTag = `${BUS_TIE_CONFIG.AUTO_TAG_PREFIX}-${busA}-${busB}`;
+        
+        // ✅ Find next sequence number
+        const existingTiesWithSameBase = components.filter(c => 
+            c.type === 'bus-tie' && 
+            c.tag && 
+            c.tag.startsWith(`${baseTag}-`)
+        );
+        
+        let maxSeq = 0;
+        existingTiesWithSameBase.forEach(tie => {
+            const parts = tie.tag.split('-');
+            const seqNum = parseInt(parts[parts.length - 1]);
+            if (!isNaN(seqNum) && seqNum > maxSeq) {
+                maxSeq = seqNum;
+            }
+        });
+        
+        const nextSeq = maxSeq + 1;
+        const finalTag = `${baseTag}-${nextSeq}`;
+        
+        // ✅ Calculate impedance (simplified bus bar impedance)
+        // Using typical bus bar impedance: ~0.00005 ohms per foot for large conductors
+        // Z = length * impedance_per_foot
+        const impedancePerFoot = 0.00001; // ohms/ft for large bus bars
+        const impedance = length * impedancePerFoot;
+        
+        // ✅ Build component
+        component = {
+            ...component,
+            rating: rating,
+            breakerType: breakerType,
+            length: length,
+            size: size,
+            normalState: normalState,
+            currentState: normalState, // Initially same as normal state
+            interlock: interlock,
+            impedance: impedance,
+            description: description,
+            tag: finalTag,
+            isBusTie: true,
+            voltage: fromBus.voltage, // Store voltage for reference
+            name: `${finalTag} - ${rating}A ${breakerType} Tie`
+        };
+        
+        // ✅ Enhanced logging
+        console.log('\n' + '═'.repeat(70));
+        console.log('✅ BUS TIE ADDED WITH AUTO-TAG');
+        console.log('═'.repeat(70));
+        console.log(`Tag:             ${finalTag}`);
+        console.log(`  - Prefix:      ${BUS_TIE_CONFIG.AUTO_TAG_PREFIX} (Bus Tie)`);
+        console.log(`  - Bus A:       ${busA}`);
+        console.log(`  - Bus B:       ${busB}`);
+        console.log(`  - Sequence:    ${nextSeq}`);
+        console.log('─'.repeat(70));
+        console.log(`Rating:          ${rating} A`);
+        console.log(`Breaker Type:    ${breakerType}`);
+        console.log(`Bus Length:      ${length} ft`);
+        console.log(`Conductor Size:  ${size} kcmil`);
+        console.log(`Normal State:    ${normalState.toUpperCase()}`);
+        console.log(`Current State:   ${normalState.toUpperCase()}`);
+        console.log(`Interlock:       ${interlock.toUpperCase()}`);
+        console.log(`Impedance:       ${impedance.toFixed(6)} Ω`);
+        console.log(`Voltage:         ${fromBus.voltage} V`);
+        console.log(`From Bus:        ${fromBus.name} (${fromBus.tag || 'no tag'})`);
+        console.log(`To Bus:          ${toBus.name} (${toBus.tag || 'no tag'})`);
+        if (description) {
+            console.log(`Description:     ${description}`);
+        }
+        console.log('═'.repeat(70) + '\n');
+    }
 
         components.push(component);
     
@@ -742,6 +1046,19 @@ function addComponent() {
                          `  • Name: ${component.name}\n` +
                          `  • Type: ${component.motorType}\n` +
                          `  • Location: ${component.location}`);
+               } else if (type === 'bus-tie') {
+                   alert(`✅ Bus Tie "${component.tag}" added successfully!\n\n` +
+                         `Tag: ${component.tag}\n` +
+                         `  • Between: ${component.fromBusName} ↔ ${component.toBusName}\n` +
+                         `  • Voltage: ${component.voltage} V\n` +
+                         `  • Rating: ${component.rating} A\n` +
+                         `  • Type: ${component.breakerType}\n\n` +
+                         `Operating Configuration:\n` +
+                         `  • Normal State: ${component.normalState.toUpperCase()}\n` +
+                         `  • Current State: ${component.currentState.toUpperCase()}\n` +
+                         `  • Interlock: ${component.interlock.toUpperCase()}\n\n` +
+                         `${component.description ? `Description: ${component.description}\n\n` : ''}` +
+                         `⚠️ IEEE 141: Verify breaker ratings for both open and closed scenarios.`);
                } else {
                    alert(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} added successfully!`);
                }
@@ -976,6 +1293,73 @@ function displayComponents() {
                         <div class="info-row">
                             <strong>Efficiency:</strong> ${((comp.efficiency || 0.90) * 100).toFixed(1)}% | 
                             <strong>PF:</strong> ${(comp.powerFactor || 0.85).toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ═══════════════════════════════════════════════════════════════════
+        // BUS TIE COMPONENT (WITH STATE INDICATOR)
+        // Added: 2025-11-04 by bfforex - Feature: Bus Tie Circuit Breaker Analysis
+        // ═══════════════════════════════════════════════════════════════════
+        else if (comp.type === 'bus-tie') {
+            const isOpen = (comp.currentState || comp.normalState) === 'open';
+            const stateIcon = isOpen ? '🔌' : '⚡';
+            const stateText = isOpen ? 'OPEN (Isolated)' : 'CLOSED (Operating)';
+            const stateColor = isOpen ? '#9e9e9e' : '#4caf50';
+            const stateBgColor = isOpen ? '#f5f5f5' : '#e8f5e9';
+            
+            html += `
+                <div class="component-header" style="background: ${stateBgColor};">
+                    <div class="component-type-section">
+                        <span class="component-icon" style="font-size: 1.3em;">${stateIcon}</span>
+                        <span class="component-tag-display">
+                            <strong style="color: ${stateColor};">${comp.tag || 'N/A'}</strong>
+                            ${comp.description ? `<span class="component-desc">- ${comp.description}</span>` : ''}
+                        </span>
+                    </div>
+                    <div class="component-controls">
+                        <button 
+                            class="btn btn-small" 
+                            style="background: ${stateColor}; color: white; margin-right: 5px;"
+                            onclick="toggleBusTieState(${comp.id})" 
+                            title="Toggle operating state">
+                            ${stateIcon} ${stateText}
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deleteComponent(${comp.id})" title="Delete bus tie">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="component-details">
+                    <div class="component-tag-badge" style="background: ${stateColor}; color: white;">
+                        🔌 ${comp.tag || 'N/A'} - ${stateText}
+                    </div>
+                    <div class="component-info-grid">
+                        <div class="info-row">
+                            <strong>Between:</strong> 
+                            <span class="bus-name-highlight">${comp.fromBusName || comp.fromBus}</span>
+                            ↔
+                            <span class="bus-name-highlight">${comp.toBusName || comp.toBus}</span>
+                        </div>
+                        <div class="info-row">
+                            <strong>Voltage:</strong> ${comp.voltage || 'N/A'} V
+                        </div>
+                        <div class="info-row">
+                            <strong>Rating:</strong> ${comp.rating} A | 
+                            <strong>Type:</strong> ${comp.breakerType}
+                        </div>
+                        <div class="info-row">
+                            <strong>Bus Length:</strong> ${comp.length} ft | 
+                            <strong>Size:</strong> ${comp.size} kcmil
+                        </div>
+                        <div class="info-row">
+                            <strong>Normal State:</strong> ${(comp.normalState || 'open').toUpperCase()} | 
+                            <strong>Interlock:</strong> ${(comp.interlock || 'no').toUpperCase()}
+                        </div>
+                        <div class="info-row">
+                            <strong>Impedance:</strong> ${(comp.impedance || BUS_TIE_CONFIG.DEFAULT_IMPEDANCE).toFixed(6)} Ω
                         </div>
                     </div>
                 </div>
@@ -1759,6 +2143,111 @@ function validateComponent(component) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// BUS TIE STATE MANAGEMENT
+// Added: 2025-11-04 by bfforex - Feature: Bus Tie Circuit Breaker Analysis
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Toggle bus tie operating state between OPEN and CLOSED
+ * @param {number} componentId - ID of the bus tie component
+ */
+function toggleBusTieState(componentId) {
+    const busTie = components.find(c => c.id === componentId);
+    
+    if (!busTie || busTie.type !== 'bus-tie') {
+        alert('❌ Bus tie not found!');
+        return;
+    }
+    
+    const currentState = busTie.currentState || busTie.normalState || 'open';
+    const newState = currentState === 'open' ? 'closed' : 'open';
+    
+    // Confirmation dialog with safety warnings
+    const confirmMessage = newState === 'closed' 
+        ? `⚠️ CLOSE BUS TIE: ${busTie.tag}\n\n` +
+          `This will PARALLEL the following buses:\n` +
+          `  • ${busTie.fromBusName} (${busTie.voltage}V)\n` +
+          `  • ${busTie.toBusName} (${busTie.voltage}V)\n\n` +
+          `WARNINGS:\n` +
+          `  ⚠️ Fault current will INCREASE by ~30-40%\n` +
+          `  ⚠️ Arc flash hazard will INCREASE significantly\n` +
+          `  ⚠️ Verify all breaker ratings are adequate\n` +
+          `  ⚠️ Check source interlock if applicable\n\n` +
+          `Per IEEE 141: Ensure protection coordination is valid.\n\n` +
+          `Proceed with CLOSING bus tie?`
+        : `🔌 OPEN BUS TIE: ${busTie.tag}\n\n` +
+          `This will ISOLATE the buses:\n` +
+          `  • ${busTie.fromBusName} (${busTie.voltage}V)\n` +
+          `  • ${busTie.toBusName} (${busTie.voltage}V)\n\n` +
+          `This is the normal operating mode per IEEE 141.\n\n` +
+          `Proceed with OPENING bus tie?`;
+    
+    if (!confirm(confirmMessage)) {
+        console.log(`❌ Bus tie state change cancelled by user`);
+        return;
+    }
+    
+    // Update state
+    busTie.currentState = newState;
+    
+    console.log('\n' + '═'.repeat(70));
+    console.log(`🔄 BUS TIE STATE CHANGED: ${busTie.tag}`);
+    console.log('═'.repeat(70));
+    console.log(`Previous State:  ${currentState.toUpperCase()}`);
+    console.log(`New State:       ${newState.toUpperCase()}`);
+    console.log(`Normal State:    ${(busTie.normalState || 'open').toUpperCase()}`);
+    console.log(`Between:         ${busTie.fromBusName} ↔ ${busTie.toBusName}`);
+    console.log(`Voltage:         ${busTie.voltage} V`);
+    console.log('─'.repeat(70));
+    
+    if (newState === 'closed') {
+        console.log('⚠️ WARNING: Fault current will increase significantly!');
+        console.log('⚠️ WARNING: Arc flash hazard increased - update PPE labels!');
+        console.log('⚠️ WARNING: Verify breaker interrupting ratings!');
+    } else {
+        console.log('✅ Buses now isolated - normal operating mode');
+        console.log('✅ Fault current and arc flash reduced to normal levels');
+    }
+    
+    console.log('═'.repeat(70) + '\n');
+    
+    // Refresh display
+    displayComponents();
+    autoSaveToLocalStorage();
+    
+    // Show success message
+    const stateIcon = newState === 'open' ? '🔌' : '⚡';
+    const stateText = newState === 'open' ? 'OPEN (Isolated)' : 'CLOSED (Operating)';
+    
+    alert(
+        `${stateIcon} Bus Tie State Changed!\n\n` +
+        `Tag: ${busTie.tag}\n` +
+        `New State: ${stateText}\n\n` +
+        `${newState === 'closed' 
+            ? '⚠️ Remember to:\n' +
+              '  • Recalculate fault currents\n' +
+              '  • Update arc flash labels\n' +
+              '  • Verify breaker ratings\n' +
+              '  • Review protection coordination'
+            : '✅ Buses now operate independently\n' +
+              '  • Fault current reduced\n' +
+              '  • Arc flash hazard reduced\n' +
+              '  • Normal operating mode'
+        }`
+    );
+    
+    // ✅ Trigger recalculation of affected buses
+    if (typeof getBusesToRecalculate === 'function') {
+        const affectedBuses = getBusesToRecalculate(componentId);
+        console.log(`   Affected buses for recalculation: ${affectedBuses.join(', ')}`);
+        
+        // Note: Automatic recalculation is not triggered to avoid performance issues
+        // User should manually recalculate after state change
+        console.log('   ⚠️ Manual recalculation recommended after bus tie state change');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // MODAL HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1787,6 +2276,7 @@ window.editComponent = editComponent;
 window.saveComponentEdits = saveComponentEdits;
 window.deleteComponent = deleteComponent;
 window.closeEditComponentModal = closeEditComponentModal;
+window.toggleBusTieState = toggleBusTieState;
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
