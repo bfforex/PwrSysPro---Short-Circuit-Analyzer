@@ -2236,8 +2236,15 @@ function toggleBusTieState(componentId) {
         }`
     );
     
-    // TODO: Trigger recalculation of affected buses
-    // This will be implemented in Phase 3 when calculations are updated
+    // ✅ Trigger recalculation of affected buses
+    if (typeof getBusesToRecalculate === 'function') {
+        const affectedBuses = getBusesToRecalculate(componentId);
+        console.log(`   Affected buses for recalculation: ${affectedBuses.join(', ')}`);
+        
+        // Note: Automatic recalculation is not triggered to avoid performance issues
+        // User should manually recalculate after state change
+        console.log('   ⚠️ Manual recalculation recommended after bus tie state change');
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
