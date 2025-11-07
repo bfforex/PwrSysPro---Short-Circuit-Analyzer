@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PwrSys Pro - Short Circuit Analyzer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="css/styles.css" rel="stylesheet"/>
+</head>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- PERMANENT FIX: Voltage Drop Compatibility Patch -->
+<!-- Issue #6: Ensures both property names work -->
+<!-- Date: 2025-11-01 by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+if (window.calculateVoltageDrop) {
+    const original = window.calculateVoltageDrop;
+    window.calculateVoltageDrop = function(busId, path, loadFlowData) {
+        const result = original(busId, path, loadFlowData);
+        if (result) {
+            // Ensure both property name variants exist
+            if (result.totalDropPercent !== undefined && !result.cumulativeDropPercent) {
+                result.cumulativeDropPercent = result.totalDropPercent;
+            }
+            if (result.totalDropVolts !== undefined && !result.cumulativeDropVolts) {
+                result.cumulativeDropVolts = result.totalDropVolts;
+            }
+        }
+        return result;
+    };
+    console.log('✅ Voltage drop compatibility patch loaded');
+}
+</script>
+<body>
+<div class="auto-save-indicator" id="autoSaveIndicator">✓ Auto-saved</div>
+<div class="container">
+<div class="header">
+<button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+<h1>⚡ PwrSys Pro - Short Circuit Analyzer</h1>
+<p>NEC/PEC Compliant | Multi-Bus Power System Analysis</p>
+<p class="header-info">Author: <strong id="Author">Engr. B. P. Faraon</strong></p>
+<p class="header-info">Session: <span id="sessionDate">2025-10-29 12:23:00</span></p>
+</div>
+<div class="main-content">
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- OPTIMIZED SIDEBAR - Collapsible & Scrollable -->
+<!-- Modified: 2025-10-29 12:23:00 UTC by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="sidebar">
+<!-- Project Information - Compact -->
+<div class="section section-compact">
+<h3>📋 Project Info</h3>
+<div class="form-group">
+<label for="projectName">Project:</label>
+<input aria-label="Project name" id="projectName" placeholder="Project name" type="text"/>
+</div>
+<div class="form-group">
+<label for="engineer">Engineer:</label>
+<input aria-label="Engineer name" id="engineer" placeholder="Engineer name" type="text"/>
+</div>
+<div class="form-group">
+<label for="autoSave">
+<input checked="" class="checkbox-inline" id="autoSave" type="checkbox"/>
+                            Auto-save
+                        </label>
+</div>
+<!-- Collapsible Advanced Settings -->
+<details class="collapsible-section">
+<summary>Advanced Settings</summary>
+<div class="form-group">
+<label for="projectNumber">Project #:</label>
+<input aria-label="Project number" id="projectNumber" placeholder="Project number" type="text"/>
+</div>
+</details>
+</div>
+<!-- Bus Manager - Scrollable -->
+<div class="section section-scrollable">
+<h3>🔌 Bus Manager</h3>
+<button class="btn btn-success btn-full-width" onclick="openAddBusModal()">+ Add Bus</button>
+<div class="bus-tree" id="busTree">
+<div class="alert alert-info">
+                            No buses created yet. Click "Add Bus" to start.
+                        </div>
+</div>
+</div>
+<!-- Calculation Settings - Collapsible -->
+<div class="section section-compact">
+<details class="collapsible-section" open="">
+<summary>⚙️ Calculation Settings</summary>
+<div class="settings-grid">
+<div class="form-group">
+<label for="loadCurrent">Load (A):</label>
+<input aria-label="Load current in amperes" id="loadCurrent" min="0" step="0.1" type="number" value="100"/>
+</div>
+<div class="form-group">
+<label for="powerFactor">PF:</label>
+<input aria-label="Power factor" id="powerFactor" max="1" min="0" step="0.01" type="number" value="0.9"/>
+</div>
+<div class="form-group">
+<label for="voltageDropLimit">VD Limit (%):</label>
+<input aria-label="Voltage drop limit percentage" id="voltageDropLimit" max="100" min="0" step="0.1" type="number" value="3"/>
+</div>
+<div class="form-group">
+<label for="temperature">Temp (°C):</label>
+<input aria-label="Operating temperature in Celsius" id="temperature" max="150" min="-40" step="1" type="number" value="75"/>
+</div>
+</div>
+<div class="radio-group">
+<label for="method-ptp">
+<input checked="" id="method-ptp" name="method" type="radio" value="point-to-point"/>
+                                P-to-P
+                            </label>
+<label for="method-pu">
+<input id="method-pu" name="method" type="radio" value="per-unit"/>
+                                Per-Unit
+                            </label>
+</div>
+</details>
+</div>
+<!-- Add Component - Collapsible -->
+<div class="section section-compact">
+<details class="collapsible-section">
+<summary>➕ Add Component</summary>
+<div class="form-group">
+<label for="fromBus">From:</label>
+<select aria-label="Select source bus" id="fromBus">
+<option value="">Select source bus</option>
+</select>
+</div>
+<div class="form-group">
+<label for="toBus">To:</label>
+<select aria-label="Select destination bus" id="toBus">
+<option value="">Select destination bus</option>
+</select>
+</div>
+<div class="form-group">
+<label for="componentType">Type:</label>
+<select aria-label="Select component type" id="componentType" onchange="updateComponentInputs()">
+<option value="transformer">Transformer</option>
+<option value="cable">Cable</option>
+<option value="generator">Generator</option>
+<option value="motor">Motor</option>
+<option value="bus-tie">Bus Tie (Circuit Breaker)</option>
+</select>
+</div>
+<div id="componentInputs"></div>
+<button class="btn btn-success btn-full-width" onclick="addComponent()">+ Add</button>
+</details>
+</div>
+<!-- Actions -->
+<div class="section section-compact">
+<h3>🎬 Actions</h3>
+<button class="btn btn-primary btn-full-width" id="calculateBtn">
+                        🔢 Calculate All
+                    </button>
+<button class="btn btn-danger btn-full-width btn-top-margin" onclick="clearAll()">
+                        🗑️ Clear All
+                    </button>
+<button class="btn btn-secondary btn-full-width btn-top-margin" onclick="saveProject()">
+                        💾 Save
+                    </button>
+<button class="btn btn-secondary btn-full-width btn-top-margin" onclick="loadProject()">
+                        📂 Load
+                    </button>
+</div>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- ✅ ADD MODIFICATION 1 HERE (AFTER ACTIONS SECTION) -->
+<!-- System-Wide Maximum Demand Calculation UI -->
+<!-- Added: 2025-11-04 23:02:53 UTC by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="section section-compact">
+    <h3 style="color: #667eea;">🏭 System-Wide Analysis</h3>
+    <p style="font-size: 11px; color: #666; line-height: 1.4; margin: 5px 0 10px 0;">
+        Calculate total maximum demand for multiple substations (Level 2 hierarchy).
+    </p>
+    
+    <button onclick="calculateSystemDemand()" 
+            class="btn btn-primary btn-full-width"
+            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                   color: white; 
+                   border: none;
+                   margin-bottom: 10px;">
+        📊 Calculate System MD
+    </button>
+    
+    <div class="form-group" style="margin-top: 10px;">
+        <label for="customSystemDF" style="font-size: 12px;">
+            Custom System DF (optional):
+            <span class="tooltip" style="font-size: 11px;">ℹ️
+                <span class="tooltiptext">
+                    Override automatic diversity factor (1.0-2.0).<br/>
+                    Leave blank for IEEE 141-1993 automatic calculation.<br/>
+                    Typical: 1.30 (2-3 subs), 1.45 (4-6 subs), 1.55 (7-10 subs)
+                </span>
+            </span>
+        </label>
+        <input type="number" 
+               id="customSystemDF" 
+               placeholder="Auto (IEEE 141-1993)" 
+               step="0.01" 
+               min="1.0" 
+               max="2.0"
+               style="width: 100%;"
+               aria-label="Custom system diversity factor">
+    </div>
+    
+    <details class="collapsible-section" style="margin-top: 10px;">
+        <summary style="font-size: 11px; color: #667eea; cursor: pointer;">
+            ℹ️ How it works
+        </summary>
+        <div style="font-size: 10px; color: #666; line-height: 1.5; padding: 8px; background: rgba(102, 126, 234, 0.05); border-radius: 4px; margin-top: 5px;">
+            <strong>Level 1:</strong> Each substation calculates its maximum demand (MD)<br/>
+            <strong>Level 2:</strong> System combines all MDs with diversity factor<br/>
+            <strong>Result:</strong> Optimized sizing for main utility service
+        </div>
+    </details>
+</div>
+</div>
+<!-- End Sidebar -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MAIN CONTENT AREA -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="content-area">
+<div class="tabs">
+<button class="tab active" onclick="switchTab(event, 'buses')">🔌 Buses</button>
+<button class="tab" onclick="switchTab(event, 'components')">Components</button>
+<button class="tab" onclick="switchTab(event, 'results')">Results</button>
+<button class="tab" onclick="switchTab(event, 'calculations')">Calculations</button>
+<button class="tab" onclick="switchTab(event, 'exports')">📥 Export</button>
+<button class="tab" id="recommendationsTabButton" onclick="switchTab(event, 'recommendations')" style="display: none;">💡 Recommendations</button>
+</div>
+<!-- Buses Tab -->
+<div class="tab-content active" id="busesTab">
+<div class="section">
+<h3>🔌 Power System Buses</h3>
+<div id="busesContent">
+<div class="alert alert-info">
+                                No buses created yet. Use the Bus Manager to add buses to your system.
+                            </div>
+</div>
+</div>
+</div>
+<!-- Components Tab -->
+<div class="tab-content" id="componentsTab">
+<div class="section">
+<h3>🔧 System Components</h3>
+<div id="componentsList">
+<div class="alert alert-info">
+                                No components added yet. Add components to connect your buses.
+                            </div>
+</div>
+</div>
+</div>
+<!-- Results Tab -->
+<div class="tab-content" id="resultsTab">
+<div id="resultsContainer">
+<div class="alert alert-info">
+                            Run calculation to see results here.
+                        </div>
+</div>
+</div>
+<!-- Calculations Tab -->
+<div class="tab-content" id="calculationsTab">
+<div id="calculationSteps">
+<div class="alert alert-info">
+                            Detailed calculations will appear here after running the analysis.
+                        </div>
+</div>
+</div>
+<!-- Export Tab -->
+<div class="tab-content" id="exportsTab">
+<div class="section">
+<h2>📥 Export Reports</h2>
+<p class="export-description">Generate comprehensive reports in various formats</p>
+<div class="export-categories">
+<!-- Bus Reports -->
+<div class="export-category">
+<h3>🔌 Bus Reports</h3>
+<p class="category-desc">Export detailed analysis for individual or all buses</p>
+<div class="export-buttons-grid">
+<button class="btn btn-info btn-large" onclick="promptBusExport()">
+                                        📄 Export Single Bus Report
+                                    </button>
+<button class="btn btn-primary btn-large" onclick="exportAllBusesSummary()">
+                                        📊 Export All Buses Summary
+                                    </button>
+</div>
+</div>
+<!-- Bus Tie Reports -->
+<div class="export-category">
+<h3>🔌 Bus Tie Reports</h3>
+<p class="category-desc">Generate scenario comparison reports for bus tie configurations</p>
+<div class="export-buttons-grid">
+<button class="btn btn-info btn-large" onclick="exportBusTieReport()">
+                                        📊 Export Bus Tie Analysis
+                                    </button>
+<button class="btn btn-primary btn-large" onclick="exportAllBusTiesReport()">
+                                        📋 Export All Bus Ties Report
+                                    </button>
+</div>
+</div>
+<!-- Recommendations -->
+<div class="export-category">
+<h3>💡 Recommendations</h3>
+<p class="category-desc">Export engineering recommendations and action plans</p>
+<div class="export-buttons-grid">
+<button class="btn btn-warning btn-large" onclick="exportRecommendationsCSV()">
+                                        📑 Export Recommendations (CSV)
+                                    </button>
+<button class="btn btn-secondary btn-large" onclick="exportActionPlan()">
+                                        📋 Export Action Plan
+                                    </button>
+</div>
+</div>
+<!-- Project Data -->
+<div class="export-category">
+<h3>💾 Project Data</h3>
+<p class="category-desc">Save and backup your project</p>
+<div class="export-buttons-grid">
+<button class="btn btn-success btn-large" onclick="saveProject()">
+                                        💾 Save Project (JSON)
+                                    </button>
+<button class="btn btn-secondary btn-large" onclick="loadProject()">
+                                        📂 Load Project
+                                    </button>
+</div>
+</div>
+</div>
+<!-- Export Tips -->
+<div class="export-tips">
+<h4>💡 Export Tips</h4>
+<ul>
+<li>Calculate all buses first for complete system reports</li>
+<li>CSV exports can be opened in Excel or Google Sheets</li>
+<li>Action plans include checkboxes for tracking completion</li>
+<li>Save project regularly to preserve your work</li>
+<li>Reports include IEEE standards compliance analysis</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- End Export Tab -->
+<!-- System Recommendations Tab -->
+<div class="tab-content" id="recommendationsTab">
+<div id="recommendationsTabContent">
+<div class="alert alert-info">
+                            Calculate all buses to generate system-wide recommendations.
+                        </div>
+</div>
+</div>
+</div>
+<!-- End Content Area -->
+</div>
+<!-- End Main Content -->
+</div>
+<!-- End Container -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODALS -->
+<!-- Modified: 2025-10-29 12:23:00 UTC by bfforex -->
+<!-- Feature #5: Demand & Diversity Factors Added -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- Add Bus Modal -->
+<div aria-labelledby="addBusModalTitle" class="modal" id="addBusModal" role="dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h2 id="addBusModalTitle">Add New Bus</h2>
+<span aria-label="Close modal" class="close-modal" onclick="closeAddBusModal()">×</span>
+</div>
+<div class="modal-body">
+<div class="form-group">
+<label for="newBusName">Bus Name:</label>
+<input aria-label="Bus name" id="newBusName" placeholder="e.g., Main Switchboard" type="text"/>
+</div>
+<div class="form-group">
+<label for="newBusVoltage">Bus Voltage (V):</label>
+<input aria-label="Bus voltage in volts" id="newBusVoltage" min="0" placeholder="e.g., 480" step="0.1" type="number"/>
+</div>
+<div class="form-group">
+<label for="newBusType">Bus Type:</label>
+<select aria-label="Select bus type" id="newBusType" onchange="toggleUtilityFields()">
+<option value="distribution">Distribution</option>
+<option value="branch">Branch/Panel</option>
+<option value="source">Source (Utility/Generator)</option>
+</select>
+</div>
+<div class="form-group">
+<label for="newBusLoad">Bus Load Current (A) - Optional:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Specify direct load on this bus. Leave blank to calculate from downstream motors, transformers, and cables automatically.</span>
+</span>
+</label>
+<input aria-label="Bus load current in amperes" id="newBusLoad" min="0" placeholder="Auto-calculated if blank" step="0.1" type="number"/>
+<div class="small-muted">If blank, load will be automatically calculated from downstream equipment</div>
+</div>
+<div class="form-group">
+<label for="newBusParent">Parent Bus:</label>
+<select aria-label="Select parent bus" id="newBusParent">
+<option value="">None (Root Bus)</option>
+</select>
+</div><div class="form-group"><label>Insert After:</label><select class="form-control" id="insertAfterBus"></select></div>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- FEATURE #5: DEMAND & DIVERSITY FACTORS -->
+<!-- Added: 2025-10-29 12:23:00 UTC by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<details class="collapsible-section">
+<summary style="cursor: pointer; padding: 10px; background: #f0f0f0; border-radius: 5px; margin: 10px 0;">
+                        ⚡ Demand &amp; Diversity Factors (Optional - Feature #5)
+                    </summary>
+<div style="padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; margin-top: 5px;">
+<div class="form-group">
+<label for="newBusDemandFactor">
+                                Demand Factor (0.0 - 1.0):
+                                <span class="tooltip">ℹ️
+                                    <span class="tooltiptext">Ratio of actual load to connected load per NEC Article 220. Default: 1.0 (100%). Example: 0.85 means 85% of connected load is expected to be used simultaneously.</span>
+</span>
+</label>
+<input id="newBusDemandFactor" max="1" min="0" placeholder="1.0 (100%)" step="0.01" type="number" value="1.0"/>
+<small style="color: #666; font-size: 0.85em;">
+                                📖 NEC Article 220 - Demand factors for load calculations<br/>
+                                Examples: Lighting=100%, Receptacles=50%, Motors=85-100% depending on duty
+                            </small>
+</div>
+<div class="form-group">
+<label for="newBusDiversityFactor">
+                                Diversity Factor (≥ 1.0):
+                                <span class="tooltip" tabindex="0" aria-label="Info about diversity factor">
+                                    ℹ️
+                                    <span class="tooltiptext">
+                                        Per IEEE 141: Diversity Factor = (Sum of individual maximum demands) ÷ (Maximum demand of the whole system).
+                                        This value is always ≥ 1. Example: If feeders total 240 kW and system peak is 150 kW, DF = 1.6.
+                                        Leave blank for automatic selection based on bus type.
+                                    </span>
+                                </span>
+                                </label>
+                                <input id="newBusDiversityFactor" name="diversityFactor" type="number" min="1" step="0.01"
+                                       placeholder="Auto (based on bus type)" aria-describedby="diversityHelp"/>
+                                <small id="diversityHelp" style="color: #666; font-size: 0.85em;">
+                                    📖 IEEE 141-1993 Red Book - Diversity Factor for system design<br/>
+                                    Auto defaults: Source Bus = 1.10, Distribution Bus = 1.15, Branch Circuit = 1.20<br/>
+                                    Leave blank to use automatic values
+                                </small>
+
+</div>
+
+<div style="background: rgba(102, 126, 234, 0.1); padding: 10px; border-radius: 5px; margin-top: 10px;">
+    <strong style="color: #667eea;">💡 What's the difference?</strong>
+    <ul style="margin: 8px 0; padding-left: 20px; font-size: 0.9em; line-height: 1.6;">
+        <li><strong>Demand Factor (Kd)</strong>: Used for an individual load or a small group. Formula:
+            <br/><code>Maximum Demand (individual) = Connected Load × Demand Factor</code>
+            <br/>Demand Factor ≤ 1.0 (reduces connected load).</li>
+        <li><strong>Diversity Factor (DF)</strong>: Used when combining multiple load groups at system level. Formula:
+            <br/><code>Maximum System Demand = (Sum of Individual Maximum Demands) ÷ Diversity Factor</code>
+            <br/>Diversity Factor ≥ 1.0 (accounts for non-simultaneous peaks).</li>
+        <li><strong>Relationship</strong>: Kd = 1 ÷ DF (they are inverses, do NOT multiply both).</li>
+        <li><strong>Calculation Flow</strong>:
+            <br/>Step 1: Apply Demand Factor to each load → Individual Maximum Demands.
+            <br/>Step 2: Sum all individual demands and apply Diversity Factor → System Maximum Demand.</li>
+    </ul>
+</div>
+
+</div>
+</details>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="hidden" id="utilityModeGroup">
+<div class="form-group">
+<label for="utilityMode">Utility Source Data Mode:</label>
+<select aria-label="Select utility source data mode" id="utilityMode" onchange="toggleUtilityInputMode()">
+<option value="kA">Fault Current (kA)</option>
+<option value="MVA">Fault MVA</option>
+</select>
+</div>
+</div>
+<div class="hidden" id="utilitySourceGroup">
+<div class="form-group" id="faultCurrentMode">
+<label for="newBusUtilityFault">Available Fault Current (kA):
+                            <span class="tooltip">ℹ️
+                                <span class="tooltiptext">Three-phase symmetrical fault current available from utility</span>
+</span>
+</label>
+<input aria-label="Available fault current in kA" id="newBusUtilityFault" min="0" placeholder="e.g., 50" step="0.1" type="number"/>
+</div>
+<div class="form-group hidden" id="faultMVAMode">
+<label for="newBusUtilityMVA">Available Fault MVA:
+                            <span class="tooltip">ℹ️
+                                <span class="tooltiptext">Three-phase symmetrical fault MVA from utility</span>
+</span>
+</label>
+<input aria-label="Available fault MVA" id="newBusUtilityMVA" min="0" placeholder="e.g., 500" step="0.1" type="number"/>
+</div>
+</div>
+<div class="form-group hidden" id="utilityXRGroup">
+<label for="newBusUtilityXR">Source X/R Ratio:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Typical values: 3-10 for utility sources, 15-30 for generators</span>
+</span>
+</label>
+<input aria-label="Source X/R ratio" id="newBusUtilityXR" min="0" placeholder="e.g., 3" step="0.1" type="number" value="3"/>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeAddBusModal()">Cancel</button>
+<button class="btn btn-primary" onclick="saveBus()">Add Bus</button>
+</div>
+</div>
+</div>
+<!-- Edit Bus Modal -->
+<div aria-labelledby="editBusModalTitle" class="modal" id="editBusModal" role="dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h2 id="editBusModalTitle">Edit Bus</h2>
+<span aria-label="Close modal" class="close-modal" onclick="closeEditBusModal()">×</span>
+</div>
+<div class="modal-body" id="editBusModalBody"></div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeEditBusModal()">Cancel</button>
+<button class="btn btn-primary" onclick="saveBusEdits()">Save Changes</button>
+</div>
+</div>
+</div>
+<!-- Edit Component Modal -->
+<div aria-labelledby="editComponentModalTitle" class="modal" id="editComponentModal" role="dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h2 id="editComponentModalTitle">Edit Component</h2>
+<span aria-label="Close modal" class="close-modal" onclick="closeEditComponentModal()">×</span>
+</div>
+<div class="modal-body" id="editComponentModalBody"></div>
+<div class="modal-footer">
+<button class="btn btn-secondary" onclick="closeEditComponentModal()">Cancel</button>
+<button class="btn btn-primary" onclick="saveComponentEdits()">Save Changes</button>
+</div>
+</div>
+</div>
+<!-- Hidden File Input -->
+<label class="sr-only" for="fileInput">Load Project File</label>
+<input accept=".json" aria-label="Load project JSON file" class="hidden" id="fileInput" type="file"/>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT MODULES -->
+<!-- Updated: 2025-10-29 12:23:00 UTC by bfforex -->
+<!-- Feature #5: Added demandFactors.js -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 1: FOUNDATION (Constants, State, Utilities) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/constants.js"></script>
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 2: FEATURE #4 - DEMAND & DIVERSITY FACTORS -->
+<!-- ✅ CRITICAL: demandFactors.js MUST load BEFORE loadDiversityCalc.js -->
+<!-- Updated: 2025-11-01 09:42:15 UTC by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/demandFactors.js"></script>
+<script src="js/loadDiversityCalc.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 3: MODAL MANAGER (Accessibility) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/modalManager.js"></script>
+<!-- LAYER 4: ANALYTICS AND STANDARDS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/thresholds.js"></script>
+<script src="js/reportAnalytics.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 5: RECOMMENDATION SYSTEM -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/recommendationRules.js"></script>
+<script src="js/recommendationEngine.js"></script>
+<script src="js/recommendationUI.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 6: MANAGER LAYER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/busManager.js"></script>
+<script src="js/componentManager.js"></script>
+<!-- Bus Tie Mesh Detection Module -->
+<script src="js/meshDetection.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 7: CALCULATION LAYER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/loadCalculations.js"></script>
+<script src="js/motorContribution.js"></script>
+<!-- Protection Device Ratings Module -->
+<script src="js/protectionDeviceRatings.js"></script>
+<script src="js/voltageDropCalc.js"></script>
+<script src="js/shortCircuitCalc.js"></script>
+<script src="js/loadFlowCalc.js"></script>
+<!-- Arc Flash Analysis -->
+<script src="js/arcFlashCalc.js"></script>
+<script src="js/exportArcFlashReport.js"></script>
+<!-- Bus Tie Calculation Module -->
+<script src="js/busTieCalculations.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 8: CALCULATION COORDINATOR -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/calculations.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 9: DISPLAY LAYER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/calculationDisplay.js"></script>
+<script src="js/ui.js"></script>
+<!-- Compatibility shim: defines safe aliases/fallbacks for helpers referenced across modules.
+     Non-destructive: only creates missing functions. Load after ui.js and before main.js. -->
+<script src="js/compat.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 10: EXPORT/REPORT LAYER -->
+<!-- Updated: 2025-11-01 10:28:22 UTC by bfforex -->
+<!-- Issue #6: Added enhanced system report generator -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/exportReport.js"></script>
+<script src="js/exportLoadFlowReport.js"></script>
+<script src="js/exportEnhancedSystemReport.js"></script>
+<!-- Bus Tie Reports Module -->
+<script src="js/busTieReports.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 11: PROJECT MANAGEMENT -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/projectManager.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 12: APPLICATION ENTRY POINT (MUST BE LAST) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/main.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- DIAGNOSTIC SCRIPT - Check module loading -->
+<!-- Updated: 2025-11-01 09:42:15 UTC by bfforex -->
+<!-- Fixed: Correct variable names for diversity factors -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+    console.log('\n' + '═'.repeat(80));
+    console.log('MODULE LOADING DIAGNOSTIC v2.1');
+    console.log('═'.repeat(80));
+    
+    const requiredFunctions = {
+        // Short Circuit Functions
+        'calculateShortCircuit': typeof calculateShortCircuit !== 'undefined',
+        'calculateShortCircuitPointToPoint': typeof calculateShortCircuitPointToPoint !== 'undefined',
+        'calculateShortCircuitPerUnit': typeof calculateShortCircuitPerUnit !== 'undefined',
+        
+        // Load Flow Functions
+        'calculateLoadFlow': typeof calculateLoadFlow !== 'undefined',
+        'calculateLoadFlowWithDemand': typeof calculateLoadFlowWithDemand !== 'undefined',
+        'applyDemandFactorsToLoadFlow': typeof applyDemandFactorsToLoadFlow !== 'undefined',
+        
+        // Voltage Drop Functions
+        'calculateVoltageDrop': typeof calculateVoltageDrop !== 'undefined',
+        
+        // Motor Contribution Functions
+        'calculateMotorContribution': typeof calculateMotorContribution !== 'undefined',
+        'calculateTotalMotorContribution': typeof calculateTotalMotorContribution !== 'undefined',
+        'combineSystemAndMotorFault': typeof combineSystemAndMotorFault !== 'undefined',
+        'combineMotorWithSystem': typeof combineMotorWithSystem !== 'undefined',
+        
+        // Calculation Coordinator
+        'calculateBus': typeof calculateBus !== 'undefined',
+        'calculateAllBuses': typeof calculateAllBuses !== 'undefined',
+        
+        // Display Functions
+        'displayCalculationResults': typeof displayCalculationResults !== 'undefined',
+        
+        // Demand & Diversity Factors (CORRECTED)
+        'DIVERSITY_FACTORS': typeof window.DIVERSITY_FACTORS !== 'undefined',
+        'DEMAND_FACTORS': typeof window.DEMAND_FACTORS !== 'undefined',
+        'diversityToDemand': typeof window.diversityToDemand === 'function',
+        'getMotorDiversityFactor': typeof window.getMotorDiversityFactor === 'function',
+        'calculateDiversifiedLoad': typeof window.calculateDiversifiedLoad === 'function',
+        'getDiversityFactorForBus': typeof getDiversityFactorForBus !== 'undefined'
+    };
+    
+    let allLoaded = true;
+    let criticalMissing = [];
+    
+    for (const [funcName, isLoaded] of Object.entries(requiredFunctions)) {
+        const status = isLoaded ? '✅' : '❌';
+        console.log(`${status} ${funcName}: ${isLoaded ? 'LOADED' : 'MISSING'}`);
+        
+        if (!isLoaded) {
+            allLoaded = false;
+            criticalMissing.push(funcName);
+        }
+    }
+    
+    console.log('═'.repeat(80));
+    
+    if (allLoaded) {
+        console.log('✅ ALL MODULES LOADED SUCCESSFULLY');
+        console.log('✅ Feature #1: Motor Contribution - READY');
+        console.log('✅ Feature #4: Demand & Diversity Factors - READY');
+        console.log('✅ Issue #2: Voltage Drop Base Voltage - FIXED');
+        console.log('✅ System Status: OPERATIONAL');
+    } else {
+        console.error('❌ SOME MODULES FAILED TO LOAD');
+        console.error('   Missing functions:', criticalMissing.join(', '));
+        console.error('   Check script loading order in index.html');
+        console.error('   Check browser console for JavaScript errors');
+        console.error('   Verify all .js files are accessible');
+    }
+    
+    console.log('═'.repeat(80) + '\n');
+    
+    // Additional system checks
+    console.log('SYSTEM HEALTH CHECK:');
+    console.log('  - buses array:', Array.isArray(buses) ? `✅ (${buses.length} buses)` : '❌ Not initialized');
+    console.log('  - components array:', Array.isArray(components) ? `✅ (${components.length} components)` : '❌ Not initialized');
+    console.log('  - SQRT3 constant:', typeof SQRT3 !== 'undefined' ? `✅ (${SQRT3.toFixed(4)})` : '❌ Missing');
+    console.log('  - CABLE_IMPEDANCE_DATA:', typeof CABLE_IMPEDANCE_DATA !== 'undefined' ? '✅ Loaded' : '❌ Missing');
+    
+    // Diversity Factors Check
+    if (typeof window.DIVERSITY_FACTORS !== 'undefined') {
+        console.log('  - DIVERSITY_FACTORS:', '✅ Loaded');
+        console.log('    - Motors:', typeof window.DIVERSITY_FACTORS.motors !== 'undefined' ? '✅' : '❌');
+        console.log('    - Welding:', typeof window.DIVERSITY_FACTORS.welding !== 'undefined' ? '✅' : '❌');
+        console.log('    - LNG Plant:', typeof window.DIVERSITY_FACTORS.lng_plant !== 'undefined' ? '✅' : '❌');
+        console.log('    - Fabrication Yard:', typeof window.DIVERSITY_FACTORS.fabrication_yard !== 'undefined' ? '✅' : '❌');
+    } else {
+        console.log('  - DIVERSITY_FACTORS:', '❌ Not loaded');
+    }
+    
+    if (typeof window.DEMAND_FACTORS !== 'undefined') {
+        console.log('  - DEMAND_FACTORS:', '✅ Loaded');
+    } else {
+        console.log('  - DEMAND_FACTORS:', '❌ Not loaded');
+    }
+    
+    console.log('');
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- SYSTEM-WIDE MAXIMUM DEMAND CALCULATION HANDLERS -->
+<!-- Added: 2025-11-04 22:55:21 UTC by bfforex -->
+<!-- Feature: Hierarchical Level 2 Diversity Factors -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+/**
+ * Calculate system-wide maximum demand for all distribution substations
+ * Triggers Level 2 hierarchical calculation
+ */
+function calculateSystemDemand() {
+    console.log('🏭 Starting System-Wide Maximum Demand Calculation...');
+    console.log('Date/Time: 2025-11-05 02:13:18 UTC');
+    console.log('User: bfforex');
+    
+    try {
+        // ═══════════════════════════════════════════════════════════════
+        // IDENTIFY SUBSTATIONS BY LVSG (LOW VOLTAGE SWITCHGEAR)
+        // 
+        // System Architecture:
+        //   Each substation contains:
+        //     - MVSG (LCxx1-1) at 13.8kV (Medium Voltage Switchgear)
+        //     - Distribution Transformer (13.8kV → 440V)
+        //     - LVSG (LCxx1-4) at 440V (Low Voltage Switchgear)
+        //     - Connected loads (shops, panels, MCCs, motors)
+        //
+        // Strategy:
+        //   Calculate system MD based on LVSG buses (LCxx1-4) because:
+        //   - All substation loads connect to LVSG
+        //   - Load flow at LVSG captures full substation demand
+        //   - Transformer automatically reflects load to MV side
+        //   - No double-counting
+        //
+        // Updated: 2025-11-05 02:15:00 UTC by bfforex
+        // ═══════════════════════════════════════════════════════════════
+        
+        console.log('📊 Identifying substations by LVSG (Low Voltage Switchgear)...');
+        
+        // Step 1: Find all transformers (they define substation boundaries)
+        const transformers = components.filter(c => c.type === 'transformer');
+        console.log('📊 Total transformers found:', transformers.length);
+        
+        // Step 2: Get LVSG buses (secondary side of transformers)
+        //         These are the LCxx1-4 buses (440V side)
+        const lvsgBusIds = transformers.map(t => t.toBus);
+        console.log('📊 LVSG buses (transformer secondary sides):', lvsgBusIds.length);
+        
+        // Step 3: Filter to get actual LVSG buses (should be distribution/branch type)
+        const lvsgBuses = buses.filter(b => lvsgBusIds.includes(b.id));
+        
+        console.log('📊 LVSG buses identified:', 
+            lvsgBuses.map(b => ({
+                name: b.name,
+                type: b.type,
+                voltage: b.voltage,
+                id: b.id
+            }))
+        );
+        
+        // Step 4: Get corresponding MVSG and transformer details for each substation
+        console.log('\n📊 SUBSTATION DETAILS:');
+        const substationDetails = lvsgBuses.map(lvsg => {
+            // Find the transformer feeding this LVSG
+            const xfmr = transformers.find(t => t.toBus === lvsg.id);
+            
+            // Find the MVSG (fromBus of transformer)
+            const mvsg = xfmr ? buses.find(b => b.id === xfmr.fromBus) : null;
+            
+            const detail = {
+                substationName: lvsg.name.replace('-4', ''), // LCJ1-4 → LCJ1
+                mvsg: mvsg ? mvsg.name : 'Unknown',
+                mvsgVoltage: xfmr ? xfmr.primary : 0,
+                transformer: xfmr ? `${xfmr.rating} kVA` : 'None',
+                lvsg: lvsg.name,
+                lvsgVoltage: xfmr ? xfmr.secondary : lvsg.voltage,
+                lvsgId: lvsg.id
+            };
+            
+            console.log(`   ${detail.substationName}:`);
+            console.log(`      MVSG: ${detail.mvsg} (${detail.mvsgVoltage}V)`);
+            console.log(`      Transformer: ${detail.transformer}`);
+            console.log(`      LVSG: ${detail.lvsg} (${detail.lvsgVoltage}V) ← Calculate MD here`);
+            
+            return detail;
+        });
+        
+        // Step 5: The substations for system calculation are the LVSG buses
+        const substationBuses = lvsgBuses;
+        
+        // Step 6: Identify other buses (not substations)
+        const allBuses = buses.filter(b => b.type === 'distribution' || b.type === 'branch');
+        const nonSubstationBuses = allBuses.filter(b => !lvsgBusIds.includes(b.id));
+        
+        if (nonSubstationBuses.length > 0) {
+            console.log('\nℹ️ Other buses (not LVSG, excluded from system calculation):');
+            nonSubstationBuses.forEach(b => {
+                const feedingComp = components.find(c => c.toBus === b.id);
+                const parent = feedingComp ? buses.find(pb => pb.id === feedingComp.fromBus) : null;
+                console.log(`   - ${b.name} (${b.voltage}V) - fed from: ${parent ? parent.name : 'unknown'} via ${feedingComp ? feedingComp.type : 'unknown'}`);
+            });
+        }
+        
+        // ═══════════════════════════════════════════════════════════════
+        // VALIDATION CHECKS
+        // ═══════════════════════════════════════════════════════════════
+        
+        if (substationBuses.length === 0) {
+            alert('⚠️ No substations found.\n\n' +
+                  'Substations are identified by their LVSG (Low Voltage Switchgear) buses.\n' +
+                  'These are the secondary side of distribution transformers (e.g., LCxx1-4).\n\n' +
+                  'Current system has:\n' +
+                  '  • ' + transformers.length + ' transformer(s)\n' +
+                  '  • ' + allBuses.length + ' distribution/branch bus(es)\n' +
+                  '  • 0 LVSG buses identified\n\n' +
+                  'Please check:\n' +
+                  '1. Distribution transformers are defined with type="transformer"\n' +
+                  '2. Transformers have secondary buses (LVSG)\n' +
+                  '3. System topology matches: MVSG → Transformer → LVSG → Loads');
+            return;
+        }
+        
+        if (substationBuses.length < 2) {
+            const msg = '⚠️ System calculation requires at least 2 substations.\n\n' +
+                       'You currently have ' + substationBuses.length + ' substation:\n' +
+                       '  • ' + substationDetails[0].substationName + ' (LVSG: ' + substationDetails[0].lvsg + ')\n\n';
+            
+            alert(msg + 
+                  'Each substation should have:\n' +
+                  '  - MVSG (Medium Voltage Switchgear)\n' +
+                  '  - Distribution Transformer\n' +
+                  '  - LVSG (Low Voltage Switchgear)\n\n' +
+                  'Add more substations to perform system-wide diversity analysis.');
+            return;
+        }
+        
+        // Get custom diversity factor if specified
+        const customDFInput = document.getElementById('customSystemDF');
+        const customDF = customDFInput && customDFInput.value ? parseFloat(customDFInput.value) : null;
+        
+        if (customDF !== null && (customDF < 1.0 || customDF > 2.0)) {
+            alert('⚠️ Invalid Diversity Factor\n\n' +
+                  'System diversity factor must be between 1.0 and 2.0\n' +
+                  '(Typical range: 1.3 to 1.6 for industrial facilities)\n\n' +
+                  'Current value: ' + customDF);
+            return;
+        }
+        
+        // Validate that calculateSystemMaximumDemand function exists
+        if (typeof calculateSystemMaximumDemand !== 'function') {
+            alert('❌ Error: System calculation function not loaded.\n\n' +
+                  'The required module (loadFlowCalc.js) may not have loaded correctly.\n' +
+                  'Please refresh the page and try again.\n\n' +
+                  'If the problem persists, check the browser console for errors.');
+            console.error('❌ calculateSystemMaximumDemand function not found');
+            console.error('   Check that js/loadFlowCalc.js has been modified correctly');
+            return;
+        }
+        
+        // Show loading indicator
+        const resultDiv = document.getElementById('resultsContainer');
+        if (resultDiv) {
+            const substationNames = substationDetails.map(s => s.substationName).join(', ');
+            
+            resultDiv.innerHTML = 
+                '<div style="text-align: center; padding: 60px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; color: white;">' +
+                '<h2 style="margin: 0 0 20px 0; font-size: 28px;">⏳ Calculating System Maximum Demand...</h2>' +
+                '<p style="font-size: 16px; margin: 0 0 10px 0;">Analyzing ' + substationBuses.length + ' substations</p>' +
+                '<p style="font-size: 13px; margin: 0 0 15px 0; opacity: 0.9;">' + substationNames + '</p>' +
+                '<p style="font-size: 12px; margin: 0 0 15px 0; opacity: 0.8;">Calculating load flow at each LVSG (Low Voltage Switchgear)...</p>' +
+                '<div style="display: inline-block; width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>' +
+                '</div>' +
+                '<style>@keyframes spin { to { transform: rotate(360deg); } }</style>';
+            
+            // Switch to Results tab
+            const resultsTab = document.querySelector('[onclick*="results"]');
+            if (resultsTab) {
+                resultsTab.click();
+            }
+            
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Extract LVSG bus IDs for calculation
+        const substationIds = substationBuses.map(b => b.id);
+        
+        console.log(`\n✅ Found ${substationIds.length} substations for system analysis`);
+        console.log('📋 Calculating MD at LVSG buses:', substationBuses.map(b => b.name).join(', '));
+        
+        // Perform calculation with a small delay to show loading animation
+        setTimeout(() => {
+            try {
+                const options = {
+                    facilityType: 'heavy_fabrication_yard',
+                    includeDetailedSteps: true
+                };
+                
+                if (customDF !== null) {
+                    options.systemDiversityFactor = customDF;
+                    console.log(`Using custom system DF: ${customDF}`);
+                } else {
+                    console.log('Using automatic system DF based on substation count');
+                }
+                
+                const result = calculateSystemMaximumDemand(substationIds, options);
+                
+                // Enhance result with substation details
+                result.substations.forEach((sub, idx) => {
+                    const detail = substationDetails.find(d => d.lvsgId === sub.busId);
+                    if (detail) {
+                        sub.substationName = detail.substationName;
+                        sub.mvsg = detail.mvsg;
+                        sub.lvsg = detail.lvsg;
+                        sub.transformer = detail.transformer;
+                    }
+                });
+                
+                // Display results
+                displaySystemMaximumDemandResults(result);
+                
+                console.log('✅ System calculation complete');
+                console.log('   Total System MD:', result.totalSystemMD.toFixed(2), 'A');
+                console.log('   Reduction:', result.currentReductionPercent.toFixed(1), '%');
+                
+            } catch (calcError) {
+                console.error('❌ Error during calculation:', calcError);
+                console.error('Stack trace:', calcError.stack);
+                
+                if (resultDiv) {
+                    resultDiv.innerHTML = 
+                        '<div style="color: #d32f2f; padding: 30px; background: #ffebee; border-radius: 8px; border-left: 5px solid #d32f2f;">' +
+                        '<h3 style="margin-top: 0;">❌ Calculation Error</h3>' +
+                        '<p><strong>Error:</strong> ' + calcError.message + '</p>' +
+                        '<p>Please check:</p>' +
+                        '<ul style="text-align: left;">' +
+                        '<li>All LVSG buses (LCxx1-4) have loads connected</li>' +
+                        '<li>Load flow calculations can run for each substation</li>' +
+                        '<li>Transformers are properly configured</li>' +
+                        '<li>Browser console for detailed error messages</li>' +
+                        '</ul>' +
+                        '<button class="btn btn-secondary" onclick="location.reload()">Refresh Page</button>' +
+                        '</div>';
+                }
+                
+                alert('❌ Calculation Error\n\n' + calcError.message + '\n\nCheck console for details.');
+            }
+        }, 500); // 500ms delay for smooth UX
+        
+    } catch (error) {
+        console.error('❌ Error in system calculation setup:', error);
+        console.error('Stack trace:', error.stack);
+        alert('❌ Setup Error\n\n' + error.message + '\n\nCheck console for details.');
+        
+        const resultDiv = document.getElementById('resultsContainer');
+        if (resultDiv) {
+            resultDiv.innerHTML = 
+                '<div style="color: red; padding: 20px; background: #ffebee; border-radius: 5px;">' +
+                '<h3>❌ Error</h3>' +
+                '<p>' + error.message + '</p>' +
+                '<pre style="background: white; padding: 10px; overflow-x: auto; font-size: 12px;">' + 
+                error.stack + 
+                '</pre>' +
+                '</div>';
+        }
+    }
+}
+
+/**
+ * Display system maximum demand results in the UI
+ */
+function displaySystemMaximumDemandResults(result) {
+    const resultDiv = document.getElementById('resultsContainer');
+    if (!resultDiv) {
+        console.error('❌ Results container not found');
+        return;
+    }
+    
+    let html = '';
+    
+    // Header Card
+    html += '<div class="calculation-result" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">';
+    html += '<h2 style="margin: 0 0 10px 0; font-size: 32px;">🏭 SYSTEM-WIDE MAXIMUM DEMAND</h2>';
+    html += '<p style="margin: 0; opacity: 0.95; font-size: 16px;">Hierarchical Level 2 Analysis - IEEE 141-1993 Red Book</p>';
+    html += '<p style="margin: 5px 0 0 0; opacity: 0.85; font-size: 13px;">Calculation Date: ' + result.calculationDate + '</p>';
+    // ✅ DYNAMIC: Show detected system voltage
+ const systemVoltage = result.substations[0]?.primaryVoltage || 'Unknown'; 
+ const voltages = [...new Set(result.substations.map(s => s.primaryVoltage))];
+ const voltageDisplay = voltages.length === 0 
+             ? 'Unknown (no substations)'
+     : voltages.length === 1
+                     ? `${voltages[0]}V`
+                      : `${voltages.join('V, ')}V (mixed)`;
+ html += '<p style="margin: 5px 0 0 0; opacity: 0.85; font-size: 13px;">';
+ html += 'System Primary Voltage: ' + voltageDisplay;
+ if (voltages.length > 1) {
+     html += ' ⚠️ (calculations use individual voltages)';
+   }
+ html += '</p>';
+   html += '</div>';
+    
+    // Summary Cards Grid
+    html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px;">';
+    
+    // Card 1: Substations
+    html += '<div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 20px; border-radius: 10px; border-left: 5px solid #4caf50; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h4 style="margin: 0 0 10px 0; color: #2e7d32; font-size: 14px;">📊 Substations Analyzed</h4>';
+    html += '<p style="font-size: 36px; font-weight: bold; margin: 0; color: #1b5e20;">' + result.substationCount + '</p>';
+    html += '<p style="font-size: 12px; margin: 5px 0 0 0; color: #558b2f;">Distribution & branch buses</p>';
+    html += '</div>';
+    
+    // Card 2: Total System MD
+    html += '<div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h4 style="margin: 0 0 10px 0; color: #e65100; font-size: 14px;">⚡ Total System MD</h4>';
+    html += '<p style="font-size: 32px; font-weight: bold; margin: 0; color: #bf360c;">' + result.totalSystemMD.toFixed(2) + ' A</p>';
+    html += '<p style="font-size: 14px; margin: 5px 0 0 0; color: #e65100; font-weight: 600;">' + result.totalSystemPowerKVA.toFixed(2) + ' kVA</p>';
+    html += '</div>';
+    
+    // Card 3: Load Reduction
+    html += '<div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 20px; border-radius: 10px; border-left: 5px solid #2196f3; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h4 style="margin: 0 0 10px 0; color: #0d47a1; font-size: 14px;">📉 Load Reduction</h4>';
+    html += '<p style="font-size: 32px; font-weight: bold; margin: 0; color: #1565c0;">' + result.currentReductionPercent.toFixed(1) + '%</p>';
+    html += '<p style="font-size: 14px; margin: 5px 0 0 0; color: #1976d2;">' + result.currentReduction.toFixed(2) + ' A saved</p>';
+    html += '</div>';
+    
+    // Card 4: System DF
+    html += '<div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); padding: 20px; border-radius: 10px; border-left: 5px solid #9c27b0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h4 style="margin: 0 0 10px 0; color: #4a148c; font-size: 14px;">🔢 System DF</h4>';
+    html += '<p style="font-size: 36px; font-weight: bold; margin: 0; color: #6a1b9a;">' + result.systemDiversityFactor.toFixed(3) + '</p>';
+    html += '<p style="font-size: 12px; margin: 5px 0 0 0; color: #7b1fa2;">';
+    html += 'IEEE 141-1993 Table 3-5';
+    if (result.systemDFSource) {
+        html += ' (' + result.systemDFSource + ')';
+    } else {
+        html += ' (automatic)';
+    }
+    html += '</p>';
+    html += '</div>';
+    
+    html += '</div>';
+    
+    // Substation Breakdown Table
+    html += '<div class="result-section" style="margin-bottom: 25px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h3 style="color: #2c3e50; margin-top: 0;">📋 Individual Substation Maximum Demands (Level 1)</h3>';
+    html += '<div style="overflow-x: auto;">';
+    html += '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
+    html += '<thead><tr style="background: #2c3e50; color: white;">';
+    html += '<th style="padding: 12px 8px; text-align: left; font-weight: 600;">#</th>';
+    html += '<th style="padding: 12px 8px; text-align: left; font-weight: 600;">Substation Name</th>';
+    html += '<th style="padding: 12px 8px; text-align: right; font-weight: 600;">Voltage</th>';
+    html += '<th style="padding: 12px 8px; text-align: right; font-weight: 600;">Connected (A)</th>';
+    html += '<th style="padding: 12px 8px; text-align: right; font-weight: 600;">Demand (A)</th>';
+    html += '<th style="padding: 12px 8px; text-align: right; font-weight: 600;">MD Secondary (A)</th>';
+    html += '<th style="padding: 12px 8px; text-align: right; font-weight: 600;">MD Primary (A)</th>';
+    html += '<th style="padding: 12px 8px; text-align: right; font-weight: 600;">Power (kVA)</th>';
+    html += '<th style="padding: 12px 8px; text-align: right; font-weight: 600;">DF</th>';
+    html += '</tr></thead><tbody>';
+    
+    result.substations.forEach((sub, idx) => {
+                      const rowBg = idx % 2 === 0 ? '#f9f9f9' : 'white';
+    
+                      // ✅ ADD NULL SAFETY CHECKS
+                      const voltage = sub.voltage || sub.secondaryVoltage || 0;
+                      const connectedCurrent = sub.connectedCurrent || sub.connectedCurrent_Secondary || 0;
+                      const demandCurrent = sub.demandCurrent || sub.demandCurrent_Secondary || 0;
+                      const mdSecondary = sub.maxDemandCurrent_Secondary || sub.maxDemandCurrent || 0;
+                      const mdPrimary = sub.maxDemandCurrent_Primary || sub.maxDemandCurrent || 0;
+                      const powerKVA = sub.maxDemandPowerKVA || 0;
+                      const diversityFactor = sub.diversityFactor || 1.0;
+    
+                      html += '<tr style="background: ' + rowBg + '; border-bottom: 1px solid #e0e0e0;">';
+                      html += '<td style="padding: 12px 8px; font-weight: 600;">' + sub.index + '</td>';
+                      html += '<td style="padding: 12px 8px;"><strong>' + sub.busName + '</strong></td>';
+                      html += '<td style="padding: 12px 8px; text-align: right;">' + voltage + 'V</td>';
+                      html += '<td style="padding: 12px 8px; text-align: right;">' + connectedCurrent.toFixed(2) + '</td>';
+                      html += '<td style="padding: 12px 8px; text-align: right;">' + demandCurrent.toFixed(2) + '</td>';
+                      html += '<td style="padding: 12px 8px; text-align: right; color: #666;">' + mdSecondary.toFixed(2) + '</td>';
+                      html += '<td style="padding: 12px 8px; text-align: right; font-weight: bold; color: #ff6f00;">' + mdPrimary.toFixed(2) + '</td>';
+                      html += '<td style="padding: 12px 8px; text-align: right;">' + powerKVA.toFixed(2) + '</td>';
+                      html += '<td style="padding: 12px 8px; text-align: right; color: #7b1fa2; font-weight: 600;">' + diversityFactor.toFixed(3) + '</td>';
+                      html += '</tr>';
+                  });
+    
+    // Totals row
+    html += '<tr style="background: #ecf0f1; font-weight: bold; border-top: 3px solid #2c3e50;">';
+    html += '<td colspan="3" style="padding: 14px 8px; font-size: 15px;">TOTAL (Sum of MDs)</td>';
+
+    // ✅ NULL-SAFE: Use calculated value or fallback
+    const totalConnected = result.totalConnectedCurrent_Secondary || 
+                           result.totalConnectedCurrent || 
+                           result.substations.reduce((sum, s) => sum + (s.connectedCurrent || 0), 0);
+
+    html += '<td style="padding: 14px 8px; text-align: right;">' + totalConnected.toFixed(2) + '</td>';
+    html += '<td style="padding: 14px 8px; text-align: right;">—</td>';
+    html += '<td style="padding: 14px 8px; text-align: right;">—</td>';
+    html += '<td style="padding: 14px 8px; text-align: right; color: #d32f2f; font-size: 16px;">' + (result.sumOfSubstationMDs || 0).toFixed(2) + '</td>';
+    html += '<td style="padding: 14px 8px; text-align: right; font-size: 15px;">' + (result.sumOfSubstationPowerKVA || 0).toFixed(2) + '</td>';
+    html += '<td style="padding: 14px 8px; text-align: right;">—</td>';
+    html += '</tr>';
+    
+    html += '</tbody></table>';
+    html += '</div>';
+    html += '</div>';
+    
+    // System Level Summary
+    html += '<div style="background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%); padding: 25px; border-radius: 10px; border-left: 6px solid #fbc02d; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h3 style="margin-top: 0; color: #f57f17; font-size: 22px;">⚡ System-Level Calculation (Level 2)</h3>';
+    html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 20px;">';
+    
+    html += '<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
+    html += '<p style="margin: 0 0 8px 0; color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;"><strong>Sum of Substation MDs:</strong></p>';
+    html += '<p style="font-size: 32px; margin: 0; color: #f57c00; font-weight: bold;">' + result.sumOfSubstationMDs.toFixed(2) + ' A</p>';
+    html += '<p style="margin: 8px 0 0 0; color: #757575; font-size: 13px;">(If all substations peaked simultaneously)</p>';
+    html += '</div>';
+    
+    html += '<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
+    html += '<p style="margin: 0 0 8px 0; color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;"><strong>System Diversity Factor:</strong></p>';
+    html += '<p style="font-size: 32px; margin: 0; color: #7b1fa2; font-weight: bold;">' + result.systemDiversityFactor.toFixed(3) + '</p>';
+    html += '<p style="margin: 8px 0 0 0; color: #757575; font-size: 13px;">IEEE 141-1993 Table 3-5</p>';
+    html += '</div>';
+    
+    html += '</div>';
+    
+    html += '<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
+    html += '<p style="margin: 0 0 10px 0; font-size: 16px; color: #424242;"><strong>📐 Formula:</strong></p>';
+    html += '<p style="margin: 0; font-family: \'Courier New\', monospace; font-size: 18px; padding: 15px; background: #f5f5f5; border-radius: 5px; border-left: 4px solid #7b1fa2;">';
+    html += 'Total System MD = ' + result.sumOfSubstationMDs.toFixed(2) + ' A ÷ ' + result.systemDiversityFactor.toFixed(3);
+    html += ' = <span style="color: #d32f2f; font-weight: bold; font-size: 20px;">' + result.totalSystemMD.toFixed(2) + ' A</span>';
+    html += '</p>';
+    html += '</div>';
+    html += '</div>';
+    
+    // Design Recommendations
+    html += '<div style="background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%); padding: 25px; border-radius: 10px; margin-bottom: 25px; border-left: 6px solid #0288d1; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h3 style="margin-top: 0; color: #01579b; font-size: 22px;">🎯 Design Recommendations</h3>';
+    html += '<ul style="line-height: 2; font-size: 15px; margin: 15px 0; padding-left: 25px; color: #263238;">';
+    // ✅ DYNAMIC: Get system voltage from result
+    const systemPrimaryVoltage = result.substations[0]?.primaryVoltage || 0;
+    html += '<li><strong>Main Utility Service:</strong> Size for <span style="color: #d32f2f; font-weight: bold;">' + result.totalSystemMD.toFixed(2) + ' A at ' + systemPrimaryVoltage + 'V</span> (not ' + result.sumOfSubstationMDs.toFixed(2) + ' A)</li>';
+    html += '<li><strong>Primary Switchgear:</strong> Minimum rating of ' + Math.ceil(result.totalSystemMD / 100) * 100 + ' A at ' + systemPrimaryVoltage + 'V</li>';
+    html += '<li><strong>Primary Switchgear:</strong> Minimum rating of ' + Math.ceil(result.totalSystemMD / 100) * 100 + ' A</li>';
+    html += '<li><strong>Utility Contract Capacity:</strong> Request <span style="color: #d32f2f; font-weight: bold;">' + result.totalSystemPowerKVA.toFixed(2) + ' kVA</span></li>';
+    html += '<li><strong>Individual Substations:</strong> Size transformers and equipment per Level 1 calculations above</li>';
+    html += '<li><strong>Estimated Monthly Savings:</strong> ~' + result.powerReductionKVA.toFixed(0) + ' kVA demand reduction = Lower utility demand charges</li>';
+    html += '<li><strong>Cost Benefit:</strong> Proper diversity application prevents oversizing, reducing capital and operational costs</li>';
+    html += '</ul>';
+    html += '</div>';
+    
+    // Calculation Steps
+    html += '<div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+    html += '<h3 style="color: #2c3e50; margin-top: 0;">📖 Detailed Calculation Steps</h3>';
+    html += '<button onclick="toggleCalculationSteps()" class="btn btn-secondary" style="margin-bottom: 15px; padding: 10px 20px;">Toggle Calculation Details</button>';
+    html += '<pre id="systemCalculationSteps" style="display: none; background: #f8f9fa; padding: 20px; border-radius: 6px; overflow-x: auto; font-size: 12px; line-height: 1.6; border: 1px solid #dee2e6; font-family: \'Courier New\', monospace;">';
+    html += (result.calculationSteps || 'No calculation steps available');
+    html += '</pre>';
+    html += '</div>';
+    
+    // Standards Reference
+    html += '<div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e0e0e0;">';
+    html += '<h4 style="margin-top: 0; color: #424242; font-size: 18px;">📋 Standards & References</h4>';
+    html += '<ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8; color: #616161;">';
+    result.standards.forEach(std => {
+        html += '<li>' + std + '</li>';
+    });
+    html += '</ul>';
+    html += '<p style="margin: 15px 0 0 0; font-size: 12px; color: #757575; border-top: 1px solid #e0e0e0; padding-top: 10px;">';
+    html += '<strong>Calculation Performance:</strong> ' + result.calculationTimeMs + 'ms | ';
+    html += '<strong>Date:</strong> ' + result.calculationDate + ' | ';
+    html += '<strong>Engineer:</strong> ' + (document.getElementById('engineer')?.value || 'Unknown');
+    html += '</p>';
+    html += '</div>';
+    
+    resultDiv.innerHTML = html;
+    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Toggle visibility of calculation steps
+ */
+function toggleCalculationSteps() {
+    const stepsElement = document.getElementById('systemCalculationSteps');
+    if (stepsElement) {
+        if (stepsElement.style.display === 'none') {
+            stepsElement.style.display = 'block';
+            // Scroll into view smoothly
+            stepsElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            stepsElement.style.display = 'none';
+        }
+    }
+}
+
+// Log that handlers are loaded
+console.log('✅ System-Wide Maximum Demand UI handlers loaded');
+</script>
+
+</body>
+</html>

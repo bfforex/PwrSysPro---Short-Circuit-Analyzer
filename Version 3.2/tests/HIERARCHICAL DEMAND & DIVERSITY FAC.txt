@@ -1,0 +1,204 @@
+HIERARCHICAL DEMAND & DIVERSITY FACTOR CALCULATION
+System-Wide Maximum Demand (Level 2)
+════════════════════════════════════════════════════════════════════════════════
+
+📋 CALCULATION INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Date/Time:              2025-11-05 13:13:48 UTC
+Engineer:               B. P. Faraon
+Project:                AG&P Industrial Yard
+Facility Type:          HEAVY FABRICATION YARD
+Number of Substations:  8
+Standards:              IEEE 141-1993, NEC Article 220
+
+📖 HIERARCHICAL METHODOLOGY
+────────────────────────────────────────────────────────────────────────────────
+This calculation implements a TWO-LEVEL hierarchy:
+
+LEVEL 1: Individual Substation Maximum Demand
+  • Apply demand factors to equipment (motors, transformers, etc.)
+  • Apply substation diversity factor to account for internal non-coincidence
+  • Result: Maximum Demand (MD) for each substation
+  • Formula: MD = (Connected × Demand Factor) / Substation DF
+
+LEVEL 2: Total System Maximum Demand
+  • Treat each substation MD as an "individual load"
+  • Apply system-level diversity factor
+  • Accounts for peaks at different times (offices vs. shops)
+  • Result: Total system MD for sizing main utility service
+  • Formula: Total MD = (Sum of Substation MDs) / System DF
+
+════════════════════════════════════════════════════════════════════════════════
+LEVEL 1: SUBSTATION MAXIMUM DEMANDS
+════════════════════════════════════════════════════════════════════════════════
+
+🏭 SUBSTATION 1: LCJ1-4
+────────────────────────────────────────────────────────────────────────────────
+Secondary Voltage:      440V (LVSG)
+Primary Voltage:        13200V (MVSG)
+Transformer:            13200V/440V, 1000 kVA
+Motor Count:            0
+Transformer Count:      0
+
+Connected Load:         916.00 A
+Demand Load:            778.60 A (after demand factors)
+Substation DF:          1.200
+Maximum Demand (MD):    648.83 A
+Power:                  494.48 kVA
+
+Level 1 Reduction:      267.17 A (29.2%)
+
+🏭 SUBSTATION 2: LCH1-4
+────────────────────────────────────────────────────────────────────────────────
+Secondary Voltage:      440V (LVSG)
+Primary Voltage:        13200V (MVSG)
+Transformer:            13200V/440V, 1000 kVA
+Motor Count:            0
+Transformer Count:      0
+
+Connected Load:         984.00 A
+Demand Load:            836.40 A (after demand factors)
+Substation DF:          1.200
+Maximum Demand (MD):    697.00 A
+Power:                  531.19 kVA
+
+Level 1 Reduction:      287.00 A (29.2%)
+
+🏭 SUBSTATION 3: LCC1-4
+────────────────────────────────────────────────────────────────────────────────
+Secondary Voltage:      440V (LVSG)
+Primary Voltage:        13200V (MVSG)
+Transformer:            13200V/440V, 1000 kVA
+Motor Count:            0
+Transformer Count:      0
+
+Connected Load:         972.00 A
+Demand Load:            826.20 A (after demand factors)
+Substation DF:          1.200
+Maximum Demand (MD):    688.50 A
+Power:                  524.71 kVA
+
+Level 1 Reduction:      283.50 A (29.2%)
+
+🏭 SUBSTATION 4: LCC2-4
+────────────────────────────────────────────────────────────────────────────────
+Secondary Voltage:      440V (LVSG)
+Primary Voltage:        13200V (MVSG)
+Transformer:            13200V/440V, 300 kVA
+Motor Count:            3
+Transformer Count:      0
+
+Connected Load:         479.57 A
+Demand Load:            436.41 A (after demand factors)
+Substation DF:          1.200
+Maximum Demand (MD):    363.67 A
+Power:                  277.16 kVA
+
+Level 1 Reduction:      115.90 A (24.2%)
+
+🏭 SUBSTATION 5: LCD1-4
+────────────────────────────────────────────────────────────────────────────────
+Secondary Voltage:      440V (LVSG)
+Primary Voltage:        13200V (MVSG)
+Transformer:            13200V/440V, 500 kVA
+Motor Count:            0
+Transformer Count:      0
+
+Connected Load:         511.00 A
+Demand Load:            434.35 A (after demand factors)
+Substation DF:          1.200
+Maximum Demand (MD):    361.96 A
+Power:                  275.85 kVA
+
+Level 1 Reduction:      149.04 A (29.2%)
+
+🏭 SUBSTATION 6: LCA1-4
+────────────────────────────────────────────────────────────────────────────────
+Secondary Voltage:      440V (LVSG)
+Primary Voltage:        13200V (MVSG)
+Transformer:            13200V/440V, 1000 kVA
+Motor Count:            0
+Transformer Count:      0
+
+Connected Load:         990.00 A
+Demand Load:            841.50 A (after demand factors)
+Substation DF:          1.200
+Maximum Demand (MD):    701.25 A
+Power:                  534.42 kVA
+
+Level 1 Reduction:      288.75 A (29.2%)
+
+🏭 SUBSTATION 7: LCB1-4
+────────────────────────────────────────────────────────────────────────────────
+Secondary Voltage:      440V (LVSG)
+Primary Voltage:        13200V (MVSG)
+Transformer:            13200V/440V, 1000 kVA
+Motor Count:            0
+Transformer Count:      0
+
+Connected Load:         1001.00 A
+Demand Load:            850.85 A (after demand factors)
+Substation DF:          1.200
+Maximum Demand (MD):    709.04 A
+Power:                  540.36 kVA
+
+Level 1 Reduction:      291.96 A (29.2%)
+
+🏭 SUBSTATION 8: LCU1-4
+────────────────────────────────────────────────────────────────────────────────
+Secondary Voltage:      440V (LVSG)
+Primary Voltage:        13200V (MVSG)
+Transformer:            13200V/440V, 2000 kVA
+Motor Count:            0
+Transformer Count:      0
+
+Connected Load:         1036.00 A
+Demand Load:            880.60 A (after demand factors)
+Substation DF:          1.200
+Maximum Demand (MD):    733.83 A
+Power:                  559.26 kVA
+
+Level 1 Reduction:      302.17 A (29.2%)
+
+════════════════════════════════════════════════════════════════════════════════
+LEVEL 2: SYSTEM-WIDE MAXIMUM DEMAND
+════════════════════════════════════════════════════════════════════════════════
+
+📊 SYSTEM AGGREGATION
+────────────────────────────────────────────────────────────────────────────────
+Sum of Substation MDs:  163.47 A
+System Diversity Factor: 1.200 (8 substations)
+Reference:              IEEE 141-1993 Table 3-5
+
+Formula:
+  Total System MD = (Sum of Substation MDs) / System DF
+  Total System MD = 163.47 A / 1.200
+  Total System MD = 136.22 A
+
+💰 TOTAL SAVINGS (LEVEL 1 + LEVEL 2)
+────────────────────────────────────────────────────────────────────────────────
+Total Connected Load:   6889.57 A (100.0%)
+Total System MD:        136.22 A (2.0%)
+Total Reduction:        6753.35 A (98.0%)
+
+Total Connected Power:  5250.56 kVA
+Total System Power:     3114.52 kVA
+Power Savings:          2136.04 kVA
+
+🎯 DESIGN IMPLICATIONS
+────────────────────────────────────────────────────────────────────────────────
+✓ Main Utility Service:     Size for 136.22 A (not 163.47 A)
+✓ Primary Switchgear:       Size for 136.22 A
+✓ Utility Contract:         Request 3114.52 kVA capacity
+✓ Individual Substations:   Size per Level 1 calculations
+
+📋 STANDARDS COMPLIANCE
+────────────────────────────────────────────────────────────────────────────────
+✓ IEEE 141-1993 Red Book - Chapter 3: System Design
+✓ IEEE 141-1993 Section 3.3 - Diversity Factors
+✓ NEC Article 220 - Branch Circuit, Feeder, and Service Loads
+✓ NEC Article 430.24 - Motor Demand Factors
+
+════════════════════════════════════════════════════════════════════════════════
+END OF SYSTEM-WIDE CALCULATION
+════════════════════════════════════════════════════════════════════════════════

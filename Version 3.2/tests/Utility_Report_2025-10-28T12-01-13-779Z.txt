@@ -1,0 +1,59 @@
+====================================================================================================
+SHORT CIRCUIT ANALYSIS REPORT - BUS: Utility
+====================================================================================================
+
+Project: Test Yard Project
+Project Number: Test Project 3
+Engineer: B. P. Faraon
+Date: 2025-10-28 20:00:58 UTC
+Software: PwrSys Pro - Short Circuit Analyzer v1.0
+Author: Engr. B. P. Faraon
+Calculation Method: per-unit
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: Utility
+Voltage: 13200 V
+Type: source
+
+FAULT CURRENT RESULTS:
+----------------------------------------------------------------------------------------------------
+Symmetrical Fault Current: 4.374 kA (4373.87 A)
+Asymmetrical (Peak) Current: 5.405 kA (5405.21 A)
+Line-to-Ground Fault: 3.718 kA
+Line-to-Line Fault: 3.788 kA
+X/R Ratio: 3.000
+Total Impedance: 1.742400 Ω
+
+PER-UNIT BASE VALUES AT TARGET BUS:
+----------------------------------------------------------------------------------------------------
+Base kVA: 10000 kVA (CONSTANT for entire system)
+Base Voltage: 13200 V
+Base Impedance: N/A Ω
+Base Current: N/A A
+
+PATH FROM SOURCE:
+----------------------------------------------------------------------------------------------------
+1. Utility (13200V) - SOURCE
+
+VOLTAGE DROP ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Total Voltage Drop: 0.000% (0.000 V)
+Maximum Single Component Drop: 0.000%
+IEEE 141 Compliance: ✓ COMPLIANT
+Power Factor: 0.9
+
+
+====================================================================================================
+ENGINEERING RECOMMENDATIONS
+====================================================================================================
+
+✅ NO ISSUES DETECTED
+
+This bus meets all IEEE standards and design criteria.
+No corrective actions are required at this time.
+
+
+====================================================================================================
+END OF REPORT
+====================================================================================================

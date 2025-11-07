@@ -1,0 +1,340 @@
+════════════════════════════════════════════════════════════════════════════════
+VOLTAGE DROP CALCULATION - ENHANCED
+════════════════════════════════════════════════════════════════════════════════
+
+📋 CALCULATION INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Date/Time:           2025-11-02 23:33:10 UTC
+Engineer:            Engr. Benjie Faraon
+Target Bus:          LCB1-4 (LCB1-4)
+Source Voltage:      13200.00 V
+Load Voltage Level:  440.00 V
+Power Factor:        0.85
+Temperature:         75°C
+Method:              Component-by-Component with Voltage Tracking
+
+📖 NEC & IEEE 141 STANDARDS
+────────────────────────────────────────────────────────────────────────────────
+• NEC 215.2(A)(1) - Feeders: 3% maximum recommended
+• NEC 210.19(A) - Branch Circuits: 5% maximum
+• IEEE 141 - Combined System: 7% maximum
+• Per NEC FPN: Voltage drop calculated at LOAD voltage level
+
+ℹ️ SOURCE IMPEDANCE HANDLING
+────────────────────────────────────────────────────────────────────────────────
+Source Bus:          MERALCO-CCP (MERALCO-CCP)
+Source Voltage:      13200V
+Available Fault:     26.00 kA
+Source Impedance:    0.293116 Ω (X/R: 6)
+
+⚠️ IMPORTANT: Per IEEE 141-1993 Section 3.2.1:
+   "Voltage drop calculations shall begin at the first
+    distribution point, NOT including utility source impedance."
+
+✅ SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION
+   Source impedance is ONLY used for short circuit analysis.
+   Voltage drop starts from FIRST COMPONENT after source.
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 1: CABLE - P-13K-MECO-EHV1
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       P-13K-MECO-EHV1
+Component Type:      CABLE
+Size:                500
+Material:            COPPER
+Length:              100 ft
+From Bus:            MERALCO
+To Bus:              EHV
+Voltage Level:       13200V
+Temperature:         75°C
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000026 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000036 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000031 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        401.57 A
+Power Factor:        0.85 (cosθ=0.850, sinθ=0.527)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 401.57 × (0.003138×0.850 + 0.003600×0.527)
+ΔV = 3.174 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  13200.00 V
+   Voltage Drop:    3.17 V (0.024%)
+   Voltage After:   13196.83 V
+   Status:          ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 2: CABLE - P-13K-EHV4-DS01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       P-13K-EHV4-DS01
+Component Type:      CABLE
+Size:                250
+Material:            COPPER
+Length:              412.3 ft
+From Bus:            EHV
+To Bus:              DS-01
+Voltage Level:       13200V
+Temperature:         75°C
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000051 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000039 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000063 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        90.57 A
+Power Factor:        0.85 (cosθ=0.850, sinθ=0.527)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 90.57 × (0.025823×0.850 + 0.016080×0.527)
+ΔV = 4.772 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  13196.83 V
+   Voltage Drop:    4.77 V (0.036%)
+   Voltage After:   13192.05 V
+   Status:          ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 3: CABLE - P-13K-DS01-DS02
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       P-13K-DS01-DS02
+Component Type:      CABLE
+Size:                250
+Material:            COPPER
+Length:              709 ft
+From Bus:            DS-01
+To Bus:              DS-02
+Voltage Level:       13200V
+Temperature:         75°C
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000051 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000039 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000063 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        46.87 A
+Power Factor:        0.85 (cosθ=0.850, sinθ=0.527)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 46.87 × (0.044406×0.850 + 0.027651×0.527)
+ΔV = 4.247 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  13192.05 V
+   Voltage Drop:    4.25 V (0.032%)
+   Voltage After:   13187.81 V
+   Status:          ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 4: CABLE - P-13K-DS02-DS03
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       P-13K-DS02-DS03
+Component Type:      CABLE
+Size:                250
+Material:            COPPER
+Length:              140 ft
+From Bus:            DS-02
+To Bus:              DS-03
+Voltage Level:       13200V
+Temperature:         75°C
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000051 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000039 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000063 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        46.87 A
+Power Factor:        0.85 (cosθ=0.850, sinθ=0.527)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 46.87 × (0.008768×0.850 + 0.005460×0.527)
+ΔV = 0.839 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  13187.81 V
+   Voltage Drop:    0.84 V (0.006%)
+   Voltage After:   13186.97 V
+   Status:          ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 5: CABLE - P-13K-DS03-LCB11
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       P-13K-DS03-LCB11
+Component Type:      CABLE
+Size:                250
+Material:            COPPER
+Length:              604 ft
+From Bus:            DS-03
+To Bus:              LCB1-1
+Voltage Level:       13200V
+Temperature:         75°C
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000051 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000039 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000063 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        10.66 A
+Power Factor:        0.85 (cosθ=0.850, sinθ=0.527)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 10.66 × (0.037830×0.850 + 0.023556×0.527)
+ΔV = 0.823 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  13186.97 V
+   Voltage Drop:    0.82 V (0.006%)
+   Voltage After:   13186.15 V
+   Status:          ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔧 STEP 6: TRANSFORMER - XFRMR-LCB1-1000
+════════════════════════════════════════════════════════════════════════════════
+
+🔧 TRANSFORMER INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       XFRMR-LCB1-1000
+Component Type:      TRANSFORMER
+Rating:              1000 kVA
+Voltage Ratio:       13200V / 440V
+Turns Ratio:         30.0000:1
+Impedance:           4% on 1000 kVA base
+X/R Ratio:           2.91
+From Bus:            LCB1-1
+To Bus:              LCB1-4
+
+📐 IMPEDANCE (Secondary Side)
+────────────────────────────────────────────────────────────────────────────────
+R = 0.002517 Ω
+X = 0.007324 Ω
+Z = 0.007744 Ω
+
+📊 LOADING ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+PRIMARY SIDE (13200V):
+   Voltage Entering: 13186.15 V
+   Current:          10.66 A
+
+SECONDARY SIDE (440V):
+   Current:          319.89 A
+   Full Load:        1312.16 A
+   Loading:          24.4% ✅
+
+⚡ VOLTAGE DROP THROUGH TRANSFORMER
+────────────────────────────────────────────────────────────────────────────────
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 319.89 × (0.002517×0.850 + 0.007324×0.527)
+ΔV = 3.323 V (0.755%)
+
+VOLTAGE TRANSFORMATION:
+   Primary voltage:     13186.15 V
+   Ideal secondary:     439.54 V
+   After drop:          436.22 V
+   Status:              ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+VOLTAGE DROP SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+📊 FINAL RESULTS
+────────────────────────────────────────────────────────────────────────────────
+Source Voltage:          13200.00 V
+Nominal Load Voltage:    440.00 V
+Actual Voltage at Load:  436.22 V (99.14%)
+Total Voltage Drop:      3.78 V (0.860%)
+
+⚡ VOLTAGE PROGRESSION
+────────────────────────────────────────────────────────────────────────────────
+Point                           Voltage(V)  Drop(V)  Cumulative(V)
+────────────────────────────────────────────────────────────────────────────────
+Source                             13200.00     0.00          0.00
+Cable 1 (P-13K-MECO-EHV1)          13196.83     3.17          3.17
+Cable 2 (P-13K-EHV4-DS01)          13192.05     4.77          7.95
+Cable 3 (P-13K-DS01-DS02)          13187.81     4.25         12.19
+Cable 4 (P-13K-DS02-DS03)          13186.97     0.84         13.03
+Cable 5 (P-13K-DS03-LCB11)         13186.15     0.82         13.85
+Transformer 6 (XFRMR-LCB1-1000)      436.22     3.32      12763.78
+────────────────────────────────────────────────────────────────────────────────
+
+✅ NEC & IEEE 141 COMPLIANCE: EXCELLENT
+────────────────────────────────────────────────────────────────────────────────
+✅ EXCELLENT - Well within all recommended limits
+
+COMPLIANCE LIMITS:
+  Feeder:      3% ✅
+  Branch:      5% ✅
+  Combined:    7% ✅
+
+📚 STANDARDS REFERENCED
+────────────────────────────────────────────────────────────────────────────────
+✓ NEC 210.19(A) - Branch Circuit Conductors
+✓ NEC 215.2(A)(1) - Feeder Conductors
+✓ IEEE 141-1993 Section 3.4 - Voltage Drop Calculations
+
+════════════════════════════════════════════════════════════════════════════════
+END OF VOLTAGE DROP CALCULATION
+════════════════════════════════════════════════════════════════════════════════

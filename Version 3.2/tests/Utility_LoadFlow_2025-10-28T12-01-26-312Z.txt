@@ -1,0 +1,48 @@
+====================================================================================================
+LOAD FLOW ANALYSIS REPORT - BUS: Utility
+====================================================================================================
+
+Project: Test Yard Project
+Project Number: Test Project 3
+Engineer: B. P. Faraon
+Date: 2025-10-28 20:01:26 UTC
+Software: PwrSys Pro - Load Flow Analyzer v1.0
+Author: Engr. B. P. Faraon
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: Utility
+Voltage: 13200 V
+Type: source
+Bus Load (Direct): 0 A
+
+LOAD FLOW SUMMARY:
+----------------------------------------------------------------------------------------------------
+Total Downstream Load: 437.00 A
+Total Apparent Power: 9991.16 kVA
+Power Factor: 0.9
+Active Power: 8992.05 kW
+
+LOAD BREAKDOWN BY TYPE:
+----------------------------------------------------------------------------------------------------
+Motor Loads: 0.00 A (0.0%)
+Transformer Loads: 0.00 A (0.0%)
+Cable Loads: 437.00 A (100.0%)
+Direct Bus Loads: 0.00 A (0.0%)
+
+DETAILED COMPONENT BREAKDOWN:
+----------------------------------------------------------------------------------------------------
+Type          Description             Location                Current(A)   Power(kVA)
+----------------------------------------------------------------------------------------------------
+Cable Load    500 copper              Main MVSG                   437.00      9991.16
+
+LOAD FLOW PATH TRACING:
+----------------------------------------------------------------------------------------------------
+Starting from: Utility (13200V)
+Tracing downstream loads...
+
+See browser console for detailed path trace.
+
+====================================================================================================
+END OF LOAD FLOW REPORT
+====================================================================================================

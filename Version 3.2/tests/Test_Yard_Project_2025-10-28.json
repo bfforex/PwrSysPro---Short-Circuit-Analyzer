@@ -1,0 +1,2052 @@
+{
+  "projectInfo": {
+    "name": "Test Yard Project",
+    "engineer": "B. P. Faraon",
+    "projectNumber": "Test Project 3",
+    "savedDate": "2025-10-28T12:04:37.093Z",
+    "version": "1.1.0"
+  },
+  "buses": [
+    {
+      "id": "BUS-1761605172559-t6nbqh4g1",
+      "name": "Utility",
+      "voltage": 13200,
+      "type": "source",
+      "parentBus": null,
+      "faultCurrent": 4.373865675678983,
+      "asymFaultCurrent": 5.405210170699137,
+      "xrRatio": 3,
+      "totalZ": 1.7423999999999997,
+      "created": "2025-10-27T22:46:12.559Z",
+      "utilityFaultMVA": 100,
+      "utilityFaultCurrent": 4.373865675678983,
+      "utilityXR": 3,
+      "utilityMode": "MVA",
+      "results": {
+        "shortCircuit": {
+          "faultCurrents": {
+            "threePhaseSym": 4.373865675678983,
+            "threePhaseAsym": 5.405210170699137,
+            "lineToGround": 3.7177858243271356,
+            "lineToLine": 3.7877676751379994
+          },
+          "motorContribution": {
+            "busId": "BUS-1761605172559-t6nbqh4g1",
+            "busVoltage": 13200,
+            "motors": [],
+            "totalMotorR": 0,
+            "totalMotorX": 0,
+            "totalMotorZ": 0,
+            "motorFaultCurrent": 0,
+            "contributionPercent": 0,
+            "calculationSteps": ""
+          },
+          "totalImpedance": {
+            "magnitude": 1.7423999999999997,
+            "resistance": 0.5509952595077383,
+            "reactance": 1.6529857785232152,
+            "angle": 71.56505117707799
+          },
+          "xrRatio": 3,
+          "method": "Per-Unit",
+          "path": [
+            {
+              "bus": {
+                "id": "BUS-1761605172559-t6nbqh4g1",
+                "name": "Utility",
+                "voltage": 13200,
+                "type": "source"
+              },
+              "component": null
+            }
+          ],
+          "perUnit": {
+            "totalRpu": 0.03162277660168379,
+            "totalXpu": 0.09486832980505137,
+            "totalZpu": 0.09999999999999999,
+            "baseKVA": 10000,
+            "baseVoltage": 13200,
+            "baseZ": 17.424,
+            "baseCurrent": 437.38656756789834
+          },
+          "calculationSteps": "SHORT CIRCUIT CALCULATION - PER-UNIT METHOD\n================================================================================\n\nDate/Time: 2025-10-28 20:00:58 UTC\nEngineer: B. P. Faraon\nTemperature: 75°C\nMethod: Per-Unit System\n\nPER-UNIT BASE VALUES:\n  Base kVA: 10000 kVA\n  Base Voltage: 13200 V\n  Base Impedance: 17.424000 Ω\n  Base Current: 437.39 A\n\nSTEP 1: SOURCE BUS - Utility\n--------------------------------------------------------------------------------\nBus Voltage: 13200 V\nAvailable Fault Current: 4.37 kA\nSource X/R Ratio: 3\n\nSource Impedance (Ohmic):\n  R = 0.550995 Ω\n  X = 1.652986 Ω\n\nConverted to Per-Unit:\n  R_pu = 0.031623 pu\n  X_pu = 0.094868 pu\n\nRunning Total: R_pu = 0.031623, X_pu = 0.094868\n\n\nℹ️  No motor contribution (no motors connected to this bus)\n\n\n================================================================================\nFINAL SHORT CIRCUIT CALCULATION (PER-UNIT METHOD)\n================================================================================\n\nTarget Bus: Utility (13200V)\n\nTotal System Impedance (Per-Unit):\n  R_pu = 0.031623 pu\n  X_pu = 0.094868 pu\n  Z_pu = 0.100000 pu\n  X/R Ratio = 3.000\n\nTotal System Impedance (Ohmic Equivalent):\n  R = 0.550995 Ω\n  X = 1.652986 Ω\n  Z = 1.742400 Ω\n\nTHREE-PHASE SYMMETRICAL FAULT CURRENT:\n  I_pu = V_pu / Z_pu = 1.0 / 0.100000 = 10.000000 pu\n  I_actual = I_pu × I_base\n  I_actual = 10.000000 × 437.39\n  I_sc = 4373.87 A = 4.374 kA\n\nASYMMETRICAL (PEAK) FAULT CURRENT:\n  Multiplier = √(1 + 2e^(-4R/X)) = 1.2358\n  I_asym = 4.374 × 1.2358 = 5.405 kA\n\nPER-UNIT SYSTEM ADVANTAGES:\n  ✓ Voltage level changes handled automatically\n  ✓ Transformer ratios built into per-unit conversion\n  ✓ Easy parallel/series impedance combinations\n  ✓ Standard for multi-voltage level systems\n\n",
+          "calculationDate": "2025-10-28 20:00:58 UTC",
+          "arcFlash": null
+        },
+        "loadFlow": {
+          "busId": "BUS-1761605172559-t6nbqh4g1",
+          "busName": "Utility",
+          "busVoltage": 13200,
+          "totalLoad": 437,
+          "breakdown": {
+            "motors": [],
+            "transformers": [],
+            "cables": [
+              {
+                "name": "500 COPPER - 65ft",
+                "location": "Utility → Main MVSG",
+                "size": "500",
+                "material": "copper",
+                "length": 65,
+                "parallel": 1,
+                "current": 437,
+                "powerKVA": 9991.161878380311
+              }
+            ],
+            "directLoads": [],
+            "generators": []
+          },
+          "summary": {
+            "totalCurrent": 437,
+            "totalPowerKVA": 9991.161878380311,
+            "totalPowerKW": 8992.04569054228,
+            "powerFactor": 0.9
+          },
+          "pathTrace": [
+            {
+              "depth": 0,
+              "bus": "Utility",
+              "voltage": 13200,
+              "loads": []
+            }
+          ],
+          "calculationSteps": "LOAD FLOW CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:00:58 UTC\nEngineer: B. P. Faraon\nBus: Utility (13200V)\nPower Factor: 0.9\n\n📍 Utility (13200V)\n  └─ CABLE: 500 COPPER - 65ft\n    │  Specified Load: 437.00 A\n    └─ 500 copper \n  └─ Subtotal: 437.00 A\n\n════════════════════════════════════════════════════════════════════════════════\nLOAD FLOW SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Load Current: 437.00 A\nTotal Apparent Power: 9991.16 kVA\nTotal Active Power: 8992.05 kW\nPower Factor: 0.9\n\nBREAKDOWN BY TYPE:\n--------------------------------------------------------------------------------\nMotors: 0.00 A (0.0%)\nTransformers: 0.00 A (reflected from downstream)\nCables: 437.00 A (100.0%)\nDirect Loads: 0.00 A (0.0%)\nGenerators: 0 (Sources)\n\n",
+          "calculationDate": "2025-10-28 20:00:58 UTC"
+        },
+        "voltageDrop": {
+          "busId": "BUS-1761605172559-t6nbqh4g1",
+          "busName": "Utility",
+          "busVoltage": 13200,
+          "powerFactor": 0.9,
+          "temperature": 75,
+          "components": [],
+          "cumulativeDropVolts": 0,
+          "cumulativeDropPercent": 0,
+          "maxDropPercent": 0,
+          "maxDropComponent": null,
+          "criticalComponents": [],
+          "compliance": {
+            "feederLimit": 3,
+            "branchLimit": 5,
+            "combinedLimit": 7,
+            "status": "EXCELLENT"
+          },
+          "calculationSteps": "VOLTAGE DROP CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:00:58 UTC\nEngineer: B. P. Faraon\nBus: Utility (13200V)\nPower Factor: 0.9\nTemperature: 75°C\nMethod: Component-by-Component Analysis\n\nIEEE 141 STANDARDS:\n  • Feeder Circuits: 3% maximum\n  • Branch Circuits: 5% maximum\n  • Combined System: 7% maximum\n\nSOURCE IMPEDANCE HANDLING:\n--------------------------------------------------------------------------------\nSource Bus: Utility (13200V)\nAvailable Fault Current: 4.37 kA\nSource Impedance: 1.742400 Ω (X/R: 3)\n\n⚠️  IMPORTANT: Per IEEE 141-1993 Section 3.2.1:\n   \"Voltage drop calculations shall begin at the first\n    distribution point, NOT including utility source impedance.\"\n\n✅ SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION\n   Source impedance is ONLY used for short circuit analysis.\n   Voltage drop starts from FIRST COMPONENT after source.\n\n════════════════════════════════════════════════════════════════════════════════\nVOLTAGE DROP SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Voltage Drop: 0.000% (0.000 V)\nMaximum Single Component: 0.000%\n\n✅ EXCELLENT - Well within recommended limits\n\nIEEE 141 COMPLIANCE: EXCELLENT\n  Feeder Limit: 3% ✓\n  Branch Limit: 5% ✓\n  Combined Limit: 7% ✓\n\nCOMPONENT BREAKDOWN:\n--------------------------------------------------------------------------------\nStep  Type       Name                      Current(A)  Drop(V)  Drop(%)  Status\n--------------------------------------------------------------------------------\n--------------------------------------------------------------------------------\n\n",
+          "calculationDate": "2025-10-28 20:00:58 UTC"
+        },
+        "faultCurrents": {
+          "threePhaseSym": 4.373865675678983,
+          "threePhaseAsym": 5.405210170699137,
+          "lineToGround": 3.7177858243271356,
+          "lineToLine": 3.7877676751379994
+        },
+        "totalImpedance": {
+          "magnitude": 1.7423999999999997,
+          "resistance": 0.5509952595077383,
+          "reactance": 1.6529857785232152,
+          "angle": 71.56505117707799
+        },
+        "xrRatio": 3,
+        "path": [
+          {
+            "bus": {
+              "id": "BUS-1761605172559-t6nbqh4g1",
+              "name": "Utility",
+              "voltage": 13200,
+              "type": "source"
+            },
+            "component": null
+          }
+        ],
+        "method": "per-unit",
+        "calculationDate": "2025-10-28 20:00:58 UTC",
+        "analysisComplete": true,
+        "analysisTypes": [
+          "shortCircuit",
+          "loadFlow",
+          "voltageDrop"
+        ]
+      },
+      "pathComponents": [
+        {
+          "sequence": 0,
+          "bus": {
+            "id": "BUS-1761605172559-t6nbqh4g1",
+            "name": "Utility",
+            "voltage": 13200,
+            "type": "source"
+          },
+          "component": null
+        }
+      ]
+    },
+    {
+      "id": "BUS-1761605205471-vb2q4f1vx",
+      "name": "Main MVSG",
+      "voltage": 13200,
+      "type": "distribution",
+      "parentBus": "BUS-1761605172559-t6nbqh4g1",
+      "faultCurrent": 4.366684931827218,
+      "asymFaultCurrent": 5.3935050477799775,
+      "xrRatio": 2.9931677879239396,
+      "totalZ": 1.7452652692563464,
+      "created": "2025-10-27T22:46:45.471Z",
+      "results": {
+        "shortCircuit": {
+          "faultCurrents": {
+            "threePhaseSym": 4.366684931827218,
+            "threePhaseAsym": 5.3935050477799775,
+            "lineToGround": 3.7116821920531353,
+            "lineToLine": 3.781549150962371
+          },
+          "motorContribution": {
+            "busId": "BUS-1761605205471-vb2q4f1vx",
+            "busVoltage": 13200,
+            "motors": [],
+            "totalMotorR": 0,
+            "totalMotorX": 0,
+            "totalMotorZ": 0,
+            "motorFaultCurrent": 0,
+            "contributionPercent": 0,
+            "calculationSteps": ""
+          },
+          "totalImpedance": {
+            "magnitude": 1.7452652692563464,
+            "resistance": 0.5530347430577385,
+            "reactance": 1.6553257785232152,
+            "angle": 71.52582509124312
+          },
+          "xrRatio": 2.9931677879239396,
+          "method": "Per-Unit",
+          "path": [
+            {
+              "bus": {
+                "id": "BUS-1761605172559-t6nbqh4g1",
+                "name": "Utility",
+                "voltage": 13200,
+                "type": "source"
+              },
+              "component": null
+            },
+            {
+              "bus": {
+                "id": "BUS-1761605205471-vb2q4f1vx",
+                "name": "Main MVSG",
+                "voltage": 13200,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761608841676,
+                "type": "cable",
+                "name": "500 COPPER - 65ft"
+              }
+            }
+          ],
+          "perUnit": {
+            "totalRpu": 0.03173982685133944,
+            "totalXpu": 0.09500262732571253,
+            "totalZpu": 0.10016444382784358,
+            "baseKVA": 10000,
+            "baseVoltage": 13200,
+            "baseZ": 17.424,
+            "baseCurrent": 437.38656756789834
+          },
+          "calculationSteps": "SHORT CIRCUIT CALCULATION - PER-UNIT METHOD\n================================================================================\n\nDate/Time: 2025-10-28 20:01:50 UTC\nEngineer: B. P. Faraon\nTemperature: 75°C\nMethod: Per-Unit System\n\nPER-UNIT BASE VALUES:\n  Base kVA: 10000 kVA\n  Base Voltage: 13200 V\n  Base Impedance: 17.424000 Ω\n  Base Current: 437.39 A\n\nSTEP 1: SOURCE BUS - Utility\n--------------------------------------------------------------------------------\nBus Voltage: 13200 V\nAvailable Fault Current: 4.37 kA\nSource X/R Ratio: 3\n\nSource Impedance (Ohmic):\n  R = 0.550995 Ω\n  X = 1.652986 Ω\n\nConverted to Per-Unit:\n  R_pu = 0.031623 pu\n  X_pu = 0.094868 pu\n\nRunning Total: R_pu = 0.031623, X_pu = 0.094868\n\nSTEP 2: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER, 65 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.002039 Ω\n  X = 0.002340 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.002039 / 17.424000 = 0.000117 pu\n  X_pu = 0.002340 / 17.424000 = 0.000134 pu\n  Z_pu = 0.000178 pu\n\nRunning Total: R_pu = 0.031740, X_pu = 0.095003\n\n\nℹ️  No motor contribution (no motors connected to this bus)\n\n\n================================================================================\nFINAL SHORT CIRCUIT CALCULATION (PER-UNIT METHOD)\n================================================================================\n\nTarget Bus: Main MVSG (13200V)\n\nTotal System Impedance (Per-Unit):\n  R_pu = 0.031740 pu\n  X_pu = 0.095003 pu\n  Z_pu = 0.100164 pu\n  X/R Ratio = 2.993\n\nTotal System Impedance (Ohmic Equivalent):\n  R = 0.553035 Ω\n  X = 1.655326 Ω\n  Z = 1.745265 Ω\n\nTHREE-PHASE SYMMETRICAL FAULT CURRENT:\n  I_pu = V_pu / Z_pu = 1.0 / 0.100164 = 9.983583 pu\n  I_actual = I_pu × I_base\n  I_actual = 9.983583 × 437.39\n  I_sc = 4366.68 A = 4.367 kA\n\nASYMMETRICAL (PEAK) FAULT CURRENT:\n  Multiplier = √(1 + 2e^(-4R/X)) = 1.2351\n  I_asym = 4.367 × 1.2351 = 5.394 kA\n\nPER-UNIT SYSTEM ADVANTAGES:\n  ✓ Voltage level changes handled automatically\n  ✓ Transformer ratios built into per-unit conversion\n  ✓ Easy parallel/series impedance combinations\n  ✓ Standard for multi-voltage level systems\n\n",
+          "calculationDate": "2025-10-28 20:01:50 UTC",
+          "arcFlash": null
+        },
+        "loadFlow": {
+          "busId": "BUS-1761605205471-vb2q4f1vx",
+          "busName": "Main MVSG",
+          "busVoltage": 13200,
+          "totalLoad": 20,
+          "breakdown": {
+            "motors": [],
+            "transformers": [
+              {
+                "name": "1000 kVA Transformer",
+                "location": "SS1 MVSG → SS1 LVSG",
+                "rating": 1000,
+                "primaryVoltage": 13200,
+                "secondaryVoltage": 440,
+                "secondaryCurrent": 600,
+                "primaryCurrent": 20,
+                "loading": 45.72614131981836,
+                "powerKVA": 457.26141319818356
+              }
+            ],
+            "cables": [
+              {
+                "name": "300 COPPER - 85ft",
+                "location": "SS1 LVSG → MDP1",
+                "size": "300",
+                "material": "copper",
+                "length": 85,
+                "parallel": 2,
+                "current": 600,
+                "powerKVA": 457.26141319818356
+              },
+              {
+                "name": "4/0 COPPER - 65ft",
+                "location": "MVSG Branch → SS1 MVSG",
+                "size": "4/0",
+                "material": "copper",
+                "length": 65,
+                "parallel": 1,
+                "current": 20,
+                "powerKVA": 457.26141319818356
+              },
+              {
+                "name": "250 COPPER - 5905ft",
+                "location": "Main MVSG → MVSG Branch",
+                "size": "250",
+                "material": "copper",
+                "length": 5905,
+                "parallel": 1,
+                "current": 20,
+                "powerKVA": 457.26141319818356
+              }
+            ],
+            "directLoads": [],
+            "generators": []
+          },
+          "summary": {
+            "totalCurrent": 20,
+            "totalPowerKVA": 457.26141319818356,
+            "totalPowerKW": 411.5352718783652,
+            "powerFactor": 0.9
+          },
+          "pathTrace": [
+            {
+              "depth": 0,
+              "bus": "Main MVSG",
+              "voltage": 13200,
+              "loads": []
+            },
+            {
+              "depth": 2,
+              "bus": "MVSG Branch",
+              "voltage": 13200,
+              "loads": []
+            },
+            {
+              "depth": 4,
+              "bus": "SS1 MVSG",
+              "voltage": 13200,
+              "loads": []
+            },
+            {
+              "depth": 6,
+              "bus": "SS1 LVSG",
+              "voltage": 440,
+              "loads": []
+            }
+          ],
+          "calculationSteps": "LOAD FLOW CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:01:50 UTC\nEngineer: B. P. Faraon\nBus: Main MVSG (13200V)\nPower Factor: 0.9\n\n📍 Main MVSG (13200V)\n  └─ CABLE: 250 COPPER - 5905ft\n    📍 MVSG Branch (13200V)\n      └─ CABLE: 4/0 COPPER - 65ft\n        📍 SS1 MVSG (13200V)\n          └─ TRANSFORMER: 1000 kVA Transformer (13200V / 440V)\n            📍 SS1 LVSG (440V)\n              └─ CABLE: 300 COPPER (2×) - 85ft\n                │  Specified Load: 600.00 A\n                └─ 300 copper (2×)\n              └─ Subtotal: 600.00 A\n\n            │  Rating: 1000 kVA\n            │  Secondary Load: 600.00 A @ 440V\n            │  Primary Current: 20.00 A @ 13200V\n            │  Loading: 45.7%\n            └─ Turns Ratio: 30.0000\n          └─ Subtotal: 20.00 A\n\n      └─ Subtotal: 20.00 A\n\n  └─ Subtotal: 20.00 A\n\n════════════════════════════════════════════════════════════════════════════════\nLOAD FLOW SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Load Current: 20.00 A\nTotal Apparent Power: 457.26 kVA\nTotal Active Power: 411.54 kW\nPower Factor: 0.9\n\nBREAKDOWN BY TYPE:\n--------------------------------------------------------------------------------\nMotors: 0.00 A (0.0%)\nTransformers: 20.00 A (reflected from downstream)\nCables: 640.00 A (100.0%)\nDirect Loads: 0.00 A (0.0%)\nGenerators: 0 (Sources)\n\n",
+          "calculationDate": "2025-10-28 20:01:50 UTC"
+        },
+        "voltageDrop": {
+          "busId": "BUS-1761605205471-vb2q4f1vx",
+          "busName": "Main MVSG",
+          "busVoltage": 13200,
+          "powerFactor": 0.9,
+          "temperature": 75,
+          "components": [
+            {
+              "step": 1,
+              "type": "cable",
+              "name": "500 COPPER - 65ft",
+              "length": 65,
+              "size": "500",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 2.161358944432626,
+              "dropPercent": 0.016373931397216865,
+              "severity": "OK",
+              "current": 437,
+              "powerFactor": 0.9
+            }
+          ],
+          "cumulativeDropVolts": 2.161358944432626,
+          "cumulativeDropPercent": 0.016373931397216865,
+          "maxDropPercent": 0.016373931397216865,
+          "maxDropComponent": {
+            "step": 1,
+            "name": "500 COPPER - 65ft",
+            "type": "cable"
+          },
+          "criticalComponents": [],
+          "compliance": {
+            "feederLimit": 3,
+            "branchLimit": 5,
+            "combinedLimit": 7,
+            "status": "EXCELLENT"
+          },
+          "calculationSteps": "VOLTAGE DROP CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:01:50 UTC\nEngineer: B. P. Faraon\nBus: Main MVSG (13200V)\nPower Factor: 0.9\nTemperature: 75°C\nMethod: Component-by-Component Analysis\n\nIEEE 141 STANDARDS:\n  • Feeder Circuits: 3% maximum\n  • Branch Circuits: 5% maximum\n  • Combined System: 7% maximum\n\nSOURCE IMPEDANCE HANDLING:\n--------------------------------------------------------------------------------\nSource Bus: Utility (13200V)\nAvailable Fault Current: 4.37 kA\nSource Impedance: 1.742400 Ω (X/R: 3)\n\n⚠️  IMPORTANT: Per IEEE 141-1993 Section 3.2.1:\n   \"Voltage drop calculations shall begin at the first\n    distribution point, NOT including utility source impedance.\"\n\n✅ SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION\n   Source impedance is ONLY used for short circuit analysis.\n   Voltage drop starts from FIRST COMPONENT after source.\n\nSTEP 1: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER\nLength: 65 ft\nTemperature: 75°C\nImpedance: R = 0.002039 Ω, X = 0.002340 Ω\nLoad Current: 437.00 A\nVoltage Drop: 2.161 V (0.016%)\nStatus: OK\nCumulative: 0.016%\n\n════════════════════════════════════════════════════════════════════════════════\nVOLTAGE DROP SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Voltage Drop: 0.016% (2.161 V)\nMaximum Single Component: 0.016% (500 COPPER - 65ft)\n\n✅ EXCELLENT - Well within recommended limits\n\nIEEE 141 COMPLIANCE: EXCELLENT\n  Feeder Limit: 3% ✓\n  Branch Limit: 5% ✓\n  Combined Limit: 7% ✓\n\nCOMPONENT BREAKDOWN:\n--------------------------------------------------------------------------------\nStep  Type       Name                      Current(A)  Drop(V)  Drop(%)  Status\n--------------------------------------------------------------------------------\n1     cable      500 COPPER - 65ft              437.0    2.161    0.016  OK\n--------------------------------------------------------------------------------\n\n",
+          "calculationDate": "2025-10-28 20:01:50 UTC"
+        },
+        "faultCurrents": {
+          "threePhaseSym": 4.366684931827218,
+          "threePhaseAsym": 5.3935050477799775,
+          "lineToGround": 3.7116821920531353,
+          "lineToLine": 3.781549150962371
+        },
+        "totalImpedance": {
+          "magnitude": 1.7452652692563464,
+          "resistance": 0.5530347430577385,
+          "reactance": 1.6553257785232152,
+          "angle": 71.52582509124312
+        },
+        "xrRatio": 2.9931677879239396,
+        "path": [
+          {
+            "bus": {
+              "id": "BUS-1761605172559-t6nbqh4g1",
+              "name": "Utility",
+              "voltage": 13200,
+              "type": "source"
+            },
+            "component": null
+          },
+          {
+            "bus": {
+              "id": "BUS-1761605205471-vb2q4f1vx",
+              "name": "Main MVSG",
+              "voltage": 13200,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761608841676,
+              "type": "cable",
+              "name": "500 COPPER - 65ft"
+            }
+          }
+        ],
+        "method": "per-unit",
+        "calculationDate": "2025-10-28 20:01:50 UTC",
+        "analysisComplete": true,
+        "analysisTypes": [
+          "shortCircuit",
+          "loadFlow",
+          "voltageDrop"
+        ]
+      },
+      "pathComponents": [
+        {
+          "sequence": 0,
+          "bus": {
+            "id": "BUS-1761605172559-t6nbqh4g1",
+            "name": "Utility",
+            "voltage": 13200,
+            "type": "source"
+          },
+          "component": null
+        },
+        {
+          "sequence": 1,
+          "bus": {
+            "id": "BUS-1761605205471-vb2q4f1vx",
+            "name": "Main MVSG",
+            "voltage": 13200,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761608841676,
+            "type": "cable",
+            "name": "500 COPPER - 65ft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "BUS-1761605275559-b8ga2n2b4",
+      "name": "MVSG Branch",
+      "voltage": 13200,
+      "type": "branch",
+      "parentBus": "BUS-1761605205471-vb2q4f1vx",
+      "faultCurrent": 3.6301850534229785,
+      "asymFaultCurrent": 4.110873974034355,
+      "xrRatio": 2.0432026187044148,
+      "totalZ": 2.0993485018393305,
+      "created": "2025-10-27T22:47:55.559Z",
+      "results": {
+        "shortCircuit": {
+          "faultCurrents": {
+            "threePhaseSym": 3.6301850534229785,
+            "threePhaseAsym": 4.110873974034355,
+            "lineToGround": 3.085657295409532,
+            "lineToLine": 3.1437402562642993
+          },
+          "motorContribution": {
+            "busId": "BUS-1761605275559-b8ga2n2b4",
+            "busVoltage": 13200,
+            "motors": [],
+            "totalMotorR": 0,
+            "totalMotorX": 0,
+            "totalMotorZ": 0,
+            "motorFaultCurrent": 0,
+            "contributionPercent": 0,
+            "calculationSteps": ""
+          },
+          "totalImpedance": {
+            "magnitude": 2.0993485018393305,
+            "resistance": 0.9228750791827385,
+            "reactance": 1.8856207785232153,
+            "angle": 63.92159274457406
+          },
+          "xrRatio": 2.0432026187044148,
+          "method": "Per-Unit",
+          "path": [
+            {
+              "bus": {
+                "id": "BUS-1761605172559-t6nbqh4g1",
+                "name": "Utility",
+                "voltage": 13200,
+                "type": "source"
+              },
+              "component": null
+            },
+            {
+              "bus": {
+                "id": "BUS-1761605205471-vb2q4f1vx",
+                "name": "Main MVSG",
+                "voltage": 13200,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761608841676,
+                "type": "cable",
+                "name": "500 COPPER - 65ft"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761605275559-b8ga2n2b4",
+                "name": "MVSG Branch",
+                "voltage": 13200,
+                "type": "branch"
+              },
+              "component": {
+                "id": 1761608989931,
+                "type": "cable",
+                "name": "250 COPPER - 5905ft"
+              }
+            }
+          ],
+          "perUnit": {
+            "totalRpu": 0.05296574145906442,
+            "totalXpu": 0.10821974165078141,
+            "totalZpu": 0.1204860251285199,
+            "baseKVA": 10000,
+            "baseVoltage": 13200,
+            "baseZ": 17.424,
+            "baseCurrent": 437.38656756789834
+          },
+          "calculationSteps": "SHORT CIRCUIT CALCULATION - PER-UNIT METHOD\n================================================================================\n\nDate/Time: 2025-10-28 20:02:15 UTC\nEngineer: B. P. Faraon\nTemperature: 75°C\nMethod: Per-Unit System\n\nPER-UNIT BASE VALUES:\n  Base kVA: 10000 kVA\n  Base Voltage: 13200 V\n  Base Impedance: 17.424000 Ω\n  Base Current: 437.39 A\n\nSTEP 1: SOURCE BUS - Utility\n--------------------------------------------------------------------------------\nBus Voltage: 13200 V\nAvailable Fault Current: 4.37 kA\nSource X/R Ratio: 3\n\nSource Impedance (Ohmic):\n  R = 0.550995 Ω\n  X = 1.652986 Ω\n\nConverted to Per-Unit:\n  R_pu = 0.031623 pu\n  X_pu = 0.094868 pu\n\nRunning Total: R_pu = 0.031623, X_pu = 0.094868\n\nSTEP 2: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER, 65 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.002039 Ω\n  X = 0.002340 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.002039 / 17.424000 = 0.000117 pu\n  X_pu = 0.002340 / 17.424000 = 0.000134 pu\n  Z_pu = 0.000178 pu\n\nRunning Total: R_pu = 0.031740, X_pu = 0.095003\n\nSTEP 3: CABLE\n--------------------------------------------------------------------------------\nCable: 250 COPPER, 5905 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.369840 Ω\n  X = 0.230295 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.369840 / 17.424000 = 0.021226 pu\n  X_pu = 0.230295 / 17.424000 = 0.013217 pu\n  Z_pu = 0.025005 pu\n\nRunning Total: R_pu = 0.052966, X_pu = 0.108220\n\n\nℹ️  No motor contribution (no motors connected to this bus)\n\n\n================================================================================\nFINAL SHORT CIRCUIT CALCULATION (PER-UNIT METHOD)\n================================================================================\n\nTarget Bus: MVSG Branch (13200V)\n\nTotal System Impedance (Per-Unit):\n  R_pu = 0.052966 pu\n  X_pu = 0.108220 pu\n  Z_pu = 0.120486 pu\n  X/R Ratio = 2.043\n\nTotal System Impedance (Ohmic Equivalent):\n  R = 0.922875 Ω\n  X = 1.885621 Ω\n  Z = 2.099349 Ω\n\nTHREE-PHASE SYMMETRICAL FAULT CURRENT:\n  I_pu = V_pu / Z_pu = 1.0 / 0.120486 = 8.299718 pu\n  I_actual = I_pu × I_base\n  I_actual = 8.299718 × 437.39\n  I_sc = 3630.19 A = 3.630 kA\n\nASYMMETRICAL (PEAK) FAULT CURRENT:\n  Multiplier = √(1 + 2e^(-4R/X)) = 1.1324\n  I_asym = 3.630 × 1.1324 = 4.111 kA\n\nPER-UNIT SYSTEM ADVANTAGES:\n  ✓ Voltage level changes handled automatically\n  ✓ Transformer ratios built into per-unit conversion\n  ✓ Easy parallel/series impedance combinations\n  ✓ Standard for multi-voltage level systems\n\n",
+          "calculationDate": "2025-10-28 20:02:15 UTC",
+          "arcFlash": null
+        },
+        "loadFlow": {
+          "busId": "BUS-1761605275559-b8ga2n2b4",
+          "busName": "MVSG Branch",
+          "busVoltage": 13200,
+          "totalLoad": 20,
+          "breakdown": {
+            "motors": [],
+            "transformers": [
+              {
+                "name": "1000 kVA Transformer",
+                "location": "SS1 MVSG → SS1 LVSG",
+                "rating": 1000,
+                "primaryVoltage": 13200,
+                "secondaryVoltage": 440,
+                "secondaryCurrent": 600,
+                "primaryCurrent": 20,
+                "loading": 45.72614131981836,
+                "powerKVA": 457.26141319818356
+              }
+            ],
+            "cables": [
+              {
+                "name": "300 COPPER - 85ft",
+                "location": "SS1 LVSG → MDP1",
+                "size": "300",
+                "material": "copper",
+                "length": 85,
+                "parallel": 2,
+                "current": 600,
+                "powerKVA": 457.26141319818356
+              },
+              {
+                "name": "4/0 COPPER - 65ft",
+                "location": "MVSG Branch → SS1 MVSG",
+                "size": "4/0",
+                "material": "copper",
+                "length": 65,
+                "parallel": 1,
+                "current": 20,
+                "powerKVA": 457.26141319818356
+              }
+            ],
+            "directLoads": [],
+            "generators": []
+          },
+          "summary": {
+            "totalCurrent": 20,
+            "totalPowerKVA": 457.26141319818356,
+            "totalPowerKW": 411.5352718783652,
+            "powerFactor": 0.9
+          },
+          "pathTrace": [
+            {
+              "depth": 0,
+              "bus": "MVSG Branch",
+              "voltage": 13200,
+              "loads": []
+            },
+            {
+              "depth": 2,
+              "bus": "SS1 MVSG",
+              "voltage": 13200,
+              "loads": []
+            },
+            {
+              "depth": 4,
+              "bus": "SS1 LVSG",
+              "voltage": 440,
+              "loads": []
+            }
+          ],
+          "calculationSteps": "LOAD FLOW CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:02:15 UTC\nEngineer: B. P. Faraon\nBus: MVSG Branch (13200V)\nPower Factor: 0.9\n\n📍 MVSG Branch (13200V)\n  └─ CABLE: 4/0 COPPER - 65ft\n    📍 SS1 MVSG (13200V)\n      └─ TRANSFORMER: 1000 kVA Transformer (13200V / 440V)\n        📍 SS1 LVSG (440V)\n          └─ CABLE: 300 COPPER (2×) - 85ft\n            │  Specified Load: 600.00 A\n            └─ 300 copper (2×)\n          └─ Subtotal: 600.00 A\n\n        │  Rating: 1000 kVA\n        │  Secondary Load: 600.00 A @ 440V\n        │  Primary Current: 20.00 A @ 13200V\n        │  Loading: 45.7%\n        └─ Turns Ratio: 30.0000\n      └─ Subtotal: 20.00 A\n\n  └─ Subtotal: 20.00 A\n\n════════════════════════════════════════════════════════════════════════════════\nLOAD FLOW SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Load Current: 20.00 A\nTotal Apparent Power: 457.26 kVA\nTotal Active Power: 411.54 kW\nPower Factor: 0.9\n\nBREAKDOWN BY TYPE:\n--------------------------------------------------------------------------------\nMotors: 0.00 A (0.0%)\nTransformers: 20.00 A (reflected from downstream)\nCables: 620.00 A (100.0%)\nDirect Loads: 0.00 A (0.0%)\nGenerators: 0 (Sources)\n\n",
+          "calculationDate": "2025-10-28 20:02:15 UTC"
+        },
+        "voltageDrop": {
+          "busId": "BUS-1761605275559-b8ga2n2b4",
+          "busName": "MVSG Branch",
+          "busVoltage": 13200,
+          "powerFactor": 0.9,
+          "temperature": 75,
+          "components": [
+            {
+              "step": 1,
+              "type": "cable",
+              "name": "500 COPPER - 65ft",
+              "length": 65,
+              "size": "500",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 2.161358944432626,
+              "dropPercent": 0.016373931397216865,
+              "severity": "OK",
+              "current": 437,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 2,
+              "type": "cable",
+              "name": "250 COPPER - 5905ft",
+              "length": 5905,
+              "size": "250",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 15.007858793964676,
+              "dropPercent": 0.11369589995427784,
+              "severity": "OK",
+              "current": 20,
+              "powerFactor": 0.9
+            }
+          ],
+          "cumulativeDropVolts": 17.1692177383973,
+          "cumulativeDropPercent": 0.1300698313514947,
+          "maxDropPercent": 0.11369589995427784,
+          "maxDropComponent": {
+            "step": 2,
+            "name": "250 COPPER - 5905ft",
+            "type": "cable"
+          },
+          "criticalComponents": [],
+          "compliance": {
+            "feederLimit": 3,
+            "branchLimit": 5,
+            "combinedLimit": 7,
+            "status": "EXCELLENT"
+          },
+          "calculationSteps": "VOLTAGE DROP CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:02:15 UTC\nEngineer: B. P. Faraon\nBus: MVSG Branch (13200V)\nPower Factor: 0.9\nTemperature: 75°C\nMethod: Component-by-Component Analysis\n\nIEEE 141 STANDARDS:\n  • Feeder Circuits: 3% maximum\n  • Branch Circuits: 5% maximum\n  • Combined System: 7% maximum\n\nSOURCE IMPEDANCE HANDLING:\n--------------------------------------------------------------------------------\nSource Bus: Utility (13200V)\nAvailable Fault Current: 4.37 kA\nSource Impedance: 1.742400 Ω (X/R: 3)\n\n⚠️  IMPORTANT: Per IEEE 141-1993 Section 3.2.1:\n   \"Voltage drop calculations shall begin at the first\n    distribution point, NOT including utility source impedance.\"\n\n✅ SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION\n   Source impedance is ONLY used for short circuit analysis.\n   Voltage drop starts from FIRST COMPONENT after source.\n\nSTEP 1: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER\nLength: 65 ft\nTemperature: 75°C\nImpedance: R = 0.002039 Ω, X = 0.002340 Ω\nLoad Current: 437.00 A\nVoltage Drop: 2.161 V (0.016%)\nStatus: OK\nCumulative: 0.016%\n\nSTEP 2: CABLE\n--------------------------------------------------------------------------------\nCable: 250 COPPER\nLength: 5905 ft\nTemperature: 75°C\nImpedance: R = 0.369840 Ω, X = 0.230295 Ω\nLoad Current: 20.00 A\nVoltage Drop: 15.008 V (0.114%)\nStatus: OK\nCumulative: 0.130%\n\n════════════════════════════════════════════════════════════════════════════════\nVOLTAGE DROP SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Voltage Drop: 0.130% (17.169 V)\nMaximum Single Component: 0.114% (250 COPPER - 5905ft)\n\n✅ EXCELLENT - Well within recommended limits\n\nIEEE 141 COMPLIANCE: EXCELLENT\n  Feeder Limit: 3% ✓\n  Branch Limit: 5% ✓\n  Combined Limit: 7% ✓\n\nCOMPONENT BREAKDOWN:\n--------------------------------------------------------------------------------\nStep  Type       Name                      Current(A)  Drop(V)  Drop(%)  Status\n--------------------------------------------------------------------------------\n1     cable      500 COPPER - 65ft              437.0    2.161    0.016  OK\n2     cable      250 COPPER - 5905ft             20.0   15.008    0.114  OK\n--------------------------------------------------------------------------------\n\n",
+          "calculationDate": "2025-10-28 20:02:15 UTC"
+        },
+        "faultCurrents": {
+          "threePhaseSym": 3.6301850534229785,
+          "threePhaseAsym": 4.110873974034355,
+          "lineToGround": 3.085657295409532,
+          "lineToLine": 3.1437402562642993
+        },
+        "totalImpedance": {
+          "magnitude": 2.0993485018393305,
+          "resistance": 0.9228750791827385,
+          "reactance": 1.8856207785232153,
+          "angle": 63.92159274457406
+        },
+        "xrRatio": 2.0432026187044148,
+        "path": [
+          {
+            "bus": {
+              "id": "BUS-1761605172559-t6nbqh4g1",
+              "name": "Utility",
+              "voltage": 13200,
+              "type": "source"
+            },
+            "component": null
+          },
+          {
+            "bus": {
+              "id": "BUS-1761605205471-vb2q4f1vx",
+              "name": "Main MVSG",
+              "voltage": 13200,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761608841676,
+              "type": "cable",
+              "name": "500 COPPER - 65ft"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761605275559-b8ga2n2b4",
+              "name": "MVSG Branch",
+              "voltage": 13200,
+              "type": "branch"
+            },
+            "component": {
+              "id": 1761608989931,
+              "type": "cable",
+              "name": "250 COPPER - 5905ft"
+            }
+          }
+        ],
+        "method": "per-unit",
+        "calculationDate": "2025-10-28 20:02:15 UTC",
+        "analysisComplete": true,
+        "analysisTypes": [
+          "shortCircuit",
+          "loadFlow",
+          "voltageDrop"
+        ]
+      },
+      "pathComponents": [
+        {
+          "sequence": 0,
+          "bus": {
+            "id": "BUS-1761605172559-t6nbqh4g1",
+            "name": "Utility",
+            "voltage": 13200,
+            "type": "source"
+          },
+          "component": null
+        },
+        {
+          "sequence": 1,
+          "bus": {
+            "id": "BUS-1761605205471-vb2q4f1vx",
+            "name": "Main MVSG",
+            "voltage": 13200,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761608841676,
+            "type": "cable",
+            "name": "500 COPPER - 65ft"
+          }
+        },
+        {
+          "sequence": 2,
+          "bus": {
+            "id": "BUS-1761605275559-b8ga2n2b4",
+            "name": "MVSG Branch",
+            "voltage": 13200,
+            "type": "branch"
+          },
+          "component": {
+            "id": 1761608989931,
+            "type": "cable",
+            "name": "250 COPPER - 5905ft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "BUS-1761609089820-ugk5fnc9l",
+      "name": "SS1 MVSG",
+      "voltage": 13200,
+      "type": "distribution",
+      "parentBus": "BUS-1761605275559-b8ga2n2b4",
+      "faultCurrent": 3.6225055180259074,
+      "asymFaultCurrent": 4.098807998928443,
+      "xrRatio": 2.035419675287915,
+      "totalZ": 2.103799018491532,
+      "created": "2025-10-27T23:51:29.820Z",
+      "results": {
+        "shortCircuit": {
+          "faultCurrents": {
+            "threePhaseSym": 3.6225055180259074,
+            "threePhaseAsym": 4.098807998928443,
+            "lineToGround": 3.0791296903220213,
+            "lineToLine": 3.1370897786104357
+          },
+          "motorContribution": {
+            "busId": "BUS-1761609089820-ugk5fnc9l",
+            "busVoltage": 13200,
+            "motors": [],
+            "totalMotorR": 0,
+            "totalMotorX": 0,
+            "totalMotorZ": 0,
+            "motorFaultCurrent": 0,
+            "contributionPercent": 0,
+            "calculationSteps": ""
+          },
+          "totalImpedance": {
+            "magnitude": 2.103799018491532,
+            "resistance": 0.9276813039827385,
+            "reactance": 1.8882207785232152,
+            "angle": 63.835151779812506
+          },
+          "xrRatio": 2.035419675287915,
+          "method": "Per-Unit",
+          "path": [
+            {
+              "bus": {
+                "id": "BUS-1761605172559-t6nbqh4g1",
+                "name": "Utility",
+                "voltage": 13200,
+                "type": "source"
+              },
+              "component": null
+            },
+            {
+              "bus": {
+                "id": "BUS-1761605205471-vb2q4f1vx",
+                "name": "Main MVSG",
+                "voltage": 13200,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761608841676,
+                "type": "cable",
+                "name": "500 COPPER - 65ft"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761605275559-b8ga2n2b4",
+                "name": "MVSG Branch",
+                "voltage": 13200,
+                "type": "branch"
+              },
+              "component": {
+                "id": 1761608989931,
+                "type": "cable",
+                "name": "250 COPPER - 5905ft"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761609089820-ugk5fnc9l",
+                "name": "SS1 MVSG",
+                "voltage": 13200,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761609344716,
+                "type": "cable",
+                "name": "4/0 COPPER - 65ft"
+              }
+            }
+          ],
+          "perUnit": {
+            "totalRpu": 0.053241580807090134,
+            "totalXpu": 0.1083689611181827,
+            "totalZpu": 0.12074144963794374,
+            "baseKVA": 10000,
+            "baseVoltage": 13200,
+            "baseZ": 17.424,
+            "baseCurrent": 437.38656756789834
+          },
+          "calculationSteps": "SHORT CIRCUIT CALCULATION - PER-UNIT METHOD\n================================================================================\n\nDate/Time: 2025-10-28 20:02:41 UTC\nEngineer: B. P. Faraon\nTemperature: 75°C\nMethod: Per-Unit System\n\nPER-UNIT BASE VALUES:\n  Base kVA: 10000 kVA\n  Base Voltage: 13200 V\n  Base Impedance: 17.424000 Ω\n  Base Current: 437.39 A\n\nSTEP 1: SOURCE BUS - Utility\n--------------------------------------------------------------------------------\nBus Voltage: 13200 V\nAvailable Fault Current: 4.37 kA\nSource X/R Ratio: 3\n\nSource Impedance (Ohmic):\n  R = 0.550995 Ω\n  X = 1.652986 Ω\n\nConverted to Per-Unit:\n  R_pu = 0.031623 pu\n  X_pu = 0.094868 pu\n\nRunning Total: R_pu = 0.031623, X_pu = 0.094868\n\nSTEP 2: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER, 65 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.002039 Ω\n  X = 0.002340 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.002039 / 17.424000 = 0.000117 pu\n  X_pu = 0.002340 / 17.424000 = 0.000134 pu\n  Z_pu = 0.000178 pu\n\nRunning Total: R_pu = 0.031740, X_pu = 0.095003\n\nSTEP 3: CABLE\n--------------------------------------------------------------------------------\nCable: 250 COPPER, 5905 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.369840 Ω\n  X = 0.230295 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.369840 / 17.424000 = 0.021226 pu\n  X_pu = 0.230295 / 17.424000 = 0.013217 pu\n  Z_pu = 0.025005 pu\n\nRunning Total: R_pu = 0.052966, X_pu = 0.108220\n\nSTEP 4: CABLE\n--------------------------------------------------------------------------------\nCable: 4/0 COPPER, 65 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.004806 Ω\n  X = 0.002600 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.004806 / 17.424000 = 0.000276 pu\n  X_pu = 0.002600 / 17.424000 = 0.000149 pu\n  Z_pu = 0.000314 pu\n\nRunning Total: R_pu = 0.053242, X_pu = 0.108369\n\n\nℹ️  No motor contribution (no motors connected to this bus)\n\n\n================================================================================\nFINAL SHORT CIRCUIT CALCULATION (PER-UNIT METHOD)\n================================================================================\n\nTarget Bus: SS1 MVSG (13200V)\n\nTotal System Impedance (Per-Unit):\n  R_pu = 0.053242 pu\n  X_pu = 0.108369 pu\n  Z_pu = 0.120741 pu\n  X/R Ratio = 2.035\n\nTotal System Impedance (Ohmic Equivalent):\n  R = 0.927681 Ω\n  X = 1.888221 Ω\n  Z = 2.103799 Ω\n\nTHREE-PHASE SYMMETRICAL FAULT CURRENT:\n  I_pu = V_pu / Z_pu = 1.0 / 0.120741 = 8.282160 pu\n  I_actual = I_pu × I_base\n  I_actual = 8.282160 × 437.39\n  I_sc = 3622.51 A = 3.623 kA\n\nASYMMETRICAL (PEAK) FAULT CURRENT:\n  Multiplier = √(1 + 2e^(-4R/X)) = 1.1315\n  I_asym = 3.623 × 1.1315 = 4.099 kA\n\nPER-UNIT SYSTEM ADVANTAGES:\n  ✓ Voltage level changes handled automatically\n  ✓ Transformer ratios built into per-unit conversion\n  ✓ Easy parallel/series impedance combinations\n  ✓ Standard for multi-voltage level systems\n\n",
+          "calculationDate": "2025-10-28 20:02:41 UTC",
+          "arcFlash": null
+        },
+        "loadFlow": {
+          "busId": "BUS-1761609089820-ugk5fnc9l",
+          "busName": "SS1 MVSG",
+          "busVoltage": 13200,
+          "totalLoad": 20,
+          "breakdown": {
+            "motors": [],
+            "transformers": [
+              {
+                "name": "1000 kVA Transformer",
+                "location": "SS1 MVSG → SS1 LVSG",
+                "rating": 1000,
+                "primaryVoltage": 13200,
+                "secondaryVoltage": 440,
+                "secondaryCurrent": 600,
+                "primaryCurrent": 20,
+                "loading": 45.72614131981836,
+                "powerKVA": 457.26141319818356
+              }
+            ],
+            "cables": [
+              {
+                "name": "300 COPPER - 85ft",
+                "location": "SS1 LVSG → MDP1",
+                "size": "300",
+                "material": "copper",
+                "length": 85,
+                "parallel": 2,
+                "current": 600,
+                "powerKVA": 457.26141319818356
+              }
+            ],
+            "directLoads": [],
+            "generators": []
+          },
+          "summary": {
+            "totalCurrent": 20,
+            "totalPowerKVA": 457.26141319818356,
+            "totalPowerKW": 411.5352718783652,
+            "powerFactor": 0.9
+          },
+          "pathTrace": [
+            {
+              "depth": 0,
+              "bus": "SS1 MVSG",
+              "voltage": 13200,
+              "loads": []
+            },
+            {
+              "depth": 2,
+              "bus": "SS1 LVSG",
+              "voltage": 440,
+              "loads": []
+            }
+          ],
+          "calculationSteps": "LOAD FLOW CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:02:41 UTC\nEngineer: B. P. Faraon\nBus: SS1 MVSG (13200V)\nPower Factor: 0.9\n\n📍 SS1 MVSG (13200V)\n  └─ TRANSFORMER: 1000 kVA Transformer (13200V / 440V)\n    📍 SS1 LVSG (440V)\n      └─ CABLE: 300 COPPER (2×) - 85ft\n        │  Specified Load: 600.00 A\n        └─ 300 copper (2×)\n      └─ Subtotal: 600.00 A\n\n    │  Rating: 1000 kVA\n    │  Secondary Load: 600.00 A @ 440V\n    │  Primary Current: 20.00 A @ 13200V\n    │  Loading: 45.7%\n    └─ Turns Ratio: 30.0000\n  └─ Subtotal: 20.00 A\n\n════════════════════════════════════════════════════════════════════════════════\nLOAD FLOW SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Load Current: 20.00 A\nTotal Apparent Power: 457.26 kVA\nTotal Active Power: 411.54 kW\nPower Factor: 0.9\n\nBREAKDOWN BY TYPE:\n--------------------------------------------------------------------------------\nMotors: 0.00 A (0.0%)\nTransformers: 20.00 A (reflected from downstream)\nCables: 600.00 A (100.0%)\nDirect Loads: 0.00 A (0.0%)\nGenerators: 0 (Sources)\n\n",
+          "calculationDate": "2025-10-28 20:02:41 UTC"
+        },
+        "voltageDrop": {
+          "busId": "BUS-1761609089820-ugk5fnc9l",
+          "busName": "SS1 MVSG",
+          "busVoltage": 13200,
+          "powerFactor": 0.9,
+          "temperature": 75,
+          "components": [
+            {
+              "step": 1,
+              "type": "cable",
+              "name": "500 COPPER - 65ft",
+              "length": 65,
+              "size": "500",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 2.161358944432626,
+              "dropPercent": 0.016373931397216865,
+              "severity": "OK",
+              "current": 437,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 2,
+              "type": "cable",
+              "name": "250 COPPER - 5905ft",
+              "length": 5905,
+              "size": "250",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 15.007858793964676,
+              "dropPercent": 0.11369589995427784,
+              "severity": "OK",
+              "current": 20,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 3,
+              "type": "cable",
+              "name": "4/0 COPPER - 65ft",
+              "length": 65,
+              "size": "4/0",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 0.18910239889496405,
+              "dropPercent": 0.001432593931022455,
+              "severity": "OK",
+              "current": 20,
+              "powerFactor": 0.9
+            }
+          ],
+          "cumulativeDropVolts": 17.358320137292264,
+          "cumulativeDropPercent": 0.13150242528251715,
+          "maxDropPercent": 0.11369589995427784,
+          "maxDropComponent": {
+            "step": 2,
+            "name": "250 COPPER - 5905ft",
+            "type": "cable"
+          },
+          "criticalComponents": [],
+          "compliance": {
+            "feederLimit": 3,
+            "branchLimit": 5,
+            "combinedLimit": 7,
+            "status": "EXCELLENT"
+          },
+          "calculationSteps": "VOLTAGE DROP CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:02:41 UTC\nEngineer: B. P. Faraon\nBus: SS1 MVSG (13200V)\nPower Factor: 0.9\nTemperature: 75°C\nMethod: Component-by-Component Analysis\n\nIEEE 141 STANDARDS:\n  • Feeder Circuits: 3% maximum\n  • Branch Circuits: 5% maximum\n  • Combined System: 7% maximum\n\nSOURCE IMPEDANCE HANDLING:\n--------------------------------------------------------------------------------\nSource Bus: Utility (13200V)\nAvailable Fault Current: 4.37 kA\nSource Impedance: 1.742400 Ω (X/R: 3)\n\n⚠️  IMPORTANT: Per IEEE 141-1993 Section 3.2.1:\n   \"Voltage drop calculations shall begin at the first\n    distribution point, NOT including utility source impedance.\"\n\n✅ SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION\n   Source impedance is ONLY used for short circuit analysis.\n   Voltage drop starts from FIRST COMPONENT after source.\n\nSTEP 1: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER\nLength: 65 ft\nTemperature: 75°C\nImpedance: R = 0.002039 Ω, X = 0.002340 Ω\nLoad Current: 437.00 A\nVoltage Drop: 2.161 V (0.016%)\nStatus: OK\nCumulative: 0.016%\n\nSTEP 2: CABLE\n--------------------------------------------------------------------------------\nCable: 250 COPPER\nLength: 5905 ft\nTemperature: 75°C\nImpedance: R = 0.369840 Ω, X = 0.230295 Ω\nLoad Current: 20.00 A\nVoltage Drop: 15.008 V (0.114%)\nStatus: OK\nCumulative: 0.130%\n\nSTEP 3: CABLE\n--------------------------------------------------------------------------------\nCable: 4/0 COPPER\nLength: 65 ft\nTemperature: 75°C\nImpedance: R = 0.004806 Ω, X = 0.002600 Ω\nLoad Current: 20.00 A\nVoltage Drop: 0.189 V (0.001%)\nStatus: OK\nCumulative: 0.132%\n\n════════════════════════════════════════════════════════════════════════════════\nVOLTAGE DROP SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Voltage Drop: 0.132% (17.358 V)\nMaximum Single Component: 0.114% (250 COPPER - 5905ft)\n\n✅ EXCELLENT - Well within recommended limits\n\nIEEE 141 COMPLIANCE: EXCELLENT\n  Feeder Limit: 3% ✓\n  Branch Limit: 5% ✓\n  Combined Limit: 7% ✓\n\nCOMPONENT BREAKDOWN:\n--------------------------------------------------------------------------------\nStep  Type       Name                      Current(A)  Drop(V)  Drop(%)  Status\n--------------------------------------------------------------------------------\n1     cable      500 COPPER - 65ft              437.0    2.161    0.016  OK\n2     cable      250 COPPER - 5905ft             20.0   15.008    0.114  OK\n3     cable      4/0 COPPER - 65ft               20.0    0.189    0.001  OK\n--------------------------------------------------------------------------------\n\n",
+          "calculationDate": "2025-10-28 20:02:41 UTC"
+        },
+        "faultCurrents": {
+          "threePhaseSym": 3.6225055180259074,
+          "threePhaseAsym": 4.098807998928443,
+          "lineToGround": 3.0791296903220213,
+          "lineToLine": 3.1370897786104357
+        },
+        "totalImpedance": {
+          "magnitude": 2.103799018491532,
+          "resistance": 0.9276813039827385,
+          "reactance": 1.8882207785232152,
+          "angle": 63.835151779812506
+        },
+        "xrRatio": 2.035419675287915,
+        "path": [
+          {
+            "bus": {
+              "id": "BUS-1761605172559-t6nbqh4g1",
+              "name": "Utility",
+              "voltage": 13200,
+              "type": "source"
+            },
+            "component": null
+          },
+          {
+            "bus": {
+              "id": "BUS-1761605205471-vb2q4f1vx",
+              "name": "Main MVSG",
+              "voltage": 13200,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761608841676,
+              "type": "cable",
+              "name": "500 COPPER - 65ft"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761605275559-b8ga2n2b4",
+              "name": "MVSG Branch",
+              "voltage": 13200,
+              "type": "branch"
+            },
+            "component": {
+              "id": 1761608989931,
+              "type": "cable",
+              "name": "250 COPPER - 5905ft"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761609089820-ugk5fnc9l",
+              "name": "SS1 MVSG",
+              "voltage": 13200,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761609344716,
+              "type": "cable",
+              "name": "4/0 COPPER - 65ft"
+            }
+          }
+        ],
+        "method": "per-unit",
+        "calculationDate": "2025-10-28 20:02:41 UTC",
+        "analysisComplete": true,
+        "analysisTypes": [
+          "shortCircuit",
+          "loadFlow",
+          "voltageDrop"
+        ]
+      },
+      "pathComponents": [
+        {
+          "sequence": 0,
+          "bus": {
+            "id": "BUS-1761605172559-t6nbqh4g1",
+            "name": "Utility",
+            "voltage": 13200,
+            "type": "source"
+          },
+          "component": null
+        },
+        {
+          "sequence": 1,
+          "bus": {
+            "id": "BUS-1761605205471-vb2q4f1vx",
+            "name": "Main MVSG",
+            "voltage": 13200,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761608841676,
+            "type": "cable",
+            "name": "500 COPPER - 65ft"
+          }
+        },
+        {
+          "sequence": 2,
+          "bus": {
+            "id": "BUS-1761605275559-b8ga2n2b4",
+            "name": "MVSG Branch",
+            "voltage": 13200,
+            "type": "branch"
+          },
+          "component": {
+            "id": 1761608989931,
+            "type": "cable",
+            "name": "250 COPPER - 5905ft"
+          }
+        },
+        {
+          "sequence": 3,
+          "bus": {
+            "id": "BUS-1761609089820-ugk5fnc9l",
+            "name": "SS1 MVSG",
+            "voltage": 13200,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761609344716,
+            "type": "cable",
+            "name": "4/0 COPPER - 65ft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "BUS-1761609389884-wxsygus31",
+      "name": "SS1 LVSG",
+      "voltage": 440,
+      "type": "distribution",
+      "parentBus": "BUS-1761609089820-ugk5fnc9l",
+      "faultCurrent": 25.421340522886293,
+      "asymFaultCurrent": 34.45641242413147,
+      "xrRatio": 4.592916785964483,
+      "totalZ": 0.009992947390588383,
+      "created": "2025-10-27T23:56:29.884Z",
+      "results": {
+        "shortCircuit": {
+          "faultCurrents": {
+            "threePhaseSym": 25.421340522886293,
+            "threePhaseAsym": 34.45641242413147,
+            "lineToGround": 21.60813944445335,
+            "lineToLine": 22.01488089281953
+          },
+          "motorContribution": {
+            "busId": "BUS-1761609389884-wxsygus31",
+            "busVoltage": 440,
+            "motors": [],
+            "totalMotorR": 0,
+            "totalMotorX": 0,
+            "totalMotorZ": 0,
+            "motorFaultCurrent": 0,
+            "contributionPercent": 0,
+            "calculationSteps": ""
+          },
+          "totalImpedance": {
+            "magnitude": 0.009992947390588383,
+            "resistance": 0.0021259239871269896,
+            "reactance": 0.009764191966160091,
+            "angle": 77.71688530389565
+          },
+          "xrRatio": 4.592916785964483,
+          "method": "Per-Unit",
+          "path": [
+            {
+              "bus": {
+                "id": "BUS-1761605172559-t6nbqh4g1",
+                "name": "Utility",
+                "voltage": 13200,
+                "type": "source"
+              },
+              "component": null
+            },
+            {
+              "bus": {
+                "id": "BUS-1761605205471-vb2q4f1vx",
+                "name": "Main MVSG",
+                "voltage": 13200,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761608841676,
+                "type": "cable",
+                "name": "500 COPPER - 65ft"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761605275559-b8ga2n2b4",
+                "name": "MVSG Branch",
+                "voltage": 13200,
+                "type": "branch"
+              },
+              "component": {
+                "id": 1761608989931,
+                "type": "cable",
+                "name": "250 COPPER - 5905ft"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761609089820-ugk5fnc9l",
+                "name": "SS1 MVSG",
+                "voltage": 13200,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761609344716,
+                "type": "cable",
+                "name": "4/0 COPPER - 65ft"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761609389884-wxsygus31",
+                "name": "SS1 LVSG",
+                "voltage": 440,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761609427596,
+                "type": "transformer",
+                "name": "1000 kVA Transformer (13200V / 440V)"
+              }
+            }
+          ],
+          "perUnit": {
+            "totalRpu": 0.10981012330201394,
+            "totalXpu": 0.5043487585826494,
+            "totalZpu": 0.5161646379436149,
+            "baseKVA": 10000,
+            "baseVoltage": 440,
+            "baseZ": 0.01936,
+            "baseCurrent": 13121.59702703695
+          },
+          "calculationSteps": "SHORT CIRCUIT CALCULATION - PER-UNIT METHOD\n================================================================================\n\nDate/Time: 2025-10-28 20:03:07 UTC\nEngineer: B. P. Faraon\nTemperature: 75°C\nMethod: Per-Unit System\n\nPER-UNIT BASE VALUES:\n  Base kVA: 10000 kVA\n  Base Voltage: 440 V\n  Base Impedance: 0.019360 Ω\n  Base Current: 13121.60 A\n\nSTEP 1: SOURCE BUS - Utility\n--------------------------------------------------------------------------------\nBus Voltage: 13200 V\nAvailable Fault Current: 4.37 kA\nSource X/R Ratio: 3\n\nSource Impedance (Ohmic):\n  R = 0.550995 Ω\n  X = 1.652986 Ω\n\nConverted to Per-Unit:\n  R_pu = 0.031623 pu\n  X_pu = 0.094868 pu\n\nRunning Total: R_pu = 0.031623, X_pu = 0.094868\n\nSTEP 2: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER, 65 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.002039 Ω\n  X = 0.002340 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.002039 / 17.424000 = 0.000117 pu\n  X_pu = 0.002340 / 17.424000 = 0.000134 pu\n  Z_pu = 0.000178 pu\n\nRunning Total: R_pu = 0.031740, X_pu = 0.095003\n\nSTEP 3: CABLE\n--------------------------------------------------------------------------------\nCable: 250 COPPER, 5905 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.369840 Ω\n  X = 0.230295 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.369840 / 17.424000 = 0.021226 pu\n  X_pu = 0.230295 / 17.424000 = 0.013217 pu\n  Z_pu = 0.025005 pu\n\nRunning Total: R_pu = 0.052966, X_pu = 0.108220\n\nSTEP 4: CABLE\n--------------------------------------------------------------------------------\nCable: 4/0 COPPER, 65 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.004806 Ω\n  X = 0.002600 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.004806 / 17.424000 = 0.000276 pu\n  X_pu = 0.002600 / 17.424000 = 0.000149 pu\n  Z_pu = 0.000314 pu\n\nRunning Total: R_pu = 0.053242, X_pu = 0.108369\n\nSTEP 5: TRANSFORMER\n--------------------------------------------------------------------------------\nPrimary: 13200 V → Secondary: 440 V\nRating: 1000 kVA\nImpedance: 4% on own base\nX/R: 7\n\nTransformer Per-Unit Impedance:\n  On own base (1000 kVA):\n    R_pu = 0.005657 pu\n    X_pu = 0.039598 pu\n    Z_pu = 0.040000 pu\n\n  Converted to system base (10000 kVA):\n    R_pu = 0.005657 × 10.0000 = 0.056569 pu\n    X_pu = 0.039598 × 10.0000 = 0.395980 pu\n\nRunning Total: R_pu = 0.109810, X_pu = 0.504349\n\n\nℹ️  No motor contribution (no motors connected to this bus)\n\n\n================================================================================\nFINAL SHORT CIRCUIT CALCULATION (PER-UNIT METHOD)\n================================================================================\n\nTarget Bus: SS1 LVSG (440V)\n\nTotal System Impedance (Per-Unit):\n  R_pu = 0.109810 pu\n  X_pu = 0.504349 pu\n  Z_pu = 0.516165 pu\n  X/R Ratio = 4.593\n\nTotal System Impedance (Ohmic Equivalent):\n  R = 0.002126 Ω\n  X = 0.009764 Ω\n  Z = 0.009993 Ω\n\nTHREE-PHASE SYMMETRICAL FAULT CURRENT:\n  I_pu = V_pu / Z_pu = 1.0 / 0.516165 = 1.937366 pu\n  I_actual = I_pu × I_base\n  I_actual = 1.937366 × 13121.60\n  I_sc = 25421.34 A = 25.421 kA\n\nASYMMETRICAL (PEAK) FAULT CURRENT:\n  Multiplier = √(1 + 2e^(-4R/X)) = 1.3554\n  I_asym = 25.421 × 1.3554 = 34.456 kA\n\nPER-UNIT SYSTEM ADVANTAGES:\n  ✓ Voltage level changes handled automatically\n  ✓ Transformer ratios built into per-unit conversion\n  ✓ Easy parallel/series impedance combinations\n  ✓ Standard for multi-voltage level systems\n\n",
+          "calculationDate": "2025-10-28 20:03:07 UTC",
+          "arcFlash": null
+        },
+        "loadFlow": {
+          "busId": "BUS-1761609389884-wxsygus31",
+          "busName": "SS1 LVSG",
+          "busVoltage": 440,
+          "totalLoad": 600,
+          "breakdown": {
+            "motors": [],
+            "transformers": [],
+            "cables": [
+              {
+                "name": "300 COPPER - 85ft",
+                "location": "SS1 LVSG → MDP1",
+                "size": "300",
+                "material": "copper",
+                "length": 85,
+                "parallel": 2,
+                "current": 600,
+                "powerKVA": 457.26141319818356
+              }
+            ],
+            "directLoads": [],
+            "generators": []
+          },
+          "summary": {
+            "totalCurrent": 600,
+            "totalPowerKVA": 457.26141319818356,
+            "totalPowerKW": 411.5352718783652,
+            "powerFactor": 0.9
+          },
+          "pathTrace": [
+            {
+              "depth": 0,
+              "bus": "SS1 LVSG",
+              "voltage": 440,
+              "loads": []
+            }
+          ],
+          "calculationSteps": "LOAD FLOW CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:03:07 UTC\nEngineer: B. P. Faraon\nBus: SS1 LVSG (440V)\nPower Factor: 0.9\n\n📍 SS1 LVSG (440V)\n  └─ CABLE: 300 COPPER (2×) - 85ft\n    │  Specified Load: 600.00 A\n    └─ 300 copper (2×)\n  └─ Subtotal: 600.00 A\n\n════════════════════════════════════════════════════════════════════════════════\nLOAD FLOW SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Load Current: 600.00 A\nTotal Apparent Power: 457.26 kVA\nTotal Active Power: 411.54 kW\nPower Factor: 0.9\n\nBREAKDOWN BY TYPE:\n--------------------------------------------------------------------------------\nMotors: 0.00 A (0.0%)\nTransformers: 0.00 A (reflected from downstream)\nCables: 600.00 A (100.0%)\nDirect Loads: 0.00 A (0.0%)\nGenerators: 0 (Sources)\n\n",
+          "calculationDate": "2025-10-28 20:03:07 UTC"
+        },
+        "voltageDrop": {
+          "busId": "BUS-1761609389884-wxsygus31",
+          "busName": "SS1 LVSG",
+          "busVoltage": 440,
+          "powerFactor": 0.9,
+          "temperature": 75,
+          "components": [
+            {
+              "step": 1,
+              "type": "cable",
+              "name": "500 COPPER - 65ft",
+              "length": 65,
+              "size": "500",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 2.161358944432626,
+              "dropPercent": 0.016373931397216865,
+              "severity": "OK",
+              "current": 437,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 2,
+              "type": "cable",
+              "name": "250 COPPER - 5905ft",
+              "length": 5905,
+              "size": "250",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 15.007858793964676,
+              "dropPercent": 0.11369589995427784,
+              "severity": "OK",
+              "current": 20,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 3,
+              "type": "cable",
+              "name": "4/0 COPPER - 65ft",
+              "length": 65,
+              "size": "4/0",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 0.18910239889496405,
+              "dropPercent": 0.001432593931022455,
+              "severity": "OK",
+              "current": 20,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 4,
+              "type": "transformer",
+              "name": "1000 kVA (13200V / 440V)",
+              "rating": 1000,
+              "primaryVoltage": 13200,
+              "secondaryVoltage": 440,
+              "impedance": 4,
+              "primaryCurrent": 20,
+              "secondaryCurrent": 600,
+              "dropVolts": 4.497016169994778,
+              "dropPercent": 1.0220491295442677,
+              "severity": "OK",
+              "current": 600,
+              "powerFactor": 0.9
+            }
+          ],
+          "cumulativeDropVolts": 21.85533630728704,
+          "cumulativeDropPercent": 1.153551554826785,
+          "maxDropPercent": 1.0220491295442677,
+          "maxDropComponent": {
+            "step": 4,
+            "name": "1000 kVA (13200V / 440V)",
+            "type": "transformer"
+          },
+          "criticalComponents": [],
+          "compliance": {
+            "feederLimit": 3,
+            "branchLimit": 5,
+            "combinedLimit": 7,
+            "status": "EXCELLENT"
+          },
+          "calculationSteps": "VOLTAGE DROP CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:03:07 UTC\nEngineer: B. P. Faraon\nBus: SS1 LVSG (440V)\nPower Factor: 0.9\nTemperature: 75°C\nMethod: Component-by-Component Analysis\n\nIEEE 141 STANDARDS:\n  • Feeder Circuits: 3% maximum\n  • Branch Circuits: 5% maximum\n  • Combined System: 7% maximum\n\nSOURCE IMPEDANCE HANDLING:\n--------------------------------------------------------------------------------\nSource Bus: Utility (13200V)\nAvailable Fault Current: 4.37 kA\nSource Impedance: 1.742400 Ω (X/R: 3)\n\n⚠️  IMPORTANT: Per IEEE 141-1993 Section 3.2.1:\n   \"Voltage drop calculations shall begin at the first\n    distribution point, NOT including utility source impedance.\"\n\n✅ SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION\n   Source impedance is ONLY used for short circuit analysis.\n   Voltage drop starts from FIRST COMPONENT after source.\n\nSTEP 1: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER\nLength: 65 ft\nTemperature: 75°C\nImpedance: R = 0.002039 Ω, X = 0.002340 Ω\nLoad Current: 437.00 A\nVoltage Drop: 2.161 V (0.016%)\nStatus: OK\nCumulative: 0.016%\n\nSTEP 2: CABLE\n--------------------------------------------------------------------------------\nCable: 250 COPPER\nLength: 5905 ft\nTemperature: 75°C\nImpedance: R = 0.369840 Ω, X = 0.230295 Ω\nLoad Current: 20.00 A\nVoltage Drop: 15.008 V (0.114%)\nStatus: OK\nCumulative: 0.130%\n\nSTEP 3: CABLE\n--------------------------------------------------------------------------------\nCable: 4/0 COPPER\nLength: 65 ft\nTemperature: 75°C\nImpedance: R = 0.004806 Ω, X = 0.002600 Ω\nLoad Current: 20.00 A\nVoltage Drop: 0.189 V (0.001%)\nStatus: OK\nCumulative: 0.132%\n\nSTEP 4: TRANSFORMER\n--------------------------------------------------------------------------------\nTransformer: 1000 kVA\nVoltage: 13200V / 440V\nTurns Ratio: 30.0000:1\nImpedance: 4%, X/R: 7\nImpedance (Ω): R = 0.001095 Ω, X = 0.007666 Ω\n\nPRIMARY SIDE (13200V):\n  Current: 20.00 A\n\nSECONDARY SIDE (440V):\n  Current: 600.00 A\n  Full Load Current: 1312.16 A\n  Loading: 45.7%\n\nVOLTAGE DROP:\n  Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)\n  ΔV = 1.7321 × 600.00 × (0.001095 × 0.9 + 0.007666 × 0.4359)\n  Drop: 4.497 V (1.022%)\n  Status: OK\nCumulative: 1.154%\n\n════════════════════════════════════════════════════════════════════════════════\nVOLTAGE DROP SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Voltage Drop: 1.154% (21.855 V)\nMaximum Single Component: 1.022% (1000 kVA (13200V / 440V))\n\n✅ EXCELLENT - Well within recommended limits\n\nIEEE 141 COMPLIANCE: EXCELLENT\n  Feeder Limit: 3% ✓\n  Branch Limit: 5% ✓\n  Combined Limit: 7% ✓\n\nCOMPONENT BREAKDOWN:\n--------------------------------------------------------------------------------\nStep  Type       Name                      Current(A)  Drop(V)  Drop(%)  Status\n--------------------------------------------------------------------------------\n1     cable      500 COPPER - 65ft              437.0    2.161    0.016  OK\n2     cable      250 COPPER - 5905ft             20.0   15.008    0.114  OK\n3     cable      4/0 COPPER - 65ft               20.0    0.189    0.001  OK\n4     transformer 1000 kVA (13200V / 440V)       600.0    4.497    1.022  OK\n--------------------------------------------------------------------------------\n\n",
+          "calculationDate": "2025-10-28 20:03:07 UTC"
+        },
+        "faultCurrents": {
+          "threePhaseSym": 25.421340522886293,
+          "threePhaseAsym": 34.45641242413147,
+          "lineToGround": 21.60813944445335,
+          "lineToLine": 22.01488089281953
+        },
+        "totalImpedance": {
+          "magnitude": 0.009992947390588383,
+          "resistance": 0.0021259239871269896,
+          "reactance": 0.009764191966160091,
+          "angle": 77.71688530389565
+        },
+        "xrRatio": 4.592916785964483,
+        "path": [
+          {
+            "bus": {
+              "id": "BUS-1761605172559-t6nbqh4g1",
+              "name": "Utility",
+              "voltage": 13200,
+              "type": "source"
+            },
+            "component": null
+          },
+          {
+            "bus": {
+              "id": "BUS-1761605205471-vb2q4f1vx",
+              "name": "Main MVSG",
+              "voltage": 13200,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761608841676,
+              "type": "cable",
+              "name": "500 COPPER - 65ft"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761605275559-b8ga2n2b4",
+              "name": "MVSG Branch",
+              "voltage": 13200,
+              "type": "branch"
+            },
+            "component": {
+              "id": 1761608989931,
+              "type": "cable",
+              "name": "250 COPPER - 5905ft"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761609089820-ugk5fnc9l",
+              "name": "SS1 MVSG",
+              "voltage": 13200,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761609344716,
+              "type": "cable",
+              "name": "4/0 COPPER - 65ft"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761609389884-wxsygus31",
+              "name": "SS1 LVSG",
+              "voltage": 440,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761609427596,
+              "type": "transformer",
+              "name": "1000 kVA Transformer (13200V / 440V)"
+            }
+          }
+        ],
+        "method": "per-unit",
+        "calculationDate": "2025-10-28 20:03:07 UTC",
+        "analysisComplete": true,
+        "analysisTypes": [
+          "shortCircuit",
+          "loadFlow",
+          "voltageDrop"
+        ]
+      },
+      "pathComponents": [
+        {
+          "sequence": 0,
+          "bus": {
+            "id": "BUS-1761605172559-t6nbqh4g1",
+            "name": "Utility",
+            "voltage": 13200,
+            "type": "source"
+          },
+          "component": null
+        },
+        {
+          "sequence": 1,
+          "bus": {
+            "id": "BUS-1761605205471-vb2q4f1vx",
+            "name": "Main MVSG",
+            "voltage": 13200,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761608841676,
+            "type": "cable",
+            "name": "500 COPPER - 65ft"
+          }
+        },
+        {
+          "sequence": 2,
+          "bus": {
+            "id": "BUS-1761605275559-b8ga2n2b4",
+            "name": "MVSG Branch",
+            "voltage": 13200,
+            "type": "branch"
+          },
+          "component": {
+            "id": 1761608989931,
+            "type": "cable",
+            "name": "250 COPPER - 5905ft"
+          }
+        },
+        {
+          "sequence": 3,
+          "bus": {
+            "id": "BUS-1761609089820-ugk5fnc9l",
+            "name": "SS1 MVSG",
+            "voltage": 13200,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761609344716,
+            "type": "cable",
+            "name": "4/0 COPPER - 65ft"
+          }
+        },
+        {
+          "sequence": 4,
+          "bus": {
+            "id": "BUS-1761609389884-wxsygus31",
+            "name": "SS1 LVSG",
+            "voltage": 440,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761609427596,
+            "type": "transformer",
+            "name": "1000 kVA Transformer (13200V / 440V)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "BUS-1761609544691-uzteeo2qs",
+      "name": "MDP1",
+      "voltage": 440,
+      "type": "branch",
+      "parentBus": "BUS-1761609389884-wxsygus31",
+      "faultCurrent": 20.85682871202483,
+      "asymFaultCurrent": 24.980221706760467,
+      "xrRatio": 2.6199599248069596,
+      "totalZ": 0.01217990145821997,
+      "created": "2025-10-27T23:59:04.691Z",
+      "results": {
+        "shortCircuit": {
+          "faultCurrents": {
+            "threePhaseSym": 20.85682871202483,
+            "threePhaseAsym": 24.980221706760467,
+            "lineToGround": 17.728304405221103,
+            "lineToLine": 18.062013664613502
+          },
+          "motorContribution": {
+            "busId": "BUS-1761609544691-uzteeo2qs",
+            "busVoltage": 440,
+            "motors": [],
+            "totalMotorR": 0,
+            "totalMotorX": 0,
+            "totalMotorZ": 0,
+            "motorFaultCurrent": 0,
+            "contributionPercent": 0,
+            "calculationSteps": ""
+          },
+          "totalImpedance": {
+            "magnitude": 0.01217990145821997,
+            "resistance": 0.00434326947462699,
+            "reactance": 0.011379191966160091,
+            "angle": 69.10888326743738
+          },
+          "xrRatio": 2.6199599248069596,
+          "method": "Per-Unit",
+          "path": [
+            {
+              "bus": {
+                "id": "BUS-1761605172559-t6nbqh4g1",
+                "name": "Utility",
+                "voltage": 13200,
+                "type": "source"
+              },
+              "component": null
+            },
+            {
+              "bus": {
+                "id": "BUS-1761605205471-vb2q4f1vx",
+                "name": "Main MVSG",
+                "voltage": 13200,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761608841676,
+                "type": "cable",
+                "name": "500 COPPER - 65ft"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761605275559-b8ga2n2b4",
+                "name": "MVSG Branch",
+                "voltage": 13200,
+                "type": "branch"
+              },
+              "component": {
+                "id": 1761608989931,
+                "type": "cable",
+                "name": "250 COPPER - 5905ft"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761609089820-ugk5fnc9l",
+                "name": "SS1 MVSG",
+                "voltage": 13200,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761609344716,
+                "type": "cable",
+                "name": "4/0 COPPER - 65ft"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761609389884-wxsygus31",
+                "name": "SS1 LVSG",
+                "voltage": 440,
+                "type": "distribution"
+              },
+              "component": {
+                "id": 1761609427596,
+                "type": "transformer",
+                "name": "1000 kVA Transformer (13200V / 440V)"
+              }
+            },
+            {
+              "bus": {
+                "id": "BUS-1761609544691-uzteeo2qs",
+                "name": "MDP1",
+                "voltage": 440,
+                "type": "branch"
+              },
+              "component": {
+                "id": 1761609626196,
+                "type": "cable",
+                "name": "300 COPPER (2×) - 85ft"
+              }
+            }
+          ],
+          "perUnit": {
+            "totalRpu": 0.2243424315406503,
+            "totalXpu": 0.5877681800702527,
+            "totalZpu": 0.629127141436982,
+            "baseKVA": 10000,
+            "baseVoltage": 440,
+            "baseZ": 0.01936,
+            "baseCurrent": 13121.59702703695
+          },
+          "calculationSteps": "SHORT CIRCUIT CALCULATION - PER-UNIT METHOD\n================================================================================\n\nDate/Time: 2025-10-28 20:03:33 UTC\nEngineer: B. P. Faraon\nTemperature: 75°C\nMethod: Per-Unit System\n\nPER-UNIT BASE VALUES:\n  Base kVA: 10000 kVA\n  Base Voltage: 440 V\n  Base Impedance: 0.019360 Ω\n  Base Current: 13121.60 A\n\nSTEP 1: SOURCE BUS - Utility\n--------------------------------------------------------------------------------\nBus Voltage: 13200 V\nAvailable Fault Current: 4.37 kA\nSource X/R Ratio: 3\n\nSource Impedance (Ohmic):\n  R = 0.550995 Ω\n  X = 1.652986 Ω\n\nConverted to Per-Unit:\n  R_pu = 0.031623 pu\n  X_pu = 0.094868 pu\n\nRunning Total: R_pu = 0.031623, X_pu = 0.094868\n\nSTEP 2: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER, 65 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.002039 Ω\n  X = 0.002340 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.002039 / 17.424000 = 0.000117 pu\n  X_pu = 0.002340 / 17.424000 = 0.000134 pu\n  Z_pu = 0.000178 pu\n\nRunning Total: R_pu = 0.031740, X_pu = 0.095003\n\nSTEP 3: CABLE\n--------------------------------------------------------------------------------\nCable: 250 COPPER, 5905 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.369840 Ω\n  X = 0.230295 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.369840 / 17.424000 = 0.021226 pu\n  X_pu = 0.230295 / 17.424000 = 0.013217 pu\n  Z_pu = 0.025005 pu\n\nRunning Total: R_pu = 0.052966, X_pu = 0.108220\n\nSTEP 4: CABLE\n--------------------------------------------------------------------------------\nCable: 4/0 COPPER, 65 ft\nTemperature: 75°C\nVoltage Level: 13200V\n\nCable Impedance (Ohmic):\n  R = 0.004806 Ω\n  X = 0.002600 Ω\n\nConversion to Per-Unit:\n  Z_base at 13200V = 17.424000 Ω\n  R_pu = 0.004806 / 17.424000 = 0.000276 pu\n  X_pu = 0.002600 / 17.424000 = 0.000149 pu\n  Z_pu = 0.000314 pu\n\nRunning Total: R_pu = 0.053242, X_pu = 0.108369\n\nSTEP 5: TRANSFORMER\n--------------------------------------------------------------------------------\nPrimary: 13200 V → Secondary: 440 V\nRating: 1000 kVA\nImpedance: 4% on own base\nX/R: 7\n\nTransformer Per-Unit Impedance:\n  On own base (1000 kVA):\n    R_pu = 0.005657 pu\n    X_pu = 0.039598 pu\n    Z_pu = 0.040000 pu\n\n  Converted to system base (10000 kVA):\n    R_pu = 0.005657 × 10.0000 = 0.056569 pu\n    X_pu = 0.039598 × 10.0000 = 0.395980 pu\n\nRunning Total: R_pu = 0.109810, X_pu = 0.504349\n\nSTEP 6: CABLE\n--------------------------------------------------------------------------------\nCable: 300 COPPER, 85 ft\nParallel: 2 cables (Z ÷ 2)\nTemperature: 75°C\nVoltage Level: 440V\n\nCable Impedance (Ohmic):\n  R = 0.002217 Ω\n  X = 0.001615 Ω\n\nConversion to Per-Unit:\n  Z_base at 440V = 0.019360 Ω\n  R_pu = 0.002217 / 0.019360 = 0.114532 pu\n  X_pu = 0.001615 / 0.019360 = 0.083419 pu\n  Z_pu = 0.141691 pu\n\nRunning Total: R_pu = 0.224342, X_pu = 0.587768\n\n\nℹ️  No motor contribution (no motors connected to this bus)\n\n\n================================================================================\nFINAL SHORT CIRCUIT CALCULATION (PER-UNIT METHOD)\n================================================================================\n\nTarget Bus: MDP1 (440V)\n\nTotal System Impedance (Per-Unit):\n  R_pu = 0.224342 pu\n  X_pu = 0.587768 pu\n  Z_pu = 0.629127 pu\n  X/R Ratio = 2.620\n\nTotal System Impedance (Ohmic Equivalent):\n  R = 0.004343 Ω\n  X = 0.011379 Ω\n  Z = 0.012180 Ω\n\nTHREE-PHASE SYMMETRICAL FAULT CURRENT:\n  I_pu = V_pu / Z_pu = 1.0 / 0.629127 = 1.589504 pu\n  I_actual = I_pu × I_base\n  I_actual = 1.589504 × 13121.60\n  I_sc = 20856.83 A = 20.857 kA\n\nASYMMETRICAL (PEAK) FAULT CURRENT:\n  Multiplier = √(1 + 2e^(-4R/X)) = 1.1977\n  I_asym = 20.857 × 1.1977 = 24.980 kA\n\nPER-UNIT SYSTEM ADVANTAGES:\n  ✓ Voltage level changes handled automatically\n  ✓ Transformer ratios built into per-unit conversion\n  ✓ Easy parallel/series impedance combinations\n  ✓ Standard for multi-voltage level systems\n\n",
+          "calculationDate": "2025-10-28 20:03:33 UTC",
+          "arcFlash": null
+        },
+        "loadFlow": {
+          "busId": "BUS-1761609544691-uzteeo2qs",
+          "busName": "MDP1",
+          "busVoltage": 440,
+          "totalLoad": 600,
+          "breakdown": {
+            "motors": [],
+            "transformers": [],
+            "cables": [],
+            "directLoads": [
+              {
+                "bus": "MDP1",
+                "current": 600,
+                "powerKVA": 457.26141319818356
+              }
+            ],
+            "generators": []
+          },
+          "summary": {
+            "totalCurrent": 600,
+            "totalPowerKVA": 457.26141319818356,
+            "totalPowerKW": 411.5352718783652,
+            "powerFactor": 0.9
+          },
+          "pathTrace": [
+            {
+              "depth": 0,
+              "bus": "MDP1",
+              "voltage": 440,
+              "loads": []
+            }
+          ],
+          "calculationSteps": "LOAD FLOW CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:03:33 UTC\nEngineer: B. P. Faraon\nBus: MDP1 (440V)\nPower Factor: 0.9\n\n📍 MDP1 (440V)\n  ├─ Direct Load: 600.00 A\n  └─ Subtotal: 600.00 A\n\n════════════════════════════════════════════════════════════════════════════════\nLOAD FLOW SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Load Current: 600.00 A\nTotal Apparent Power: 457.26 kVA\nTotal Active Power: 411.54 kW\nPower Factor: 0.9\n\nBREAKDOWN BY TYPE:\n--------------------------------------------------------------------------------\nMotors: 0.00 A (0.0%)\nTransformers: 0.00 A (reflected from downstream)\nCables: 0.00 A (0.0%)\nDirect Loads: 600.00 A (100.0%)\nGenerators: 0 (Sources)\n\n",
+          "calculationDate": "2025-10-28 20:03:33 UTC"
+        },
+        "voltageDrop": {
+          "busId": "BUS-1761609544691-uzteeo2qs",
+          "busName": "MDP1",
+          "busVoltage": 440,
+          "powerFactor": 0.9,
+          "temperature": 75,
+          "components": [
+            {
+              "step": 1,
+              "type": "cable",
+              "name": "500 COPPER - 65ft",
+              "length": 65,
+              "size": "500",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 2.161358944432626,
+              "dropPercent": 0.016373931397216865,
+              "severity": "OK",
+              "current": 437,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 2,
+              "type": "cable",
+              "name": "250 COPPER - 5905ft",
+              "length": 5905,
+              "size": "250",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 15.007858793964676,
+              "dropPercent": 0.11369589995427784,
+              "severity": "OK",
+              "current": 20,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 3,
+              "type": "cable",
+              "name": "4/0 COPPER - 65ft",
+              "length": 65,
+              "size": "4/0",
+              "material": "copper",
+              "parallel": 1,
+              "dropVolts": 0.18910239889496405,
+              "dropPercent": 0.001432593931022455,
+              "severity": "OK",
+              "current": 20,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 4,
+              "type": "transformer",
+              "name": "1000 kVA (13200V / 440V)",
+              "rating": 1000,
+              "primaryVoltage": 13200,
+              "secondaryVoltage": 440,
+              "impedance": 4,
+              "primaryCurrent": 20,
+              "secondaryCurrent": 600,
+              "dropVolts": 4.497016169994778,
+              "dropPercent": 1.0220491295442677,
+              "severity": "OK",
+              "current": 600,
+              "powerFactor": 0.9
+            },
+            {
+              "step": 5,
+              "type": "cable",
+              "name": "300 COPPER (2×) - 85ft",
+              "length": 85,
+              "size": "300",
+              "material": "copper",
+              "parallel": 2,
+              "dropVolts": 2.8054786796108693,
+              "dropPercent": 0.6376087908206521,
+              "severity": "OK",
+              "current": 600,
+              "powerFactor": 0.9
+            }
+          ],
+          "cumulativeDropVolts": 24.660814986897908,
+          "cumulativeDropPercent": 1.791160345647437,
+          "maxDropPercent": 1.0220491295442677,
+          "maxDropComponent": {
+            "step": 4,
+            "name": "1000 kVA (13200V / 440V)",
+            "type": "transformer"
+          },
+          "criticalComponents": [],
+          "compliance": {
+            "feederLimit": 3,
+            "branchLimit": 5,
+            "combinedLimit": 7,
+            "status": "EXCELLENT"
+          },
+          "calculationSteps": "VOLTAGE DROP CALCULATION\n================================================================================\n\nDate/Time: 2025-10-28 20:03:33 UTC\nEngineer: B. P. Faraon\nBus: MDP1 (440V)\nPower Factor: 0.9\nTemperature: 75°C\nMethod: Component-by-Component Analysis\n\nIEEE 141 STANDARDS:\n  • Feeder Circuits: 3% maximum\n  • Branch Circuits: 5% maximum\n  • Combined System: 7% maximum\n\nSOURCE IMPEDANCE HANDLING:\n--------------------------------------------------------------------------------\nSource Bus: Utility (13200V)\nAvailable Fault Current: 4.37 kA\nSource Impedance: 1.742400 Ω (X/R: 3)\n\n⚠️  IMPORTANT: Per IEEE 141-1993 Section 3.2.1:\n   \"Voltage drop calculations shall begin at the first\n    distribution point, NOT including utility source impedance.\"\n\n✅ SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION\n   Source impedance is ONLY used for short circuit analysis.\n   Voltage drop starts from FIRST COMPONENT after source.\n\nSTEP 1: CABLE\n--------------------------------------------------------------------------------\nCable: 500 COPPER\nLength: 65 ft\nTemperature: 75°C\nImpedance: R = 0.002039 Ω, X = 0.002340 Ω\nLoad Current: 437.00 A\nVoltage Drop: 2.161 V (0.016%)\nStatus: OK\nCumulative: 0.016%\n\nSTEP 2: CABLE\n--------------------------------------------------------------------------------\nCable: 250 COPPER\nLength: 5905 ft\nTemperature: 75°C\nImpedance: R = 0.369840 Ω, X = 0.230295 Ω\nLoad Current: 20.00 A\nVoltage Drop: 15.008 V (0.114%)\nStatus: OK\nCumulative: 0.130%\n\nSTEP 3: CABLE\n--------------------------------------------------------------------------------\nCable: 4/0 COPPER\nLength: 65 ft\nTemperature: 75°C\nImpedance: R = 0.004806 Ω, X = 0.002600 Ω\nLoad Current: 20.00 A\nVoltage Drop: 0.189 V (0.001%)\nStatus: OK\nCumulative: 0.132%\n\nSTEP 4: TRANSFORMER\n--------------------------------------------------------------------------------\nTransformer: 1000 kVA\nVoltage: 13200V / 440V\nTurns Ratio: 30.0000:1\nImpedance: 4%, X/R: 7\nImpedance (Ω): R = 0.001095 Ω, X = 0.007666 Ω\n\nPRIMARY SIDE (13200V):\n  Current: 20.00 A\n\nSECONDARY SIDE (440V):\n  Current: 600.00 A\n  Full Load Current: 1312.16 A\n  Loading: 45.7%\n\nVOLTAGE DROP:\n  Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)\n  ΔV = 1.7321 × 600.00 × (0.001095 × 0.9 + 0.007666 × 0.4359)\n  Drop: 4.497 V (1.022%)\n  Status: OK\nCumulative: 1.154%\n\nSTEP 5: CABLE\n--------------------------------------------------------------------------------\nCable: 300 COPPER\nLength: 85 ft\nParallel Conductors: 2 (Z ÷ 2)\nTemperature: 75°C\nImpedance: R = 0.002217 Ω, X = 0.001615 Ω\nLoad Current: 600.00 A\nVoltage Drop: 2.805 V (0.638%)\nStatus: OK\nCumulative: 1.791%\n\n════════════════════════════════════════════════════════════════════════════════\nVOLTAGE DROP SUMMARY\n════════════════════════════════════════════════════════════════════════════════\n\nTotal Voltage Drop: 1.791% (24.661 V)\nMaximum Single Component: 1.022% (1000 kVA (13200V / 440V))\n\n✅ EXCELLENT - Well within recommended limits\n\nIEEE 141 COMPLIANCE: EXCELLENT\n  Feeder Limit: 3% ✓\n  Branch Limit: 5% ✓\n  Combined Limit: 7% ✓\n\nCOMPONENT BREAKDOWN:\n--------------------------------------------------------------------------------\nStep  Type       Name                      Current(A)  Drop(V)  Drop(%)  Status\n--------------------------------------------------------------------------------\n1     cable      500 COPPER - 65ft              437.0    2.161    0.016  OK\n2     cable      250 COPPER - 5905ft             20.0   15.008    0.114  OK\n3     cable      4/0 COPPER - 65ft               20.0    0.189    0.001  OK\n4     transformer 1000 kVA (13200V / 440V)       600.0    4.497    1.022  OK\n5     cable      300 COPPER (2×) - 85ft         600.0    2.805    0.638  OK\n--------------------------------------------------------------------------------\n\n",
+          "calculationDate": "2025-10-28 20:03:33 UTC"
+        },
+        "faultCurrents": {
+          "threePhaseSym": 20.85682871202483,
+          "threePhaseAsym": 24.980221706760467,
+          "lineToGround": 17.728304405221103,
+          "lineToLine": 18.062013664613502
+        },
+        "totalImpedance": {
+          "magnitude": 0.01217990145821997,
+          "resistance": 0.00434326947462699,
+          "reactance": 0.011379191966160091,
+          "angle": 69.10888326743738
+        },
+        "xrRatio": 2.6199599248069596,
+        "path": [
+          {
+            "bus": {
+              "id": "BUS-1761605172559-t6nbqh4g1",
+              "name": "Utility",
+              "voltage": 13200,
+              "type": "source"
+            },
+            "component": null
+          },
+          {
+            "bus": {
+              "id": "BUS-1761605205471-vb2q4f1vx",
+              "name": "Main MVSG",
+              "voltage": 13200,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761608841676,
+              "type": "cable",
+              "name": "500 COPPER - 65ft"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761605275559-b8ga2n2b4",
+              "name": "MVSG Branch",
+              "voltage": 13200,
+              "type": "branch"
+            },
+            "component": {
+              "id": 1761608989931,
+              "type": "cable",
+              "name": "250 COPPER - 5905ft"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761609089820-ugk5fnc9l",
+              "name": "SS1 MVSG",
+              "voltage": 13200,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761609344716,
+              "type": "cable",
+              "name": "4/0 COPPER - 65ft"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761609389884-wxsygus31",
+              "name": "SS1 LVSG",
+              "voltage": 440,
+              "type": "distribution"
+            },
+            "component": {
+              "id": 1761609427596,
+              "type": "transformer",
+              "name": "1000 kVA Transformer (13200V / 440V)"
+            }
+          },
+          {
+            "bus": {
+              "id": "BUS-1761609544691-uzteeo2qs",
+              "name": "MDP1",
+              "voltage": 440,
+              "type": "branch"
+            },
+            "component": {
+              "id": 1761609626196,
+              "type": "cable",
+              "name": "300 COPPER (2×) - 85ft"
+            }
+          }
+        ],
+        "method": "per-unit",
+        "calculationDate": "2025-10-28 20:03:33 UTC",
+        "analysisComplete": true,
+        "analysisTypes": [
+          "shortCircuit",
+          "loadFlow",
+          "voltageDrop"
+        ]
+      },
+      "pathComponents": [
+        {
+          "sequence": 0,
+          "bus": {
+            "id": "BUS-1761605172559-t6nbqh4g1",
+            "name": "Utility",
+            "voltage": 13200,
+            "type": "source"
+          },
+          "component": null
+        },
+        {
+          "sequence": 1,
+          "bus": {
+            "id": "BUS-1761605205471-vb2q4f1vx",
+            "name": "Main MVSG",
+            "voltage": 13200,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761608841676,
+            "type": "cable",
+            "name": "500 COPPER - 65ft"
+          }
+        },
+        {
+          "sequence": 2,
+          "bus": {
+            "id": "BUS-1761605275559-b8ga2n2b4",
+            "name": "MVSG Branch",
+            "voltage": 13200,
+            "type": "branch"
+          },
+          "component": {
+            "id": 1761608989931,
+            "type": "cable",
+            "name": "250 COPPER - 5905ft"
+          }
+        },
+        {
+          "sequence": 3,
+          "bus": {
+            "id": "BUS-1761609089820-ugk5fnc9l",
+            "name": "SS1 MVSG",
+            "voltage": 13200,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761609344716,
+            "type": "cable",
+            "name": "4/0 COPPER - 65ft"
+          }
+        },
+        {
+          "sequence": 4,
+          "bus": {
+            "id": "BUS-1761609389884-wxsygus31",
+            "name": "SS1 LVSG",
+            "voltage": 440,
+            "type": "distribution"
+          },
+          "component": {
+            "id": 1761609427596,
+            "type": "transformer",
+            "name": "1000 kVA Transformer (13200V / 440V)"
+          }
+        },
+        {
+          "sequence": 5,
+          "bus": {
+            "id": "BUS-1761609544691-uzteeo2qs",
+            "name": "MDP1",
+            "voltage": 440,
+            "type": "branch"
+          },
+          "component": {
+            "id": 1761609626196,
+            "type": "cable",
+            "name": "300 COPPER (2×) - 85ft"
+          }
+        }
+      ],
+      "loadCurrent": 600
+    }
+  ],
+  "components": [
+    {
+      "id": 1761608841676,
+      "type": "cable",
+      "fromBus": "BUS-1761605172559-t6nbqh4g1",
+      "toBus": "BUS-1761605205471-vb2q4f1vx",
+      "fromBusName": "Utility",
+      "toBusName": "Main MVSG",
+      "created": "2025-10-27T23:47:21.676Z",
+      "size": "500",
+      "material": "copper",
+      "length": 65,
+      "conduit": "PVC",
+      "parallel": 1,
+      "loadCurrent": 437,
+      "name": "500 COPPER - 65ft"
+    },
+    {
+      "id": 1761608989931,
+      "type": "cable",
+      "fromBus": "BUS-1761605205471-vb2q4f1vx",
+      "toBus": "BUS-1761605275559-b8ga2n2b4",
+      "fromBusName": "Main MVSG",
+      "toBusName": "MVSG Branch",
+      "created": "2025-10-27T23:49:49.931Z",
+      "size": "250",
+      "material": "copper",
+      "length": 5905,
+      "conduit": "PVC",
+      "parallel": 1,
+      "name": "250 COPPER - 5905ft"
+    },
+    {
+      "id": 1761609344716,
+      "type": "cable",
+      "fromBus": "BUS-1761605275559-b8ga2n2b4",
+      "toBus": "BUS-1761609089820-ugk5fnc9l",
+      "fromBusName": "MVSG Branch",
+      "toBusName": "SS1 MVSG",
+      "created": "2025-10-27T23:55:44.716Z",
+      "size": "4/0",
+      "material": "copper",
+      "length": 65,
+      "conduit": "PVC",
+      "parallel": 1,
+      "name": "4/0 COPPER - 65ft"
+    },
+    {
+      "id": 1761609427596,
+      "type": "transformer",
+      "fromBus": "BUS-1761609089820-ugk5fnc9l",
+      "toBus": "BUS-1761609389884-wxsygus31",
+      "fromBusName": "SS1 MVSG",
+      "toBusName": "SS1 LVSG",
+      "created": "2025-10-27T23:57:07.596Z",
+      "rating": 1000,
+      "primary": 13200,
+      "secondary": 440,
+      "impedance": 4,
+      "xr": 7,
+      "name": "1000 kVA Transformer (13200V / 440V)"
+    },
+    {
+      "id": 1761609626196,
+      "type": "cable",
+      "fromBus": "BUS-1761609389884-wxsygus31",
+      "toBus": "BUS-1761609544691-uzteeo2qs",
+      "fromBusName": "SS1 LVSG",
+      "toBusName": "MDP1",
+      "created": "2025-10-28T00:00:26.196Z",
+      "size": "300",
+      "material": "copper",
+      "length": 85,
+      "conduit": "PVC",
+      "parallel": 2,
+      "loadCurrent": 600,
+      "name": "300 COPPER (2×) - 85ft"
+    }
+  ],
+  "settings": {
+    "loadCurrent": 100,
+    "powerFactor": 0.9,
+    "voltageDropLimit": 3,
+    "temperature": 75,
+    "method": "per-unit"
+  }
+}

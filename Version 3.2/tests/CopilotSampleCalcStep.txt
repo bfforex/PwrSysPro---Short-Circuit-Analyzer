@@ -1,0 +1,220 @@
+═══════════════════════════════════════════════════════════════
+DETAILED CALCULATION STEPS - Bus: LCB1-4 (440V)
+═══════════════════════════════════════════════════════════════
+
+STEP 1: SOURCE IMPEDANCE CALCULATION
+────────────────────────────────────────────────────────────────
+Given:
+  • Source: MERALCO-CCP (13,200V)
+  • Available Fault Current: 10.09 kA
+  • System Base: 100 MVA
+
+Calculation:
+  Z_source = V² / (√3 × I_fault × V_base)
+           = (13,200)² / (√3 × 10,090 × 13,200)
+           = 174,240,000 / 230,563,080
+           = 0.7556 Ω (at 13,200V base)
+
+Convert to per-unit:
+  Z_pu = Z_actual × (S_base / V_base²)
+      = 0.7556 × (100,000,000 / 13,200²)
+      = 0.7556 × 573.9
+      = 433.6 per-unit
+
+Result: ✅ Z_source = 0.7556 Ω = 433.6 pu
+
+────────────────────────────────────────────────────────────────
+
+STEP 2: CABLE IMPEDANCE - Path Component 1
+────────────────────────────────────────────────────────────────
+Cable: P-13K-MECO-EHV1
+  • Size: 500 kcmil Copper
+  • Length: 50 ft
+  • Voltage: 13,200V
+  • Temperature: 75°C
+
+From NEC Chapter 9, Table 9:
+  • R = 0.0258 Ω/1000ft @ 75°C
+  • X = 0.0422 Ω/1000ft
+
+Calculation:
+  R_cable = (0.0258 × 50) / 1000 = 0.00129 Ω
+  X_cable = (0.0422 × 50) / 1000 = 0.00211 Ω
+  Z_cable = √(R² + X²) = √(0.00129² + 0.00211²)
+          = √(0.00000166 + 0.00000445)
+          = √0.00000611
+          = 0.00247 Ω
+
+X/R Ratio = 0.00211 / 0.00129 = 1.64
+
+Result: ✅ Z_cable = 0.00247 Ω ∠58.5° (R=0.00129, X=0.00211)
+
+────────────────────────────────────────────────────────────────
+
+STEP 3: TRANSFORMER IMPEDANCE
+────────────────────────────────────────────────────────────────
+Transformer: XFRMR-LCA1-1000
+  • Rating: 1000 kVA
+  • Primary: 13,200V
+  • Secondary: 440V
+  • Impedance: 5.75% @ rated kVA
+
+Base Impedance (Secondary):
+  Z_base = V² / S_base
+         = (440)² / 1,000,000
+         = 193,600 / 1,000,000
+         = 0.1936 Ω
+
+Transformer Impedance:
+  Z_xfmr = Z_base × %Z / 100
+         = 0.1936 × 5.75 / 100
+         = 0.01113 Ω (at 440V)
+
+Assume X/R = 10 (typical for transformers):
+  R_xfmr = Z / √(1 + (X/R)²)
+         = 0.01113 / √(1 + 100)
+         = 0.01113 / 10.05
+         = 0.00111 Ω
+  
+  X_xfmr = R × (X/R)
+         = 0.00111 × 10
+         = 0.0111 Ω
+
+Result: ✅ Z_xfmr = 0.01113 Ω ∠84.3° (R=0.00111, X=0.0111)
+
+────────────────────────────────────────────────────────────────
+
+STEP 4: TOTAL IMPEDANCE TO BUS
+────────────────────────────────────────────────────────────────
+Convert all impedances to 440V base:
+
+Source impedance reflected to secondary:
+  Z_source_440V = Z_source × (V_sec / V_pri)²
+                = 0.7556 × (440 / 13,200)²
+                = 0.7556 × 0.001111
+                = 0.000840 Ω
+
+Total series impedance:
+  R_total = R_source + R_cable1 + ... + R_xfmr + R_cable2
+          = 0.000084 + 0.00129 + ... + 0.00111 + 0.00156
+          = 0.00485 Ω
+  
+  X_total = X_source + X_cable1 + ... + X_xfmr + X_cable2
+          = 0.000836 + 0.00211 + ... + 0.0111 + 0.00265
+          = 0.01475 Ω
+  
+  Z_total = √(R_total² + X_total²)
+          = √(0.00485² + 0.01475²)
+          = √(0.0000235 + 0.0002176)
+          = √0.0002411
+          = 0.01553 Ω
+
+  X/R = 0.01475 / 0.00485 = 3.04
+
+Result: ✅ Z_total = 0.01553 Ω ∠71.8° (X/R = 3.04)
+
+────────────────────────────────────────────────────────────────
+
+STEP 5: FAULT CURRENT CALCULATION
+────────────────────────────────────────────────────────────────
+Three-Phase Fault Current:
+
+  I_fault = V / (√3 × Z_total)
+          = 440 / (√3 × 0.01553)
+          = 440 / 0.02689
+          = 16,361 A
+          = 16.36 kA (symmetrical RMS)
+
+Asymmetrical Peak Current:
+  Multiplier = 1 + e^(-2πf × t × (R/X))
+             = 1 + e^(-2π × 60 × 0.5 × (1/3.04))
+             = 1 + e^(-62.83)
+             = 1 + 0.00 (negligible DC component at 0.5 cycles)
+
+For first cycle peak (considering X/R = 3.04):
+  K_factor = √(2 × (1 + e^(-π/(X/R))))
+           = √(2 × (1 + e^(-π/3.04)))
+           = √(2 × (1 + 0.348))
+           = √2.696
+           = 1.642
+
+  I_peak = K_factor × √2 × I_rms
+         = 1.642 × 1.414 × 16.36
+         = 38.0 kA (peak)
+
+Result: ✅ I_fault_3Ø = 16.36 kA RMS, 38.0 kA Peak
+
+────────────────────────────────────────────────────────────────
+
+STEP 6: MOTOR CONTRIBUTION
+────────────────────────────────────────────────────────────────
+Motor: Comp-001 (250 HP, 440V)
+
+Motor Full Load Current:
+  I_FLC = (HP × 746) / (√3 × V × η × PF)
+        = (250 × 746) / (√3 × 440 × 0.90 × 0.85)
+        = 186,500 / 582.78
+        = 319.9 A
+
+Motor Fault Contribution (6× FLC typical):
+  I_motor = 6 × I_FLC
+          = 6 × 319.9
+          = 1,919 A
+          = 1.92 kA
+
+Decay time constant (typical induction motor):
+  τ = L/R ≈ 0.5-1.0 seconds
+
+Total fault current with motor:
+  I_total = I_fault + I_motor
+          = 16.36 + 1.92
+          = 18.28 kA (at t=0)
+  
+  I_sustained = 16.36 kA (after motor decays, t>1s)
+
+Result: ✅ Total fault = 18.28 kA initial, 16.36 kA sustained
+
+────────────────────────────────────────────────────────────────
+
+STEP 7: VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────
+Load Current: 319.9 A (motor FLC)
+
+Voltage drop through total impedance:
+  V_drop = √3 × I_load × Z_total
+         = √3 × 319.9 × 0.01553
+         = 1.732 × 319.9 × 0.01553
+         = 8.61 V
+
+Voltage drop percentage:
+  %VD = (V_drop / V_nominal) × 100
+      = (8.61 / 440) × 100
+      = 1.96%
+
+IEEE 141-1993 Limit: 7% (combined feeder + branch)
+NEC Recommendation: 3% (feeders), 5% (branch)
+
+Result: ✅ Voltage Drop = 8.61V (1.96%) - COMPLIANT
+
+────────────────────────────────────────────────────────────────
+
+STEP 8: BREAKER RATING VERIFICATION
+────────────────────────────────────────────────────────────────
+Required breaker interrupting rating:
+
+Minimum AIC rating = I_fault × safety_factor
+                   = 16.36 × 1.25
+                   = 20.45 kA
+
+Next standard rating (NEMA): 25 kA or 42 kA
+
+Recommended: 42 kA MCCB
+  • Provides 157% safety margin
+  • Accounts for future load growth
+  • Standard readily available rating
+
+Result: ✅ Recommend 42kA AIC breaker
+
+════════════════════════════════════════════════════════════════
+CALCULATION COMPLETE
+════════════════════════════════════════════════════════════════
