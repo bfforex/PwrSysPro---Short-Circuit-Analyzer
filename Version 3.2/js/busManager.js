@@ -154,12 +154,15 @@ function saveBus() {
     };
     
     // Store load current if specified
+    // ✅ CRITICAL FIX: Mark load as manual when user specifies it
+    // Added: 2025-12-01 by bfforex
     const loadField = document.getElementById('newBusLoad');
     if (loadField) {
         const loadCurrent = parseFloat(loadField.value);
         if (loadCurrent && loadCurrent > 0) {
             bus.loadCurrent = loadCurrent;
-            console.log(`✅ Bus ${name}: Load current set to ${loadCurrent} A`);
+            bus.loadCurrentAutoCalculated = false;  // ✅ Mark as MANUAL - user specified this value
+            console.log(`✅ Bus ${name}: Load current set to ${loadCurrent} A (MANUAL)`);
         }
     }
     
@@ -480,14 +483,18 @@ function saveBusEdits() {
     bus.voltage = parseFloat(document.getElementById('editBusVoltage').value);
     
     // Save load current
+    // ✅ CRITICAL FIX: Mark load as manual when user edits it
+    // Added: 2025-12-01 by bfforex
     const editLoadField = document.getElementById('editBusLoad');
     if (editLoadField) {
         const loadCurrent = parseFloat(editLoadField.value);
         if (loadCurrent && loadCurrent > 0) {
             bus.loadCurrent = loadCurrent;
-            console.log(`✅ Bus ${bus.name}: Load current updated to ${loadCurrent} A`);
+            bus.loadCurrentAutoCalculated = false;  // ✅ Mark as MANUAL - user specified this value
+            console.log(`✅ Bus ${bus.name}: Load current updated to ${loadCurrent} A (MANUAL)`);
         } else {
             delete bus.loadCurrent;
+            delete bus.loadCurrentAutoCalculated;  // ✅ Clear both - will auto-calculate on next run
             console.log(`🔄 Bus ${bus.name}: Load current cleared (will auto-calculate)`);
         }
     }

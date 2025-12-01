@@ -29,8 +29,13 @@ function calculateDownstreamLoad(busId) {
         if (!currentBus) return 0;
         
         // Add direct load on this bus if specified
-        if (currentBus.loadCurrent && currentBus.loadCurrent > 0) {
+        // ✅ FIXED: Only add MANUAL loads (not auto-calculated) to prevent double-counting
+        // Added: 2025-12-01 by bfforex
+        if (currentBus.loadCurrent && currentBus.loadCurrent > 0 && !currentBus.loadCurrentAutoCalculated) {
             branchLoad += currentBus.loadCurrent;
+            console.log(`   📍 Direct load on ${currentBus.name}: ${currentBus.loadCurrent.toFixed(2)} A (manual)`);
+        } else if (currentBus.loadCurrent && currentBus.loadCurrentAutoCalculated) {
+            console.log(`   ℹ️ Skipping auto-calculated load on ${currentBus.name} (prevents double-count)`);
         }
         
         // Find all components connected FROM this bus

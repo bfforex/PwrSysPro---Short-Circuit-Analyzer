@@ -254,14 +254,17 @@ function calculateBus(busId) {
                 console.log(`   ✅ Bus ${bus.name}: Using connected load for display: ${displayLoad.toFixed(2)} A`);
             }
     
-            // Only update if NO manual load was specified (preserve manual inputs)
-            const hadManualLoad = bus.loadCurrent && bus.loadCurrent > 0;
+            // ✅ CRITICAL FIX: Check if this is a manual load or auto-calculated
+            // Only update if NO manual load was specified OR if load was previously auto-calculated
+            const hadManualLoad = bus.loadCurrent && bus.loadCurrent > 0 && !bus.loadCurrentAutoCalculated;
     
             if (!hadManualLoad) {
                 bus.loadCurrent = displayLoad;
-                console.log(`   ✅ Bus ${bus.name}: loadCurrent property updated to ${bus.loadCurrent.toFixed(2)} A (will show in tree)`);
+                bus.loadCurrentAutoCalculated = true;  // ✅ CRITICAL: Mark as auto-calculated to prevent double-counting!
+                console.log(`   ✅ Bus ${bus.name}: loadCurrent set to ${bus.loadCurrent.toFixed(2)} A (AUTO-CALCULATED - for display only)`);
             } else {
-                console.log(`   ℹ️ Bus ${bus.name}: Keeping manual load ${bus.loadCurrent.toFixed(2)} A (not overwriting)`);
+                console.log(`   ℹ️ Bus ${bus.name}: Keeping manual load ${bus.loadCurrent.toFixed(2)} A (USER-SPECIFIED)`);
+                bus.loadCurrentAutoCalculated = false;  // Explicitly mark as manual
             }
         }
         console.log('');

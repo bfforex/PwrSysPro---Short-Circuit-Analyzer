@@ -164,9 +164,13 @@ function calculateLoadFlow(busId) {
         
         // ════════════════════════════════════════════════════════════════════════════
         // DIRECT BUS LOAD
+        // ✅ FIXED: Skip auto-calculated loads to prevent double-counting
+        // Added: 2025-12-01 by bfforex
         // ════════════════════════════════════════════════════════════════════════════
         const busLoad = parseFloat(currentBus.loadCurrent) || 0;
-        if (busLoad > 0) {
+        
+        // ✅ CRITICAL: Only include if it's a MANUAL load (not auto-calculated)
+        if (busLoad > 0 && !currentBus.loadCurrentAutoCalculated) {
             branchLoad += busLoad;
             
             const powerKVA = (busLoad * currentBus.voltage * Math.sqrt(3)) / 1000;
@@ -175,10 +179,14 @@ function calculateLoadFlow(busId) {
                 bus: currentBus.name,
                 busTag: currentBus.tag,
                 current: busLoad,
-                powerKVA: powerKVA
+                powerKVA: powerKVA,
+                source: 'manual'
             });
             
-            steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.load} Direct Load: ${busLoad.toFixed(2)} A (${powerKVA.toFixed(2)} kVA)\n`;
+            steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.load} Direct Load: ${busLoad.toFixed(2)} A (${powerKVA.toFixed(2)} kVA) [USER-SPECIFIED]\n`;
+        } else if (busLoad > 0 && currentBus.loadCurrentAutoCalculated) {
+            // ✅ Log but DON'T add (already counted via downstream components)
+            console.log(`${indent}ℹ️ Skipping auto-calculated load on ${currentBus.name} (${busLoad.toFixed(2)} A) - prevents double-count`);
         }
         
         // ════════════════════════════════════════════════════════════════════════════
