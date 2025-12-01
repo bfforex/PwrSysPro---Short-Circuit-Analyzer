@@ -243,66 +243,84 @@ function saveBus() {
     alert(`Bus "${name}" added successfully!`);
 }
 
+
 /**
  * Update bus tree display
  */
 function updateBusTree() {
-    const tree = document.getElementById('busTree');
-    
-    if (buses.length === 0) {
-        tree.innerHTML = '<div class="alert alert-info">No buses created yet. Click "Add New Bus" to start.</div>';
-        return;
-    }
-    
-    const rootBuses = buses.filter(b => !b.parentBus);
-    let html = '';
-    
-    rootBuses.forEach(bus => {
-        html += renderBusTree(bus, 0);
-    });
-    
-    tree.innerHTML = html;
+  const tree = document.getElementById('busTree');
+  if (buses.length === 0) {
+    tree.innerHTML = '<div class="alert alert-info">No buses created yet. Click "Add New Bus" to start.</div>';
+    return;
+  }
+  const rootBuses = buses.filter(b => !b.parentBus);
+  let html = '';
+  rootBuses.forEach(bus => {
+    html += renderBusTree(bus, 0);
+  });
+  tree.innerHTML = html;
   if (typeof refreshDiagramIfNeeded === 'function') refreshDiagramIfNeeded();
 }
 
+
+
 /**
- * Render bus tree recursively
+ * Render bus tree recursively (hardened)
  */
 function renderBusTree(bus, level) {
-    const children = buses.filter(b => b.parentBus === bus.id);
-    const hasChildren = children.length > 0;
-    const faultClass = bus.faultCurrent ? (bus.faultCurrent > 50 ? 'high' : (bus.faultCurrent > 25 ? 'medium' : '')) : '';
-    const isSelected = selectedBusId === bus.id;
-    
-    let html = `
-        <div class="bus-item bus-level-${level} ${isSelected ? 'selected' : ''}" onclick="selectBus('${bus.id}')" data-bus-id="${bus.id}">
-            <div class="bus-header">
-                <div>
-                    <span class="bus-name">${getBusIcon(bus.type)} ${bus.name}</span>
-                    <span class="bus-voltage">${bus.voltage}V</span>
-                    ${bus.type === 'source' ? '<span class="badge badge-info">SOURCE</span>' : ''}
-                    ${bus.loadCurrent ? `<span class="badge badge-success">${bus.loadCurrent.toFixed(1)}A</span>` : ''}
-                    ${bus.demandFactor && bus.demandFactor < 1.0 ? `<span class="badge badge-warning">DF:${(bus.demandFactor * 100).toFixed(0)}%</span>` : ''}
-                </div>
-                ${bus.faultCurrent !== null ? `<span class="bus-fault ${faultClass}">${bus.faultCurrent.toFixed(2)} kA</span>` : ''}
-            </div>
-            <div class="bus-controls">
-                <button class="btn btn-info btn-small" onclick="event.stopPropagation(); editBus('${bus.id}')">✎ Edit</button>
-                <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteBus('${bus.id}')">✕ Delete</button>
-                <button class="btn btn-primary btn-small" onclick="event.stopPropagation(); calculateBus('${bus.id}')">🔢 Calculate</button>
-            </div>
+  const children = buses.filter(b => b.parentBus === bus.id);
+  const hasChildren = children.length > 0;
+
+  // Class based on fault level (safe checks)
+  const faultVal = Number.isFinite(bus.faultCurrent) ? bus.faultCurrent : null;
+  const faultClass = faultVal != null
+    ? (faultVal > 50 ? 'high' : (faultVal > 25 ? 'medium' : ''))
+    : '';
+
+  const isSelected = selectedBusId === bus.id;
+  const voltageDisplay = formatNum(bus.voltage, 0, '—');
+
+  // Optional badges (only if values are finite)
+  const loadBadge = Number.isFinite(bus.loadCurrent)
+    ? `<span class="badge badge-success">${formatNum(bus.loadCurrent, 1)}A</span>`
+    : '';
+
+  const demandBadge = Number.isFinite(bus.demandFactor) && bus.demandFactor < 1.0
+    ? `<span class="badge badge-warning">DF:${formatNum(bus.demandFactor * 100, 0)}%</span>`
+    : '';
+
+  const faultBadge = Number.isFinite(bus.faultCurrent)
+    ? `<span class="bus-fault ${faultClass}">${formatNum(bus.faultCurrent, 2)} kA</span>`
+    : '';
+
+  let html = `
+    <div class="bus-item bus-level-${level} ${isSelected ? 'selected' : ''}" onclick="selectBus('${bus.id}')" data-bus-id="${bus.id}">
+      <div class="bus-header">
+        <div>
+          <span class="bus-name">${getBusIcon(bus.type)} ${bus.name}</span>
+          <span class="bus-voltage">${voltageDisplay}V</span>
+          ${bus.type === 'source' ? '<span class="badge badge-info">SOURCE</span>' : ''}
+          ${loadBadge}
+          ${demandBadge}
         </div>
-    `;
-    
-    if (hasChildren) {
-        html += '<div class="bus-children">';
-        children.forEach(child => {
-            html += renderBusTree(child, level + 1);
-        });
-        html += '</div>';
-    }
-    
-    return html;
+        ${faultBadge}
+      </div>
+      <div class="bus-controls">
+        <button class="btn btn-info btn-small" onclick="event.stopPropagation(); editBus('${bus.id}')">✎ Edit</button>
+        <button class="btn btn-danger btn-small" onclick="event.stopPropagation(); deleteBus('${bus.id}')">✕ Delete</button>
+        <button class="btn btn-primary btn-small" onclick="event.stopPropagation(); calculateBus('${bus.id}')">🔢 Calculate</button>
+      </div>
+    </div>
+  `;
+
+  if (hasChildren) {
+    html += '<div class="bus-children">';
+    children.forEach(child => {
+      html += renderBusTree(child, level + 1);
+    });
+    html += '</div>';
+  }
+  return html;
 }
 
 /**
@@ -589,58 +607,87 @@ function updateBusDropdowns() {
     });
 }
 
+
+// (Optional) Export a safe formatter to avoid .toFixed crashes in renderers
+window.formatNum = (value, decimals = 2, fallback = '—') => {
+  const n = typeof value === 'number' ? value : parseFloat(value);
+  return Number.isFinite(n) ? n.toFixed(decimals) : fallback;
+};
+
+
+
 /**
- * Update buses content display
+ * Update buses content display (hardened)
  */
 function updateBusesContent() {
-    const content = document.getElementById('busesContent');
-    
-    if (!content) return;
-    
-    if (buses.length === 0) {
-        content.innerHTML = '<div class="alert alert-info">No buses created yet. Use the Bus Manager to add buses to your system.</div>';
-        return;
-    }
-    
-    let html = '';
-    buses.forEach(bus => {
-        const children = buses.filter(b => b.parentBus === bus.id);
-        const componentsFrom = components.filter(c => c.fromBus === bus.id);
-        const componentsTo = components.filter(c => c.toBus === bus.id);
-        
-        html += `
-            <div class="result-item">
-                <strong>${getBusIcon(bus.type)} ${bus.name}</strong>
-                ${bus.type === 'source' ? '<span class="badge badge-info">SOURCE</span>' : ''}
-                ${bus.loadCurrent ? `<span class="badge badge-success">${bus.loadCurrent.toFixed(1)}A Load</span>` : ''}
-                ${bus.demandFactor && bus.demandFactor < 1.0 ? `<span class="badge badge-warning">DF:${(bus.demandFactor * 100).toFixed(0)}%</span>` : ''}
-                ${bus.diversityFactor ? `<span class="badge badge-info">Div:${(bus.diversityFactor * 100).toFixed(0)}%</span>` : ''}
-                <br>
-                <span style="color: var(--text-muted);">
-                    Voltage: ${bus.voltage}V | 
-                    Type: ${bus.type} | 
-                    Children: ${children.length} | 
-                    Components: ${componentsFrom.length + componentsTo.length}
-                    ${bus.loadCurrent ? ` | Load: ${bus.loadCurrent.toFixed(1)}A` : ''}
-                </span>
-                ${bus.faultCurrent !== null ? `
-                    <br><br>
-                    <strong style="color: var(--success);">Fault Current: ${bus.faultCurrent.toFixed(3)} kA</strong> |
-                    Peak: ${bus.asymFaultCurrent.toFixed(3)} kA |
-                    X/R: ${bus.xrRatio.toFixed(2)}
-                ` : ''}
-                ${bus.type === 'source' && bus.utilityFaultCurrent ? `
-                    <br><small style="color: var(--text-muted);">
-                    Utility Available: ${bus.utilityFaultCurrent.toFixed(2)} kA
-                    ${bus.utilityFaultMVA ? ` (${bus.utilityFaultMVA.toFixed(1)} MVA)` : ''}
-                    | X/R: ${bus.utilityXR}
-                    </small>
-                ` : ''}
-            </div>
-        `;
-    });
-    
-    content.innerHTML = html;
+  const content = document.getElementById('busesContent');
+  if (!content) return;
+
+  if (buses.length === 0) {
+    content.innerHTML = '<div class="alert alert-info">No buses created yet. Use the Bus Manager to add buses to your system.</div>';
+    return;
+  }
+
+  let html = '';
+  buses.forEach(bus => {
+    const children = buses.filter(b => b.parentBus === bus.id);
+    const componentsFrom = components.filter(c => c.fromBus === bus.id);
+    const componentsTo = components.filter(c => c.toBus === bus.id);
+
+    const voltageDisplay = formatNum(bus.voltage, 0, '—');
+    const loadBadge = Number.isFinite(bus.loadCurrent)
+      ? `<span class="badge badge-success">${formatNum(bus.loadCurrent, 1)}A Load</span>`
+      : '';
+
+    const demandBadge = Number.isFinite(bus.demandFactor) && bus.demandFactor < 1.0
+      ? `<span class="badge badge-warning">DF:${formatNum(bus.demandFactor * 100, 0)}%</span>`
+      : '';
+
+    const diversityBadge = Number.isFinite(bus.diversityFactor)
+      ? `<span class="badge badge-info">Div:${formatNum(bus.diversityFactor * 100, 0)}%</span>`
+      : '';
+
+    const faultLine = Number.isFinite(bus.faultCurrent)
+      ? `
+        <br><br>
+        <strong style="color: var(--success);">Fault Current: ${formatNum(bus.faultCurrent, 3)} kA</strong>
+        ${Number.isFinite(bus.asymFaultCurrent) ? `&nbsp;&nbsp;Peak: ${formatNum(bus.asymFaultCurrent, 3)} kA` : ''}
+        ${Number.isFinite(bus.xrRatio) ? `&nbsp;&nbsp;X/R: ${formatNum(bus.xrRatio, 2)}` : ''}
+      `
+      : '';
+
+    const utilityLine = (bus.type === 'source' && Number.isFinite(bus.utilityFaultCurrent))
+      ? `
+        <br><small style="color: var(--text-muted);">
+          Utility Available: ${formatNum(bus.utilityFaultCurrent, 2)} kA
+          ${Number.isFinite(bus.utilityFaultMVA) ? ` (${formatNum(bus.utilityFaultMVA, 1)} MVA)` : ''}
+          &nbsp;&nbsp;X/R: ${bus.utilityXR ?? '—'}
+        </small>
+      `
+      : '';
+
+    html += `
+      <div class="result-item">
+        <strong>${getBusIcon(bus.type)} ${bus.name}</strong>
+        ${bus.type === 'source' ? '<span class="badge badge-info">SOURCE</span>' : ''}
+        ${loadBadge}
+        ${demandBadge}
+        ${diversityBadge}
+        <br>
+        <span style="color: var(--text-muted);">
+          Voltage: ${voltageDisplay}V
+          &nbsp;&nbsp;Type: ${bus.type}
+          &nbsp;&nbsp;Children: ${children.length}
+          &nbsp;&nbsp;Components: ${componentsFrom.length + componentsTo.length}
+          ${Number.isFinite(bus.loadCurrent) ? `&nbsp;&nbsp;Load: ${formatNum(bus.loadCurrent, 1)}A` : ''}
+        </span>
+        ${faultLine}
+        ${utilityLine}
+      </div>
+    `;
+  });
+
+  content.innerHTML = html;
   if (typeof refreshDiagramIfNeeded === 'function') refreshDiagramIfNeeded();
 }
 

@@ -222,10 +222,44 @@ function calculateBus(busId) {
         // FINAL STATUS
         // ────────────────────────────────────────────────────────────────
         console.log('');
-        console.log('   📊 LOAD FLOW ANALYSIS COMPLETE:');
+        console. log('   📊 LOAD FLOW ANALYSIS COMPLETE:');
         console.log(`      Total Load: ${loadFlowResult.summary?.totalCurrent?.toFixed(2) || 'N/A'} A`);
-        console.log(`      Total Power: ${loadFlowResult.summary?.totalPowerKVA?.toFixed(2) || 'N/A'} kVA`);
+        console. log(`      Total Power: ${loadFlowResult.summary?.totalPowerKVA?.toFixed(2) || 'N/A'} kVA`);
         console.log(`      Demand Factors: ${demandFactorsApplied ? '✅ APPLIED' : '⚠️ NOT APPLIED'}`);
+        console.log('');
+
+        // ════════════════════════════════════════════════════════════════
+        // ✅ CRITICAL FIX: UPDATE BUS LOAD CURRENT FOR DISPLAY
+        // Added: 2025-12-01
+        // Issue: Bus tree shows 0. 0A for auto-calculated loads
+        // Solution: Write calculated load back to bus.loadCurrent
+        // ════════════════════════════════════════════════════════════════
+        if (loadFlowResult && loadFlowResult.summary) {
+            let displayLoad = 0;
+    
+            // Use demand/diversity load if applied, otherwise use total load
+            if (demandFactorsApplied && loadFlowResult.demandSummary) {
+                // Use the diversity-adjusted load (most realistic)
+                displayLoad = loadFlowResult.demandSummary.diversityCurrent || 
+                             loadFlowResult.demandSummary.demandCurrent || 
+                             loadFlowResult.summary.totalCurrent || 0;
+                console.log(`   ✅ Bus ${bus.name}: Using diversity load for display: ${displayLoad.toFixed(2)} A`);
+            } else {
+                // Use connected load (conservative)
+                displayLoad = loadFlowResult.summary.totalCurrent || 0;
+                console.log(`   ✅ Bus ${bus.name}: Using connected load for display: ${displayLoad.toFixed(2)} A`);
+            }
+    
+            // Only update if NO manual load was specified (preserve manual inputs)
+            const hadManualLoad = bus.loadCurrent && bus.loadCurrent > 0;
+    
+            if (! hadManualLoad) {
+                bus.loadCurrent = displayLoad;
+                console.log(`   ✅ Bus ${bus. name}: loadCurrent property updated to ${bus.loadCurrent.toFixed(2)} A (will show in tree)`);
+            } else {
+                console.log(`   ℹ️ Bus ${bus. name}: Keeping manual load ${bus.loadCurrent.toFixed(2)} A (not overwriting)`);
+            }
+        }
         console.log('');
         
         // ════════════════════════════════════════════════════════════════════════════

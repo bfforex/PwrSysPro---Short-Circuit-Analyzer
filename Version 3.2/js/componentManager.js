@@ -601,7 +601,7 @@ function addComponent() {
     }
 
     let component = {
-        id: Date.now(),
+        id: generateUniqueId('comp'),
         type: type,
         fromBus: fromBusId,
         toBus: toBusId,
