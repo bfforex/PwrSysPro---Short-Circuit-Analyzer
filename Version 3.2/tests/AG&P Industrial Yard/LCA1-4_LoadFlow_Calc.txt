@@ -1,0 +1,79 @@
+════════════════════════════════════════════════════════════════════════════════
+LOAD FLOW CALCULATION - ENHANCED
+════════════════════════════════════════════════════════════════════════════════
+
+📋 CALCULATION INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Date/Time:           2025-12-01 19:38:32 UTC
+Engineer:            B. P. Faraon
+Target Bus:          LCA1-4 (LCA1-4)
+Bus Voltage:         440V
+Power Factor:        0.87
+Method:              Recursive Downstream Load Traversal
+
+📖 CALCULATION METHODOLOGY
+────────────────────────────────────────────────────────────────────────────────
+• Traces all downstream components from target bus
+• Calculates load at each voltage level
+• Refers transformer secondary loads to primary side
+• Sums total current and power requirements
+• Component tags displayed for full traceability
+
+════════════════════════════════════════════════════════════════════════════════
+LOAD FLOW TRAVERSAL
+════════════════════════════════════════════════════════════════════════════════
+
+📍 LCA1-4 (LCA1-4) - 440V
+    📍 SH1-A16 (SH1-A16) - 440V
+      💡 Direct Load: 413.00 A (314.75 kVA)
+      ├─ 📊 Subtotal: 413.00 A (314.75 kVA)
+
+  🔌 Cable C-440-LCA14-SH1A16-01: 413.00 A (314.75 kVA)
+    📍 SH1-B16 (SH1-B16) - 440V
+      💡 Direct Load: 423.97 A (323.11 kVA)
+      ├─ 📊 Subtotal: 423.97 A (323.11 kVA)
+
+  🔌 Cable C-440-LCA14-SH1B16-01: 423.97 A (323.11 kVA)
+    📍 SH1-C16 (SH1-C16) - 440V
+      💡 Direct Load: 443.65 A (338.11 kVA)
+      ├─ 📊 Subtotal: 443.65 A (338.11 kVA)
+
+  🔌 Cable C-440-LCA14-SH1C16-01: 443.65 A (338.11 kVA)
+    📍 SH1-D16 (SH1-D16) - 440V
+      💡 Direct Load: 453.50 A (345.61 kVA)
+      ├─ 📊 Subtotal: 453.50 A (345.61 kVA)
+
+  🔌 Cable C-440-LCA14-SH1D16-01: 453.50 A (345.61 kVA)
+  ├─ 📊 Subtotal: 1734.12 A (1321.58 kVA)
+
+════════════════════════════════════════════════════════════════════════════════
+LOAD FLOW SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+📊 TOTAL LOAD AT LCA1-4
+────────────────────────────────────────────────────────────────────────────────
+Total Load Current:      1734.12 A
+Total Apparent Power:    1321.58 kVA
+Total Active Power:      1149.77 kW
+Power Factor:            0.87
+Components Analyzed:     4
+
+📋 BREAKDOWN BY COMPONENT TYPE (AT 440V LEVEL)
+────────────────────────────────────────────────────────────────────────────────
+Type          Count  Current (A)  Power (kVA)  Percentage  Note
+────────────────────────────────────────────────────────────────────────────────
+Cables            4  (conveyance)        -         -  Pass-through only
+────────────────────────────────────────────────────────────────────────────────
+TOTAL AT 440V             1734.12      1321.58            100.0%
+────────────────────────────────────────────────────────────────────────────────
+
+ℹ️ Note:
+   • Direct load of 0.00A is specified at this bus (440V)
+   • Cables convey power but are not loads (not counted in percentages)
+   • Transformers show primary current (reflected from secondary loads)
+   • Total represents all downstream loads referred to 440V
+   • Percentages are of ACTUAL consumed load (0.00A)
+
+════════════════════════════════════════════════════════════════════════════════
+END OF LOAD FLOW CALCULATION
+════════════════════════════════════════════════════════════════════════════════
