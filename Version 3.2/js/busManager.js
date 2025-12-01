@@ -405,8 +405,9 @@ function editBus(busId) {
                     <span class="tooltiptext">Specify direct load on this bus. Leave blank to calculate from downstream loads automatically.</span>
                 </span>
             </label>
-            <input type="number" id="editBusLoad" value="${bus.loadCurrent || ''}" step="0.1" min="0" placeholder="Auto-calculated if blank">
+            <input type="number" id="editBusLoad" value="${bus.loadCurrentAutoCalculated ? '' : (bus.loadCurrent || '')}" step="0.1" min="0" placeholder="Auto-calculated if blank">
             <div class="small-muted">If blank, load will be calculated from motors, transformers, and cables downstream</div>
+            ${bus.loadCurrentAutoCalculated && bus.loadCurrent > 0 ? `<div class="small-muted" style="color: #667eea; margin-top: 5px;">📊 Last calculated load: ${bus.loadCurrent.toFixed(2)} A (auto-calculated from downstream)</div>` : ''}
         </div>
         
         <details class="collapsible-section">

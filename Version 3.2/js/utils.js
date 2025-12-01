@@ -328,6 +328,28 @@ function calculateMotorCurrent(hp, voltage, efficiency = 0.9, powerFactor = 0.85
     return (hp * 746) / (voltage * Math.sqrt(3) * efficiency * powerFactor);
 }
 
+/**
+ * Safe toFixed utility function - Issue #2 FIX
+ * Prevents "Cannot read properties of undefined (reading 'toFixed')" errors
+ * when exporting reports with incomplete or missing data
+ * 
+ * @param {*} value - The value to format
+ * @param {Number} decimals - Number of decimal places (default: 2)
+ * @param {String} fallback - Fallback value if input is invalid (default: 'N/A')
+ * @returns {String} Formatted number string or fallback
+ * 
+ * @author bfforex
+ * @date 2025-12-01
+ * @version 1.0.0
+ */
+function safeToFixed(value, decimals = 2, fallback = 'N/A') {
+    if (value === undefined || value === null || isNaN(Number(value))) {
+        console.warn(`[safeToFixed] Invalid value: ${value}, using fallback: ${fallback}`);
+        return fallback;
+    }
+    return Number(value).toFixed(decimals);
+}
+
 // Export functions to global scope
 window.traceBusPath = traceBusPath;
 window.getLoadCurrent = getLoadCurrent;
@@ -335,8 +357,10 @@ window.calculateComponentVoltageDrop = calculateComponentVoltageDrop;
 window.referCurrentAcrossTransformer = referCurrentAcrossTransformer;
 window.calculateTransformerCurrent = calculateTransformerCurrent;
 window.calculateMotorCurrent = calculateMotorCurrent;
+window.safeToFixed = safeToFixed;
 
 console.log('✅ Utils loaded');
 console.log('   - traceBusPath: Available');
 console.log('   - getLoadCurrent: Available');
 console.log('   - calculateComponentVoltageDrop: Available');
+console.log('   - safeToFixed: Available (Issue #2 FIX)');

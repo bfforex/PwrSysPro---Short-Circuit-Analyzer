@@ -1,15 +1,27 @@
 /**
  * Export Report Module - Enhanced with Arc Flash Analysis
- * Modified: 2025-11-03 00:34:43 UTC by bfforex
+ * Modified: 2025-12-01 by bfforex
  * ENHANCED VERSION - Arc Flash Integration Complete
  * 
  * @author bfforex
  * @date 2025-11-03 00:34:43 UTC
- * @version 2.2.0
+ * @version 2.2.1
+ * @modified 2025-12-01 - Issue #2 FIX: Added safe formatting to prevent toFixed() errors
  * @enhanced Arc Flash Analysis integration
  * @enhanced System summary with arc flash data
  * @enhanced CSV exports with incident energy
  */
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Issue #2 FIX: Global safe formatter for this module
+// Use safeFormat() instead of .toFixed() for defensive null/undefined handling
+// ═══════════════════════════════════════════════════════════════════════════
+const exportSafeFormat = (value, decimals = 2, fallback = 'N/A') => {
+    if (value === undefined || value === null || isNaN(Number(value))) {
+        return fallback;
+    }
+    return Number(value).toFixed(decimals);
+};
 
 /**
  * Export detailed bus report with recommendations and demand factors
