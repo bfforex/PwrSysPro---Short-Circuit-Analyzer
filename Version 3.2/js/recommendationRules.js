@@ -4,8 +4,19 @@
  * 
  * @author bfforex
  * @date 2025-10-27
- * @version 1.0.0
+ * @version 1.1.0
+ * @updated 2025-12-01 - Added transformer overload rules (Bug #6 fix)
  */
+
+// Named constants for recommendation rules
+const RECOMMENDATION_CONSTANTS = {
+    DEFAULT_VOLTAGE: 480,  // Default LV voltage in volts
+    OVERLOAD_CRITICAL_THRESHOLD: 100,  // % loading that triggers CRITICAL
+    OVERLOAD_HIGH_THRESHOLD: 80,  // % loading that triggers HIGH warning
+    HIGH_FAULT_CURRENT_THRESHOLD: 40,  // kA threshold for fault concerns
+    SECONDARY_FAULT_THRESHOLD: 30,  // kA threshold for secondary fault
+    LOW_IMPEDANCE_THRESHOLD: 4  // % impedance considered low
+};
 
 const RecommendationRules = {
     /**
@@ -275,6 +286,55 @@ const RecommendationRules = {
      * Evaluate transformer loading and fault withstand
      */
     transformer: [
+        /**
+         * TF-000: TRANSFORMER OVERLOAD CRITICAL
+         * Added: 2025-12-01 - Bug #6 Fix
+         * Flags transformers loaded >100% as CRITICAL (Priority 1)
+         * Per IEEE C57.12.00 and NEC 450.3
+         */
+        {
+            id: 'TF-000',
+            name: 'Transformer Overload Critical',
+            condition: (bus, standards) => {
+                // Validate pathComponents exists before accessing
+                if (!bus.pathComponents || !Array.isArray(bus.pathComponents)) return false;
+                
+                // Check if this bus is fed by a transformer and calculate loading
+                const feedingTransformer = bus.pathComponents.find(pc => 
+                    pc.component?.type === 'transformer' && pc.component?.toBus === bus.id
+                )?.component;
+                
+                if (!feedingTransformer) return false;
+                
+                // Calculate transformer loading percentage
+                const rating = parseFloat(feedingTransformer.rating) || 0;
+                if (rating === 0) return false;
+                
+                // Get load current from bus
+                let loadCurrent = 0;
+                if (bus.results?.loadFlow?.summary?.totalCurrent) {
+                    loadCurrent = bus.results.loadFlow.summary.totalCurrent;
+                } else if (bus.loadCurrent) {
+                    loadCurrent = parseFloat(bus.loadCurrent);
+                }
+                
+                // Calculate loading using constant for default voltage
+                const voltage = bus.voltage || RECOMMENDATION_CONSTANTS.DEFAULT_VOLTAGE;
+                const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
+                const loadingPercent = (loadKVA / rating) * 100;
+                
+                // Flag as critical if loading exceeds threshold
+                return loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD;
+            },
+            severity: 'CRITICAL',
+            priority: 1,
+            recommendation: 'Transformer OVERLOADED - Loading exceeds 100% of nameplate rating',
+            action: 'IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.',
+            standard: 'IEEE C57.12.00, NEC 450.3',
+            impact: 'Transformer thermal damage, accelerated insulation aging, potential failure',
+            cost: 'VERY HIGH',
+            effort: 'High (load transfer or transformer replacement required)'
+        },
         {
             id: 'TF-001',
             name: 'Transformer Mechanical Withstand Critical',
@@ -293,6 +353,51 @@ const RecommendationRules = {
             impact: 'Transformer mechanical failure risk',
             cost: 'VERY HIGH',
             effort: 'High (transformer replacement if inadequate)'
+        },
+        /**
+         * TF-001B: TRANSFORMER HIGH LOADING WARNING
+         * Added: 2025-12-01 - Bug #6 Fix enhancement
+         * Warns when transformer is at 80-100% loading
+         */
+        {
+            id: 'TF-001B',
+            name: 'Transformer High Loading Warning',
+            condition: (bus, standards) => {
+                // Validate pathComponents exists
+                if (!bus.pathComponents || !Array.isArray(bus.pathComponents)) return false;
+                
+                const feedingTransformer = bus.pathComponents.find(pc => 
+                    pc.component?.type === 'transformer' && pc.component?.toBus === bus.id
+                )?.component;
+                
+                if (!feedingTransformer) return false;
+                
+                const rating = parseFloat(feedingTransformer.rating) || 0;
+                if (rating === 0) return false;
+                
+                let loadCurrent = 0;
+                if (bus.results?.loadFlow?.summary?.totalCurrent) {
+                    loadCurrent = bus.results.loadFlow.summary.totalCurrent;
+                } else if (bus.loadCurrent) {
+                    loadCurrent = parseFloat(bus.loadCurrent);
+                }
+                
+                const voltage = bus.voltage || RECOMMENDATION_CONSTANTS.DEFAULT_VOLTAGE;
+                const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
+                const loadingPercent = (loadKVA / rating) * 100;
+                
+                // Flag as HIGH when loading is between 80% and 100%
+                return loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_HIGH_THRESHOLD && 
+                       loadingPercent <= RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD;
+            },
+            severity: 'HIGH',
+            priority: 2,
+            recommendation: 'Transformer approaching full load capacity (>80%)',
+            action: 'Monitor load growth. Plan for capacity upgrade. Consider load balancing or future transformer replacement.',
+            standard: 'IEEE C57.12.00',
+            impact: 'Limited capacity margin, risk of overload during peak demand',
+            cost: 'MEDIUM',
+            effort: 'Low (monitoring) to High (if upgrade needed)'
         },
         {
             id: 'TF-002',

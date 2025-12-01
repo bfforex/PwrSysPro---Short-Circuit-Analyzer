@@ -4,8 +4,9 @@
  * 
  * @author bfforex
  * @date 2025-11-01 10:13:17 UTC
- * @version 1.0.0
+ * @version 1.1.0
  * @issue #6 - Enhanced System Report
+ * @updated 2025-12-01 - Bug #3 fix: Energy savings formula corrected
  * 
  * Features:
  * - Executive Summary
@@ -20,6 +21,16 @@
  */
 
 console.log('🔧 Loading Enhanced System Report Generator...');
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONSTANTS - Bug #3 Fix: Named constants for energy calculations
+// ═══════════════════════════════════════════════════════════════════════════════
+const ENERGY_CALCULATION_CONSTANTS = {
+    IEEE_141_LOAD_FACTOR: 0.70,      // IEEE 141 typical industrial load factor
+    MAX_SAVINGS_PERCENT: 0.40,        // Maximum reasonable diversity savings (40%)
+    ANNUAL_HOURS: 8760,               // Hours per year
+    DEFAULT_ENERGY_RATE: 0.12         // Default electricity rate ($/kWh)
+};
 
 /**
  * Generate comprehensive system report with all analysis sections
@@ -336,6 +347,7 @@ ${'='.repeat(100)}
     const powerFactor = parseFloat(document.getElementById('powerFactor')?.value || 0.85);
     const totalPowerKW = totalPowerKVA * powerFactor;
     const demandPowerKW = demandPowerKVA * powerFactor;
+    const diversityPowerKW = diversityPowerKVA * powerFactor;  // ✅ Bug #3 FIX: Added for energy savings calculation
 
     report += `CONNECTED LOAD SUMMARY:
 ${'-'.repeat(100)}
@@ -363,9 +375,36 @@ Factors Applied:
 
 Power Savings:
   • Load Reduction:     ${(totalConnected - totalDiversity).toFixed(2)} A
-  • Power Savings:      ${(totalPowerKVA - diversityPowerKVA).toFixed(2)} kVA
-  • Estimated Annual Energy Savings: ${((totalPowerKVA - diversityPowerKVA) * 8760 * 0.7).toFixed(0)} kWh/year
-  • Cost Savings @ $0.12/kWh: $${(((totalPowerKVA - diversityPowerKVA) * 8760 * 0.7 * 0.12)).toFixed(0)}/year
+  • Power Savings:      ${(totalPowerKVA - diversityPowerKVA).toFixed(2)} kVA (${(totalPowerKW - diversityPowerKW).toFixed(2)} kW)
+  • Estimated Annual Energy Savings: ${(() => {
+        // ✅ Bug #3 FIX: Use kW (not kVA), apply load factor, and validate
+        const powerSavingsKW = totalPowerKW - diversityPowerKW;
+        const { IEEE_141_LOAD_FACTOR, MAX_SAVINGS_PERCENT, ANNUAL_HOURS } = ENERGY_CALCULATION_CONSTANTS;
+        let energySavings = powerSavingsKW * ANNUAL_HOURS * IEEE_141_LOAD_FACTOR;
+        
+        // Validation: Energy savings cannot exceed MAX_SAVINGS_PERCENT of total consumption
+        const totalConsumption = totalPowerKW * ANNUAL_HOURS * IEEE_141_LOAD_FACTOR;
+        const maxSavings = totalConsumption * MAX_SAVINGS_PERCENT;
+        
+        if (energySavings > maxSavings) {
+            console.warn(`⚠️ Energy savings capped: ${energySavings.toFixed(0)} > ${maxSavings.toFixed(0)} kWh (${MAX_SAVINGS_PERCENT * 100}% limit)`);
+            energySavings = maxSavings;
+        }
+        
+        return energySavings.toFixed(0);
+    })()} kWh/year
+  • Cost Savings @ $${ENERGY_CALCULATION_CONSTANTS.DEFAULT_ENERGY_RATE}/kWh: $${(() => {
+        const powerSavingsKW = totalPowerKW - diversityPowerKW;
+        const { IEEE_141_LOAD_FACTOR, MAX_SAVINGS_PERCENT, ANNUAL_HOURS, DEFAULT_ENERGY_RATE } = ENERGY_CALCULATION_CONSTANTS;
+        let energySavings = powerSavingsKW * ANNUAL_HOURS * IEEE_141_LOAD_FACTOR;
+        
+        // Apply same validation
+        const totalConsumption = totalPowerKW * ANNUAL_HOURS * IEEE_141_LOAD_FACTOR;
+        const maxSavings = totalConsumption * MAX_SAVINGS_PERCENT;
+        if (energySavings > maxSavings) energySavings = maxSavings;
+        
+        return (energySavings * DEFAULT_ENERGY_RATE).toFixed(0);
+    })()}/year
 
 Standards Applied:
   ✓ IEEE 141-1993 Table 3-5 - Diversity Factors for Industrial Loads
@@ -1024,8 +1063,10 @@ System Analysis Method: ${document.querySelector('input[name="method"]:checked')
             };
         }
         voltageGroups[voltage].buses.push(bus);
-        if (bus.results?.faultCurrents?.threePhaseSym) {
-            voltageGroups[voltage].faultCurrents.push(bus.results.faultCurrents.threePhaseSym);
+        // ✅ Bug #2 FIX: Also check nested structure
+        const faultCurrents = bus.results?.faultCurrents || bus.results?.shortCircuit?.faultCurrents;
+        if (faultCurrents?.threePhaseSym) {
+            voltageGroups[voltage].faultCurrents.push(faultCurrents.threePhaseSym);
         }
     });
 
@@ -1045,7 +1086,7 @@ ${'-'.repeat(100)}
         const minFault = faults.length > 0 ? Math.min(...faults) : 0;
         
         const xrRatios = group.buses
-            .map(b => b.results?.xrRatio || 0)
+            .map(b => b.results?.xrRatio || b.results?.shortCircuit?.xrRatio || 0)
             .filter(xr => xr > 0);
         const avgXR = xrRatios.length > 0 ? xrRatios.reduce((a, b) => a + b, 0) / xrRatios.length : 0;
 
@@ -2417,9 +2458,10 @@ function generateBusSummaryTable(buses) {
         const nameStr = bus.name.padEnd(32);
         const voltageStr = bus.voltage.toString().padStart(10);
         
-        const faultCurrents = bus.results?.faultCurrents || {};
+        // ✅ Bug #2 FIX: Also check nested shortCircuit.faultCurrents structure
+        const faultCurrents = bus.results?.faultCurrents || bus.results?.shortCircuit?.faultCurrents || {};
         const faultStr = (faultCurrents.threePhaseSym || 0).toFixed(2).padStart(10);
-        const xrStr = (bus.results?.xrRatio || 0).toFixed(2).padStart(10);
+        const xrStr = (bus.results?.xrRatio || bus.results?.shortCircuit?.xrRatio || 0).toFixed(2).padStart(10);
         
         // FIX: Get voltage drop from correct location
         let vdValue = 0;
