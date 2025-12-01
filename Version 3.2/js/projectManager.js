@@ -254,7 +254,10 @@ function cleanBusesForSerialization(buses) {
             utilityFaultCurrent: bus.utilityFaultCurrent,
             utilityFaultMVA: bus.utilityFaultMVA,
             utilityXR: bus.utilityXR,
-            loadCurrent: bus.loadCurrent
+            loadCurrent: bus.loadCurrent,
+            // ✅ CRITICAL FIX: Preserve auto-calculated flag to prevent double-counting
+            // Added: 2025-12-01 by bfforex
+            loadCurrentAutoCalculated: bus.loadCurrentAutoCalculated || false
         };
         
         // ✅ Clean results to remove circular references
@@ -421,6 +424,9 @@ function sanitizeProjectData(data) {
             utilityXR: bus.utilityXR || null,
             // ✅ CRITICAL: Preserve load current
             loadCurrent: sanitizeNumber(bus.loadCurrent, 0, 0, 100000),
+            // ✅ CRITICAL FIX: Preserve auto-calculated flag to prevent double-counting
+            // Added: 2025-12-01 by bfforex
+            loadCurrentAutoCalculated: bus.loadCurrentAutoCalculated || false,
             // ✅ CRITICAL: Preserve calculation results if present
             results: bus.results || null,
             // ✅ CRITICAL: Preserve fault current results for display
