@@ -344,7 +344,10 @@ function calculateMotorCurrent(hp, voltage, efficiency = 0.9, powerFactor = 0.85
  */
 function safeToFixed(value, decimals = 2, fallback = 'N/A') {
     if (value === undefined || value === null || isNaN(Number(value))) {
-        console.warn(`[safeToFixed] Invalid value: ${value}, using fallback: ${fallback}`);
+        // Only log in development/debug mode to avoid performance impact
+        if (typeof console !== 'undefined' && console.debug) {
+            console.debug(`[safeToFixed] Invalid value: ${value}, using fallback: ${fallback}`);
+        }
         return fallback;
     }
     return Number(value).toFixed(decimals);
