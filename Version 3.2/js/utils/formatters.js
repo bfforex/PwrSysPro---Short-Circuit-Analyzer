@@ -81,15 +81,30 @@ function safeString(value, fallback = 'N/A') {
  * @returns {*} Value at path or fallback
  */
 function safeGet(obj, path, fallback = undefined) {
-    if (!obj || typeof path !== 'string') {
+    if (!obj || typeof path !== 'string' || path.length === 0) {
         return fallback;
     }
     
+    // Security: Prevent prototype pollution by blocking dangerous property names
+    const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
     const keys = path.split('.');
+    
+    for (const key of keys) {
+        // Security check: Block prototype pollution attempts
+        if (dangerousKeys.includes(key.toLowerCase())) {
+            console.warn(`[Security] Blocked access to dangerous property: ${key}`);
+            return fallback;
+        }
+    }
+    
     let current = obj;
     
     for (const key of keys) {
         if (current === undefined || current === null || typeof current !== 'object') {
+            return fallback;
+        }
+        // Use hasOwnProperty check to prevent prototype chain access
+        if (!Object.prototype.hasOwnProperty.call(current, key)) {
             return fallback;
         }
         current = current[key];

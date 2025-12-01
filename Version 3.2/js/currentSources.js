@@ -140,11 +140,18 @@ const CurrentSources = {
         } else if (bus.results && bus.results.loadFlow && bus.results.loadFlow.summary) {
             operatingCurrent = bus.results.loadFlow.summary.totalCurrent || 0;
             source = 'load_flow';
-        } else if (typeof calculateDownstreamLoadWithDiversity === 'function') {
-            const result = calculateDownstreamLoadWithDiversity(busId, { applyDiversity: true });
-            if (result && result.diversifiedLoad > 0) {
-                operatingCurrent = result.diversifiedLoad;
-                source = 'diversity_calc';
+        } else {
+            // Try to calculate diversity load if function exists
+            try {
+                if (typeof calculateDownstreamLoadWithDiversity === 'function') {
+                    const result = calculateDownstreamLoadWithDiversity(busId, { applyDiversity: true });
+                    if (result && result.diversifiedLoad > 0) {
+                        operatingCurrent = result.diversifiedLoad;
+                        source = 'diversity_calc';
+                    }
+                }
+            } catch (error) {
+                console.warn(`[CurrentSources] Error calculating diversity load for bus ${busId}:`, error.message);
             }
         }
         

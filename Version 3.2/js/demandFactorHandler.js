@@ -55,8 +55,21 @@ const DemandFactorHandler = {
      * @param {Number} factor - Demand factor (0.0 to 1.0)
      */
     setUserFactor: function(busId, factor) {
-        if (factor < 0 || factor > 1) {
-            console.warn(`[DemandFactorHandler] Invalid factor ${factor} for bus ${busId}. Must be 0.0-1.0`);
+        // Security: Validate busId to prevent prototype pollution
+        if (typeof busId !== 'string' || busId.length === 0) {
+            console.warn('[DemandFactorHandler] Invalid busId: must be non-empty string');
+            return;
+        }
+        
+        // Security: Block prototype pollution attempts
+        const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+        if (dangerousKeys.includes(busId.toLowerCase())) {
+            console.warn(`[DemandFactorHandler] Security: Blocked dangerous busId: ${busId}`);
+            return;
+        }
+        
+        if (typeof factor !== 'number' || factor < 0 || factor > 1) {
+            console.warn(`[DemandFactorHandler] Invalid factor ${factor} for bus ${busId}. Must be number 0.0-1.0`);
             return;
         }
         this.config.userDemandFactors[busId] = factor;

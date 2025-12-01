@@ -546,11 +546,21 @@ if (window.calculateVoltageDrop) {
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 1.5: SAFE UTILITIES & STATE MANAGEMENT -->
+<!-- Issue #1-6 FIX: Safe formatting, centralized state, current sources -->
+<!-- Added: 2025-12-01 by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/utils/formatters.js"></script>
+<script src="js/calculationState.js"></script>
+<script src="js/currentSources.js"></script>
+<script src="js/calculationVerifier.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
 <!-- LAYER 2: FEATURE #4 - DEMAND & DIVERSITY FACTORS -->
 <!-- ✅ CRITICAL: demandFactors.js MUST load BEFORE loadDiversityCalc.js -->
 <!-- Updated: 2025-11-01 09:42:15 UTC by bfforex -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script src="js/demandFactors.js"></script>
+<script src="js/demandFactorHandler.js"></script>
 <script src="js/loadDiversityCalc.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- LAYER 3: MODAL MANAGER (Accessibility) -->
