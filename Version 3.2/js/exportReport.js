@@ -6,17 +6,18 @@
  * @author bfforex
  * @date 2025-11-03 00:34:43 UTC
  * @version 2.2.1
- * @modified 2025-12-01 - Issue #2 FIX: Added safe formatting to prevent toFixed() errors
+ * @modified 2025-12-01 - Issue #2 FIX: Use global safeToFixed for defensive null/undefined handling
  * @enhanced Arc Flash Analysis integration
  * @enhanced System summary with arc flash data
  * @enhanced CSV exports with incident energy
  */
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Issue #2 FIX: Global safe formatter for this module
-// Use safeFormat() instead of .toFixed() for defensive null/undefined handling
+// Issue #2 FIX: Use global safeToFixed() from utils.js
+// This module relies on the safeToFixed() function being loaded from utils.js
+// If utils.js is not loaded, provide a fallback implementation
 // ═══════════════════════════════════════════════════════════════════════════
-const exportSafeFormat = (value, decimals = 2, fallback = 'N/A') => {
+const exportSafeFormat = typeof safeToFixed === 'function' ? safeToFixed : (value, decimals = 2, fallback = 'N/A') => {
     if (value === undefined || value === null || isNaN(Number(value))) {
         return fallback;
     }
