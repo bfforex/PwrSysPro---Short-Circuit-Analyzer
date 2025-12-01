@@ -257,7 +257,7 @@ function cleanBusesForSerialization(buses) {
             loadCurrent: bus.loadCurrent,
             // ✅ CRITICAL FIX: Preserve auto-calculated flag to prevent double-counting
             // Added: 2025-12-01 by bfforex
-            loadCurrentAutoCalculated: bus.loadCurrentAutoCalculated || false
+            loadCurrentAutoCalculated: bus.loadCurrentAutoCalculated || false,
         };
         
         // ✅ Clean results to remove circular references
