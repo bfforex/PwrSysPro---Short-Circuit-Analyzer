@@ -82,26 +82,28 @@ class ReportAnalytics {
             const busName = bus.name || bus.id;
             
             // Aggregate fault currents (existing short circuit data)
-            if (bus.results && bus.results.faultCurrents) {
+            // ✅ Bug #2 FIX: Also check nested shortCircuit.faultCurrents structure
+            const faultCurrents = bus.results?.faultCurrents || bus.results?.shortCircuit?.faultCurrents;
+            if (faultCurrents) {
                 this.metrics.faultCurrents.threePhaseSym.push({
                     busId: busId,
                     busName: busName,
-                    value: bus.results.faultCurrents.threePhaseSym || 0
+                    value: faultCurrents.threePhaseSym || 0
                 });
                 this.metrics.faultCurrents.threePhaseAsym.push({
                     busId: busId,
                     busName: busName,
-                    value: bus.results.faultCurrents.threePhaseAsym || 0
+                    value: faultCurrents.threePhaseAsym || 0
                 });
                 this.metrics.faultCurrents.lineToGround.push({
                     busId: busId,
                     busName: busName,
-                    value: bus.results.faultCurrents.lineToGround || 0
+                    value: faultCurrents.lineToGround || 0
                 });
                 this.metrics.faultCurrents.lineToLine.push({
                     busId: busId,
                     busName: busName,
-                    value: bus.results.faultCurrents.lineToLine || 0
+                    value: faultCurrents.lineToLine || 0
                 });
             }
 

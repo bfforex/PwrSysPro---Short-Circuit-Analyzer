@@ -275,6 +275,52 @@ const RecommendationRules = {
      * Evaluate transformer loading and fault withstand
      */
     transformer: [
+        /**
+         * TF-000: TRANSFORMER OVERLOAD CRITICAL
+         * Added: 2025-12-01 - Bug #6 Fix
+         * Flags transformers loaded >100% as CRITICAL (Priority 1)
+         * Per IEEE C57.12.00 and NEC 450.3
+         */
+        {
+            id: 'TF-000',
+            name: 'Transformer Overload Critical',
+            condition: (bus, standards) => {
+                // Check if this bus is fed by a transformer and calculate loading
+                const feedingTransformer = bus.pathComponents?.find(pc => 
+                    pc.component?.type === 'transformer' && pc.component?.toBus === bus.id
+                )?.component;
+                
+                if (!feedingTransformer) return false;
+                
+                // Calculate transformer loading percentage
+                const rating = parseFloat(feedingTransformer.rating) || 0;
+                if (rating === 0) return false;
+                
+                // Get load current from bus
+                let loadCurrent = 0;
+                if (bus.results?.loadFlow?.summary?.totalCurrent) {
+                    loadCurrent = bus.results.loadFlow.summary.totalCurrent;
+                } else if (bus.loadCurrent) {
+                    loadCurrent = parseFloat(bus.loadCurrent);
+                }
+                
+                // Calculate loading
+                const voltage = bus.voltage || 480;
+                const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
+                const loadingPercent = (loadKVA / rating) * 100;
+                
+                // Flag as critical if loading exceeds 100%
+                return loadingPercent > 100;
+            },
+            severity: 'CRITICAL',
+            priority: 1,
+            recommendation: 'Transformer OVERLOADED - Loading exceeds 100% of nameplate rating',
+            action: 'IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.',
+            standard: 'IEEE C57.12.00, NEC 450.3',
+            impact: 'Transformer thermal damage, accelerated insulation aging, potential failure',
+            cost: 'VERY HIGH',
+            effort: 'High (load transfer or transformer replacement required)'
+        },
         {
             id: 'TF-001',
             name: 'Transformer Mechanical Withstand Critical',
@@ -293,6 +339,47 @@ const RecommendationRules = {
             impact: 'Transformer mechanical failure risk',
             cost: 'VERY HIGH',
             effort: 'High (transformer replacement if inadequate)'
+        },
+        /**
+         * TF-001B: TRANSFORMER HIGH LOADING WARNING
+         * Added: 2025-12-01 - Bug #6 Fix enhancement
+         * Warns when transformer is at 80-100% loading
+         */
+        {
+            id: 'TF-001B',
+            name: 'Transformer High Loading Warning',
+            condition: (bus, standards) => {
+                const feedingTransformer = bus.pathComponents?.find(pc => 
+                    pc.component?.type === 'transformer' && pc.component?.toBus === bus.id
+                )?.component;
+                
+                if (!feedingTransformer) return false;
+                
+                const rating = parseFloat(feedingTransformer.rating) || 0;
+                if (rating === 0) return false;
+                
+                let loadCurrent = 0;
+                if (bus.results?.loadFlow?.summary?.totalCurrent) {
+                    loadCurrent = bus.results.loadFlow.summary.totalCurrent;
+                } else if (bus.loadCurrent) {
+                    loadCurrent = parseFloat(bus.loadCurrent);
+                }
+                
+                const voltage = bus.voltage || 480;
+                const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
+                const loadingPercent = (loadKVA / rating) * 100;
+                
+                // Flag as HIGH when loading is between 80% and 100%
+                return loadingPercent > 80 && loadingPercent <= 100;
+            },
+            severity: 'HIGH',
+            priority: 2,
+            recommendation: 'Transformer approaching full load capacity (>80%)',
+            action: 'Monitor load growth. Plan for capacity upgrade. Consider load balancing or future transformer replacement.',
+            standard: 'IEEE C57.12.00',
+            impact: 'Limited capacity margin, risk of overload during peak demand',
+            cost: 'MEDIUM',
+            effort: 'Low (monitoring) to High (if upgrade needed)'
         },
         {
             id: 'TF-002',
