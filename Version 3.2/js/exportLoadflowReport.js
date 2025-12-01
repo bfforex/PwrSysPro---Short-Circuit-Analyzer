@@ -4,8 +4,14 @@
  * 
  * @author bfforex
  * @date 2025-10-28 00:28:22 UTC
- * @version 1.0.0
+ * @version 1.1.0
+ * @modified 2025-12-01 - Issue #1 CRITICAL: Added safe formatting to prevent toFixed() errors
  */
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Issue #1 CRITICAL FIX: Use safeToFixed() to prevent "Cannot read properties 
+// of undefined (reading 'toFixed')" errors when exporting with incomplete data
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Export Load Flow Analysis Report
@@ -24,6 +30,12 @@ function exportLoadFlowReport(busId) {
     const loadSummary = getLoadSummary(busId);
     const downstreamLoad = calculateDownstreamLoad(busId);
     
+    // ✅ Issue #1 FIX: Use safeToFixed for safe numeric formatting
+    const safeFormat = typeof safeToFixed === 'function' ? safeToFixed : (v, d, f) => {
+        if (v === undefined || v === null || isNaN(Number(v))) return f || 'N/A';
+        return Number(v).toFixed(d || 2);
+    };
+    
     let report = `${'='.repeat(100)}\n`;
     report += `LOAD FLOW ANALYSIS REPORT - BUS: ${bus.name}\n`;
     report += `${'='.repeat(100)}\n\n`;
@@ -41,24 +53,25 @@ function exportLoadFlowReport(busId) {
     report += `Name: ${bus.name}\n`;
     report += `Voltage: ${bus.voltage} V\n`;
     report += `Type: ${bus.type}\n`;
-    report += `Bus Load (Direct): ${bus.loadCurrent || 0} A\n\n`;
+    report += `Bus Load (Direct): ${safeFormat(bus.loadCurrent, 2, '0')} A\n\n`;
     
-    // Load Flow Summary
+    // Load Flow Summary - ✅ Issue #1 FIX: Safe formatting
     report += `LOAD FLOW SUMMARY:\n`;
     report += `${'-'.repeat(100)}\n`;
-    report += `Total Downstream Load: ${downstreamLoad.toFixed(2)} A\n`;
-    report += `Total Apparent Power: ${(downstreamLoad * bus.voltage * Math.sqrt(3) / 1000).toFixed(2)} kVA\n`;
+    report += `Total Downstream Load: ${safeFormat(downstreamLoad, 2, 'N/A')} A\n`;
+    report += `Total Apparent Power: ${safeFormat(downstreamLoad * bus.voltage * Math.sqrt(3) / 1000, 2, 'N/A')} kVA\n`;
     report += `Power Factor: ${document.getElementById('powerFactor').value || '0.85'}\n`;
-    report += `Active Power: ${(downstreamLoad * bus.voltage * Math.sqrt(3) * parseFloat(document.getElementById('powerFactor').value || 0.85) / 1000).toFixed(2)} kW\n\n`;
+    report += `Active Power: ${safeFormat(downstreamLoad * bus.voltage * Math.sqrt(3) * parseFloat(document.getElementById('powerFactor').value || 0.85) / 1000, 2, 'N/A')} kW\n\n`;
     
-    // Load Breakdown by Type
+    // Load Breakdown by Type - ✅ Issue #1 FIX: Safe formatting with null checks
     if (loadSummary) {
+        const safeDownstream = downstreamLoad || 1; // Prevent division by zero
         report += `LOAD BREAKDOWN BY TYPE:\n`;
         report += `${'-'.repeat(100)}\n`;
-        report += `Motor Loads: ${loadSummary.motorLoad.toFixed(2)} A (${(loadSummary.motorLoad/downstreamLoad*100).toFixed(1)}%)\n`;
-        report += `Transformer Loads: ${loadSummary.transformerLoad.toFixed(2)} A (${(loadSummary.transformerLoad/downstreamLoad*100).toFixed(1)}%)\n`;
-        report += `Cable Loads: ${loadSummary.cableLoad.toFixed(2)} A (${(loadSummary.cableLoad/downstreamLoad*100).toFixed(1)}%)\n`;
-        report += `Direct Bus Loads: ${loadSummary.manualLoad.toFixed(2)} A (${(loadSummary.manualLoad/downstreamLoad*100).toFixed(1)}%)\n\n`;
+        report += `Motor Loads: ${safeFormat(loadSummary.motorLoad, 2, '0')} A (${safeFormat((loadSummary.motorLoad || 0)/safeDownstream*100, 1, '0')}%)\n`;
+        report += `Transformer Loads: ${safeFormat(loadSummary.transformerLoad, 2, '0')} A (${safeFormat((loadSummary.transformerLoad || 0)/safeDownstream*100, 1, '0')}%)\n`;
+        report += `Cable Loads: ${safeFormat(loadSummary.cableLoad, 2, '0')} A (${safeFormat((loadSummary.cableLoad || 0)/safeDownstream*100, 1, '0')}%)\n`;
+        report += `Direct Bus Loads: ${safeFormat(loadSummary.manualLoad, 2, '0')} A (${safeFormat((loadSummary.manualLoad || 0)/safeDownstream*100, 1, '0')}%)\n\n`;
         
         // Detailed Component List
         report += `DETAILED COMPONENT BREAKDOWN:\n`;
@@ -66,15 +79,17 @@ function exportLoadFlowReport(busId) {
         report += `Type          Description             Location                Current(A)   Power(kVA)\n`;
         report += `${'-'.repeat(100)}\n`;
         
-        loadSummary.breakdown.forEach(item => {
-            const typeStr = item.type.padEnd(12);
-            const descStr = item.description.substring(0, 22).padEnd(22);
-            const locStr = item.location.substring(0, 22).padEnd(22);
-            const currentStr = item.current.toFixed(2).padStart(10);
-            const powerStr = (item.current * bus.voltage * Math.sqrt(3) / 1000).toFixed(2).padStart(10);
-            
-            report += `${typeStr}  ${descStr}  ${locStr}  ${currentStr}   ${powerStr}\n`;
-        });
+        if (loadSummary.breakdown && Array.isArray(loadSummary.breakdown)) {
+            loadSummary.breakdown.forEach(item => {
+                const typeStr = (item.type || 'Unknown').padEnd(12);
+                const descStr = (item.description || 'N/A').substring(0, 22).padEnd(22);
+                const locStr = (item.location || 'N/A').substring(0, 22).padEnd(22);
+                const currentStr = safeFormat(item.current, 2, 'N/A').padStart(10);
+                const powerStr = safeFormat((item.current || 0) * bus.voltage * Math.sqrt(3) / 1000, 2, 'N/A').padStart(10);
+                
+                report += `${typeStr}  ${descStr}  ${locStr}  ${currentStr}   ${powerStr}\n`;
+            });
+        }
         report += `\n`;
     }
     
@@ -105,6 +120,8 @@ function exportLoadFlowReport(busId) {
 
 /**
  * Export Voltage Drop Analysis Report (Separate from Short Circuit)
+ * ✅ Issue #1 FIX: Added safe formatting to prevent toFixed() errors
+ * ✅ Issue #3 FIX: Added transformer tap adjustment support
  */
 function exportVoltageDropReport(busId) {
     const bus = buses.find(b => b.id === busId);
@@ -116,6 +133,12 @@ function exportVoltageDropReport(busId) {
     const projectName = document.getElementById('projectName').value || 'Untitled';
     const vdData = bus.results.voltageDrop;
     
+    // ✅ Issue #1 FIX: Use safeToFixed for safe numeric formatting
+    const safeFormat = typeof safeToFixed === 'function' ? safeToFixed : (v, d, f) => {
+        if (v === undefined || v === null || isNaN(Number(v))) return f || 'N/A';
+        return Number(v).toFixed(d || 2);
+    };
+    
     let report = `${'='.repeat(100)}\n`;
     report += `VOLTAGE DROP ANALYSIS REPORT - BUS: ${bus.name}\n`;
     report += `${'='.repeat(100)}\n\n`;
@@ -123,7 +146,7 @@ function exportVoltageDropReport(busId) {
     report += `Project: ${projectName}\n`;
     report += `Project Number: ${document.getElementById('projectNumber').value || 'N/A'}\n`;
     report += `Engineer: ${document.getElementById('engineer').value || 'Unknown'}\n`;
-    report += `Date: ${bus.results.calculationDate}\n`;
+    report += `Date: ${bus.results.calculationDate || 'N/A'}\n`;
     report += `Software: PwrSys Pro - Voltage Drop Analyzer v${VERSION}\n`;
     report += `Author: ${AUTHOR}\n\n`;
     
@@ -133,13 +156,23 @@ function exportVoltageDropReport(busId) {
     report += `Name: ${bus.name}\n`;
     report += `Voltage: ${bus.voltage} V\n`;
     report += `System Type: ${bus.type}\n`;
-    report += `Calculation Method: ${bus.results.method}\n\n`;
+    report += `Calculation Method: ${bus.results.method || 'N/A'}\n\n`;
     
-    // Voltage Drop Summary
+    // ✅ Issue #3 FIX: Show transformer tap adjustment if applicable
+    if (vdData.tapAdjustedNominal !== undefined && vdData.tapPercent !== undefined) {
+        report += `TRANSFORMER TAP ADJUSTMENT:\n`;
+        report += `${'-'.repeat(100)}\n`;
+        report += `Nominal Voltage:        ${safeFormat(vdData.nominalVoltage, 2, 'N/A')} V\n`;
+        report += `Tap Setting:            ${safeFormat(vdData.tapPercent, 2, 'N/A')}%\n`;
+        report += `Tap-Adjusted Nominal:   ${safeFormat(vdData.tapAdjustedNominal, 2, 'N/A')} V\n`;
+        report += `Baseline for VD%:       Tap-Adjusted Nominal (per IEEE 141-1993)\n\n`;
+    }
+    
+    // Voltage Drop Summary - ✅ Issue #1 FIX: Safe formatting
     report += `VOLTAGE DROP SUMMARY:\n`;
     report += `${'-'.repeat(100)}\n`;
-    report += `Total Voltage Drop: ${vdData.cumulativeDropPercent.toFixed(3)}% (${vdData.cumulativeDropVolts.toFixed(3)} V)\n`;
-    report += `Maximum Single Component: ${vdData.maxDropPercent.toFixed(3)}%\n`;
+    report += `Total Voltage Drop: ${safeFormat(vdData.cumulativeDropPercent, 3, 'N/A')}% (${safeFormat(vdData.cumulativeDropVolts, 3, 'N/A')} V)\n`;
+    report += `Maximum Single Component: ${safeFormat(vdData.maxDropPercent, 3, 'N/A')}%\n`;
     report += `Power Factor: ${document.getElementById('powerFactor').value || '0.9'}\n`;
     report += `Temperature: ${document.getElementById('temperature').value || '75'}°C\n\n`;
     
@@ -151,53 +184,56 @@ function exportVoltageDropReport(busId) {
     report += `Combined System: 7% maximum (absolute limit)\n`;
     report += `\n`;
     
-    if (vdData.cumulativeDropPercent <= 3) {
+    const vdPercent = vdData.cumulativeDropPercent || 0;
+    if (vdPercent <= 3) {
         report += `✅ EXCELLENT - Well within recommended limits\n`;
-    } else if (vdData.cumulativeDropPercent <= 5) {
+    } else if (vdPercent <= 5) {
         report += `✅ ACCEPTABLE - Within branch circuit limits\n`;
-    } else if (vdData.cumulativeDropPercent <= 7) {
+    } else if (vdPercent <= 7) {
         report += `⚠️  WARNING - Approaching maximum limit\n`;
     } else {
         report += `❌ NON-COMPLIANT - Exceeds IEEE 141 maximum (7%)\n`;
     }
-    report += `\nActual Voltage Drop: ${vdData.cumulativeDropPercent.toFixed(3)}%\n\n`;
+    report += `\nActual Voltage Drop: ${safeFormat(vdPercent, 3, 'N/A')}%\n\n`;
     
-    // Component-by-Component Analysis
+    // Component-by-Component Analysis - ✅ Issue #1 FIX: Safe formatting
     report += `COMPONENT-BY-COMPONENT ANALYSIS:\n`;
     report += `${'-'.repeat(100)}\n`;
     report += `Step  Type          Component Name          Current(A)  Drop(V)  Drop(%)  Cumulative(%)  Status\n`;
     report += `${'-'.repeat(100)}\n`;
     
     let cumulativePercent = 0;
-    vdData.components.forEach(comp => {
-        cumulativePercent += comp.dropPercent;
-        
-        const stepStr = comp.step.toString().padEnd(5);
-        const typeStr = comp.type.padEnd(12);
-        const nameStr = (comp.name || 'N/A').substring(0, 22).padEnd(22);
-        const currentStr = comp.current.toFixed(1).padStart(10);
-        const dropVStr = comp.dropVolts.toFixed(3).padStart(7);
-        const dropPStr = comp.dropPercent.toFixed(3).padStart(7);
-        const cumStr = cumulativePercent.toFixed(3).padStart(13);
-        const statusStr = comp.severity;
-        
-        report += `${stepStr} ${typeStr}  ${nameStr}  ${currentStr}  ${dropVStr}  ${dropPStr}  ${cumStr}  ${statusStr}\n`;
-    });
+    if (vdData.components && Array.isArray(vdData.components)) {
+        vdData.components.forEach(comp => {
+            cumulativePercent += (comp.dropPercent || 0);
+            
+            const stepStr = String(comp.step || '').padEnd(5);
+            const typeStr = (comp.type || 'N/A').padEnd(12);
+            const nameStr = (comp.name || 'N/A').substring(0, 22).padEnd(22);
+            const currentStr = safeFormat(comp.current, 1, 'N/A').padStart(10);
+            const dropVStr = safeFormat(comp.dropVolts, 3, 'N/A').padStart(7);
+            const dropPStr = safeFormat(comp.dropPercent, 3, 'N/A').padStart(7);
+            const cumStr = safeFormat(cumulativePercent, 3, 'N/A').padStart(13);
+            const statusStr = comp.severity || 'OK';
+            
+            report += `${stepStr} ${typeStr}  ${nameStr}  ${currentStr}  ${dropVStr}  ${dropPStr}  ${cumStr}  ${statusStr}\n`;
+        });
+    }
     report += `${'-'.repeat(100)}\n\n`;
     
-    // Critical Components
+    // Critical Components - ✅ Issue #1 FIX: Safe formatting with null checks
     if (vdData.criticalComponents && vdData.criticalComponents.length > 0) {
         report += `⚠️  CRITICAL COMPONENTS REQUIRING ATTENTION:\n`;
         report += `${'-'.repeat(100)}\n\n`;
         
         vdData.criticalComponents.forEach((item, index) => {
-            const comp = item.component;
-            const vd = item.voltageDrop;
+            const comp = item.component || {};
+            const vd = item.voltageDrop || {};
             
-            report += `${index + 1}. ${comp.type.toUpperCase()}: ${comp.name || comp.fromBusName}\n`;
-            report += `   Voltage Drop: ${vd.dropPercent.toFixed(3)}% (${vd.dropVolts.toFixed(2)}V)\n`;
-            report += `   Severity: ${vd.severity}\n`;
-            report += `   Current: ${vd.current.toFixed(1)}A\n`;
+            report += `${index + 1}. ${(comp.type || 'Unknown').toUpperCase()}: ${comp.name || comp.fromBusName || 'N/A'}\n`;
+            report += `   Voltage Drop: ${safeFormat(vd.dropPercent, 3, 'N/A')}% (${safeFormat(vd.dropVolts, 2, 'N/A')}V)\n`;
+            report += `   Severity: ${vd.severity || 'N/A'}\n`;
+            report += `   Current: ${safeFormat(vd.current, 1, 'N/A')}A\n`;
             
             if (comp.type === 'cable') {
                 report += `   \n`;
@@ -262,6 +298,7 @@ function exportVoltageDropReport(busId) {
 
 /**
  * Export All Buses Load Flow Summary
+ * ✅ Issue #1 FIX: Added safe formatting to prevent toFixed() errors
  */
 function exportSystemLoadFlowReport() {
     const calculatedBuses = buses.filter(b => b.results);
@@ -273,6 +310,12 @@ function exportSystemLoadFlowReport() {
     
     const projectName = document.getElementById('projectName').value || 'Untitled';
     const timestamp = getCalculationTimestamp();
+    
+    // ✅ Issue #1 FIX: Use safeToFixed for safe numeric formatting
+    const safeFormat = typeof safeToFixed === 'function' ? safeToFixed : (v, d, f) => {
+        if (v === undefined || v === null || isNaN(Number(v))) return f || 'N/A';
+        return Number(v).toFixed(d || 2);
+    };
     
     let report = `${'='.repeat(100)}\n`;
     report += `SYSTEM LOAD FLOW ANALYSIS - ALL BUSES\n`;
@@ -290,26 +333,26 @@ function exportSystemLoadFlowReport() {
     
     calculatedBuses.forEach(bus => {
         const load = calculateDownstreamLoad(bus.id);
-        const kva = load * bus.voltage * Math.sqrt(3) / 1000;
+        const kva = (load || 0) * bus.voltage * Math.sqrt(3) / 1000;
         totalKVA += kva;
         
         const nameStr = bus.name.padEnd(26);
-        const voltStr = bus.voltage.toString().padStart(10);
-        const loadStr = load.toFixed(1).padStart(9);
-        const kvaStr = kva.toFixed(2).padStart(11);
+        const voltStr = String(bus.voltage).padStart(10);
+        const loadStr = safeFormat(load, 1, 'N/A').padStart(9);
+        const kvaStr = safeFormat(kva, 2, 'N/A').padStart(11);
         
         // Calculate utilization if source bus
         let utilStr = 'N/A';
-        if (bus.type === 'source' && bus.utilityFaultMVA) {
+        if (bus.type === 'source' && bus.utilityFaultMVA && bus.utilityFaultMVA > 0) {
             const util = (kva / bus.utilityFaultMVA) * 100;
-            utilStr = util.toFixed(1) + '%';
+            utilStr = safeFormat(util, 1, 'N/A') + '%';
         }
         
         report += `${nameStr}  ${voltStr}  ${loadStr}  ${kvaStr}  ${utilStr.padStart(14)}\n`;
     });
     
     report += `${'-'.repeat(100)}\n`;
-    report += `Total System Load: ${totalKVA.toFixed(2)} kVA\n\n`;
+    report += `Total System Load: ${safeFormat(totalKVA, 2, 'N/A')} kVA\n\n`;
     
     report += `${'='.repeat(100)}\n`;
     report += `END OF SYSTEM LOAD FLOW REPORT\n`;
@@ -327,3 +370,6 @@ window.exportVoltageDropReport = exportVoltageDropReport;
 window.exportSystemLoadFlowReport = exportSystemLoadFlowReport;
 
 console.log('✅ Load Flow Report module loaded');
+console.log('   - exportLoadFlowReport: Available (Issue #1 FIX: Safe formatting)');
+console.log('   - exportVoltageDropReport: Available (Issue #1 FIX: Safe formatting, Issue #3: Tap adjustment)');
+console.log('   - exportSystemLoadFlowReport: Available (Issue #1 FIX: Safe formatting)');

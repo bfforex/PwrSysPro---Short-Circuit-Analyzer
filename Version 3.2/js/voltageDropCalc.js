@@ -4,16 +4,22 @@
  *
  * @author bfforex
  * @date 2025-11-02 15:21:31 UTC
- * @version 2.1.0
+ * @version 2.2.0
  * @enhanced Component tags display throughout calculation steps
  * @enhanced Visual hierarchy with icons and better formatting
  * @enhanced From/To bus information for traceability
  * @enhanced Helper functions for load current calculations
  * @fixed Issue #2: Base voltage handling - voltage tracked properly across transformers
- * @fixed Issue #3: Cable data integration - already working, enhanced
+ * @fixed Issue #3: CRITICAL - Voltage drop % now calculated against tap-adjusted nominal per IEEE 141-1993
  * @enhanced Load voltage calculation - now shows actual voltage at load
  * @enhanced Per NEC/IEEE 141 - voltage drop % relative to load voltage
  * @enhanced Transformer tap settings - ±5% voltage adjustment support
+ * 
+ * Issue #3 FIX (2025-12-01):
+ * - Voltage drop % now calculated against TAP-ADJUSTED nominal voltage
+ * - Per IEEE 141-1993 Section 3.4: "Voltage regulation calculations shall use
+ *   the actual secondary voltage considering tap settings"
+ * - Example: +2.5% tap on 440V = 451V baseline for VD% calculation
  * 
  * ENHANCEMENTS FROM v2.0.0:
  * - Component tags (tag property) displayed in all calculation steps
@@ -37,11 +43,12 @@
  * - IEEE 141-1993 Section 3.4 - Voltage Drop Calculations
  */
 
-console.log('🔧 Loading Voltage Drop Calculation Module v2.1.0...');
+console.log('🔧 Loading Voltage Drop Calculation Module v2.2.0...');
 console.log('   ✅ Component tags display - ENHANCED');
 console.log('   ✅ Visual hierarchy with icons - NEW');
 console.log('   ✅ From/To bus information - NEW');
 console.log('   ✅ Helper functions added - NEW');
+console.log('   ✅ Issue #3 FIX: Tap-adjusted baseline for VD% - FIXED');
 console.log('   ✅ All v2.0.0 features maintained');
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -204,6 +211,14 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
     sourceVoltage: sourceVoltage,
     loadVoltage: currentVoltage,
     nominalLoadVoltage: loadVoltage,
+    
+    // ✅ Issue #3 FIX: Track tap adjustment for correct VD% baseline
+    tapAdjustment: {
+      hasTransformerWithTap: false,
+      tapPercent: 0,
+      nominalSecondary: loadVoltage,
+      tapAdjustedNominal: loadVoltage  // Will be updated when transformer with tap is processed
+    },
     
     // Calculation parameters
     powerFactor: powerFactor,
@@ -603,7 +618,12 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
       const cosTheta = powerFactor;
       const sinTheta = Math.sqrt(1 - powerFactor * powerFactor);
       const dropVolts = SQRT3 * secondaryCurrent * (r * cosTheta + x * sinTheta);
-      const dropPercent = (secondaryV > 0) ? (dropVolts / secondaryV) * 100 : 0;
+      
+      // ✅ Issue #3 FIX: Calculate drop % against TAP-ADJUSTED nominal (NOT original nominal)
+      // Per IEEE 141-1993 Section 3.4: "Voltage regulation shall be calculated
+      // using the actual secondary voltage considering tap settings"
+      const tapAdjustedBaseline = secondaryV * (1 + tapSetting / 100);
+      const dropPercent = (tapAdjustedBaseline > 0) ? (dropVolts / tapAdjustedBaseline) * 100 : 0;
 
       let severity = 'LOW';
       if (dropPercent > 3) severity = 'HIGH';
@@ -614,6 +634,14 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
       const voltageAtSecondaryWithTap = voltageAtSecondaryNoLoad * (1 + tapSetting / 100);
       currentVoltage = voltageAtSecondaryWithTap - dropVolts;
       currentVoltageLevel = secondaryV;
+      
+      // ✅ Issue #3 FIX: Track tap adjustment for final VD% calculation
+      if (tapSetting !== 0) {
+        vdData.tapAdjustment.hasTransformerWithTap = true;
+        vdData.tapAdjustment.tapPercent = tapSetting;
+        vdData.tapAdjustment.nominalSecondary = secondaryV;
+        vdData.tapAdjustment.tapAdjustedNominal = tapAdjustedBaseline;
+      }
 
       const fullLoadCurrent = (rating * 1000) / (SQRT3 * (secondaryV || 1));
       const loading = (fullLoadCurrent > 0) ? (secondaryCurrent / fullLoadCurrent) * 100 : 0;
@@ -754,15 +782,35 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
 
   // ══════════════════════════════════════════════════════════════════════════════
   // FINAL SUMMARY (ENHANCED)
+  // ✅ Issue #3 FIX: Use tap-adjusted nominal for VD% calculation
   // ══════════════════════════════════════════════════════════════════════════════
   
   const finalVoltageAtLoad = currentVoltage;
   const finalVoltageLevel = currentVoltageLevel;
-  const nominalLoadVoltage = loadVoltage || finalVoltageLevel;
   
-  const totalVoltageDrop = nominalLoadVoltage - finalVoltageAtLoad;
-  const totalVoltageDropPercent = (nominalLoadVoltage > 0) 
-    ? (totalVoltageDrop / nominalLoadVoltage) * 100 
+  // ✅ Issue #3 FIX: Determine correct baseline for VD% calculation
+  // If transformer has tap, use tap-adjusted nominal; otherwise use standard nominal
+  let nominalLoadVoltage = loadVoltage || finalVoltageLevel;
+  let baselineForVDPercent = nominalLoadVoltage;
+  let baselineDescription = 'Nominal Voltage';
+  
+  if (vdData.tapAdjustment.hasTransformerWithTap) {
+    // Use tap-adjusted nominal as baseline per IEEE 141-1993 Section 3.4
+    baselineForVDPercent = vdData.tapAdjustment.tapAdjustedNominal;
+    baselineDescription = `Tap-Adjusted Nominal (${vdData.tapAdjustment.tapPercent > 0 ? '+' : ''}${vdData.tapAdjustment.tapPercent}% tap)`;
+    console.log(`${VOLTAGE_DROP_CONFIG.ICONS.info} Issue #3 FIX: Using tap-adjusted nominal ${baselineForVDPercent}V for VD% calculation`);
+  }
+  
+  const totalVoltageDrop = baselineForVDPercent - finalVoltageAtLoad;
+  
+  // ✅ Issue #3 FIX: Calculate VD% against TAP-ADJUSTED baseline (CORRECT)
+  const totalVoltageDropPercent = (baselineForVDPercent > 0) 
+    ? (totalVoltageDrop / baselineForVDPercent) * 100 
+    : 0;
+  
+  // Also calculate legacy (incorrect) percentage for comparison/reference
+  const legacyVoltageDropPercent = (nominalLoadVoltage > 0)
+    ? ((nominalLoadVoltage - finalVoltageAtLoad) / nominalLoadVoltage) * 100
     : 0;
   
   vdData.loadVoltage = finalVoltageAtLoad;
@@ -771,8 +819,16 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
   vdData.cumulativeDropVolts = totalVoltageDrop;
   vdData.totalDropPercent = totalVoltageDropPercent;
   vdData.cumulativeDropPercent = totalVoltageDropPercent;
+  
+  // ✅ Issue #3 FIX: Store tap-related data for exports
+  if (vdData.tapAdjustment.hasTransformerWithTap) {
+    vdData.nominalVoltage = nominalLoadVoltage;
+    vdData.tapPercent = vdData.tapAdjustment.tapPercent;
+    vdData.tapAdjustedNominal = baselineForVDPercent;
+    vdData.legacyDropPercent = legacyVoltageDropPercent;  // For reference only
+  }
 
-  // Compliance checking
+  // Compliance checking - against tap-adjusted baseline
   const feederLimit = vdData.compliance.feederLimit;
   const branchLimit = vdData.compliance.branchLimit;
   const combinedLimit = vdData.compliance.combinedLimit;
@@ -795,9 +851,27 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
   steps += `📊 FINAL RESULTS\n`;
   steps += '─'.repeat(80) + '\n';
   steps += `Source Voltage:          ${sourceVoltage.toFixed(2)} V\n`;
-  steps += `Nominal Load Voltage:    ${nominalLoadVoltage.toFixed(2)} V\n`;
-  steps += `Actual Voltage at Load:  ${finalVoltageAtLoad.toFixed(2)} V (${((finalVoltageAtLoad/nominalLoadVoltage)*100).toFixed(2)}%)\n`;
-  steps += `Total Voltage Drop:      ${totalVoltageDrop.toFixed(2)} V (${totalVoltageDropPercent.toFixed(3)}%)\n\n`;
+  
+  // ✅ Issue #3 FIX: Show tap adjustment in summary
+  if (vdData.tapAdjustment.hasTransformerWithTap) {
+    steps += `Nominal Secondary:       ${nominalLoadVoltage.toFixed(2)} V\n`;
+    steps += `Tap Setting:             ${vdData.tapAdjustment.tapPercent > 0 ? '+' : ''}${vdData.tapAdjustment.tapPercent}%\n`;
+    steps += `Tap-Adjusted Nominal:    ${baselineForVDPercent.toFixed(2)} V  ← BASELINE FOR VD%\n`;
+  } else {
+    steps += `Nominal Load Voltage:    ${nominalLoadVoltage.toFixed(2)} V\n`;
+  }
+  
+  steps += `Actual Voltage at Load:  ${finalVoltageAtLoad.toFixed(2)} V (${((finalVoltageAtLoad/baselineForVDPercent)*100).toFixed(2)}% of baseline)\n`;
+  steps += `Total Voltage Drop:      ${totalVoltageDrop.toFixed(2)} V (${totalVoltageDropPercent.toFixed(3)}%)\n`;
+  
+  // ✅ Issue #3 FIX: Show comparison with legacy calculation if tap is present
+  if (vdData.tapAdjustment.hasTransformerWithTap) {
+    steps += `\n${VOLTAGE_DROP_CONFIG.ICONS.info} IEEE 141-1993 COMPLIANCE NOTE:\n`;
+    steps += `   VD% calculated against tap-adjusted nominal (${baselineForVDPercent.toFixed(2)}V)\n`;
+    steps += `   Legacy calculation (against ${nominalLoadVoltage.toFixed(2)}V): ${legacyVoltageDropPercent.toFixed(3)}%\n`;
+    steps += `   CORRECT calculation: ${totalVoltageDropPercent.toFixed(3)}%\n`;
+  }
+  steps += '\n';
 
   if (voltageProgression.length > 1) {
     steps += `⚡ VOLTAGE PROGRESSION\n`;
@@ -845,7 +919,13 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
   steps += '─'.repeat(80) + '\n';
   steps += `✓ NEC 210.19(A) - Branch Circuit Conductors\n`;
   steps += `✓ NEC 215.2(A)(1) - Feeder Conductors\n`;
-  steps += `✓ IEEE 141-1993 Section 3.4 - Voltage Drop Calculations\n\n`;
+  steps += `✓ IEEE 141-1993 Section 3.4 - Voltage Drop Calculations\n`;
+  
+  // ✅ Issue #3 FIX: Note about tap adjustment compliance
+  if (vdData.tapAdjustment.hasTransformerWithTap) {
+    steps += `✓ IEEE 141-1993 Section 3.4.2 - Transformer Tap Adjustment Applied\n`;
+  }
+  steps += '\n';
 
   steps += '═'.repeat(80) + '\n';
   steps += 'END OF VOLTAGE DROP CALCULATION\n';
@@ -853,8 +933,11 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
   
   vdData.calculationSteps = steps;
   
-  console.log('✅ Voltage Drop Analysis Complete (v2.1.0)');
+  console.log('✅ Voltage Drop Analysis Complete (v2.2.0)');
   console.log(`   Total Drop: ${totalVoltageDropPercent.toFixed(3)}%`);
+  if (vdData.tapAdjustment.hasTransformerWithTap) {
+    console.log(`   Baseline: ${baselineForVDPercent.toFixed(2)}V (tap-adjusted)`);
+  }
   console.log(`   Voltage at Load: ${finalVoltageAtLoad.toFixed(2)}V`);
   console.log(`   Compliance: ${vdData.compliance.status}`);
   console.log('');
@@ -874,13 +957,14 @@ if (typeof window !== 'undefined') {
     window.VOLTAGE_DROP_CONFIG = VOLTAGE_DROP_CONFIG;
 }
 
-console.log('✅ Voltage Drop Calculation module v2.1.0 loaded');
+console.log('✅ Voltage Drop Calculation module v2.2.0 loaded');
 console.log('   - ENHANCED: Component tags display');
 console.log('   - ENHANCED: Visual hierarchy with icons');
 console.log('   - ENHANCED: From/To bus information');
 console.log('   - NEW: Helper functions for load calculations');
+console.log('   - FIXED: Issue #3 - Tap-adjusted baseline for VD% (IEEE 141-1993)');
 console.log('   - MAINTAINED: All v2.0.0 features');
 console.log('   - Standards: NEC 2023, IEEE 141-1993');
-console.log('   - Date: 2025-11-02 15:21:31 UTC');
+console.log('   - Date: 2025-12-01');
 console.log('   - Author: bfforex');
 console.log('');
