@@ -351,6 +351,15 @@ function editBus(busId) {
     
     const modalBody = document.getElementById('editBusModalBody');
     
+    // ✅ Issue #1 FIX: Prepare load current display values
+    // Only show user-entered load in input field, not auto-calculated values
+    const isAutoCalculated = bus.loadCurrentAutoCalculated === true;
+    const loadInputValue = isAutoCalculated ? '' : (bus.loadCurrent || '');
+    const showAutoCalcInfo = isAutoCalculated && bus.loadCurrent > 0;
+    const autoCalcInfoHTML = showAutoCalcInfo 
+        ? `<div class="small-muted" style="color: #667eea; margin-top: 5px;">📊 Last calculated load: ${formatNum(bus.loadCurrent, 2)} A (auto-calculated from downstream)</div>` 
+        : '';
+    
     let utilityFieldsHTML = '';
     if (bus.type === 'source') {
         const mode = bus.utilityMode || 'kA';
@@ -405,8 +414,9 @@ function editBus(busId) {
                     <span class="tooltiptext">Specify direct load on this bus. Leave blank to calculate from downstream loads automatically.</span>
                 </span>
             </label>
-            <input type="number" id="editBusLoad" value="${bus.loadCurrent || ''}" step="0.1" min="0" placeholder="Auto-calculated if blank">
+            <input type="number" id="editBusLoad" value="${loadInputValue}" step="0.1" min="0" placeholder="Auto-calculated if blank">
             <div class="small-muted">If blank, load will be calculated from motors, transformers, and cables downstream</div>
+            ${autoCalcInfoHTML}
         </div>
         
         <details class="collapsible-section">
