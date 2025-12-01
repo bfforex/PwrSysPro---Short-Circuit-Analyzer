@@ -832,7 +832,7 @@ function calculateShortCircuitPointToPoint(path) {
     // PROTECTION DEVICE REQUIREMENTS
     // ══════════════════════════════════════════════════════════════════════════════
 
-    if     (typeof generateProtectionDeviceRequirements === 'function') {
+    if (typeof generateProtectionDeviceRequirements === 'function') {
         steps += generateProtectionDeviceRequirements({
             faultCurrents: {
                 threePhaseSym: faultCurrentKA,
@@ -1480,7 +1480,7 @@ function calculateShortCircuitPerUnit(path) {
     // PROTECTION DEVICE REQUIREMENTS
     // ══════════════════════════════════════════════════════════════════════════════
 
-    if     (typeof generateProtectionDeviceRequirements === 'function') {
+    if (typeof generateProtectionDeviceRequirements === 'function') {
         steps += generateProtectionDeviceRequirements({
             faultCurrents: {
                 threePhaseSym: faultCurrentKA,

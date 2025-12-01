@@ -146,10 +146,10 @@ function calculateBus(busId) {
                     console.log(`      Connected Load: ${loadFlowResult.summary?.connectedCurrent?.toFixed(2) || 'N/A'} A`);
                     
                     if (loadFlowResult.demandSummary) {
-                        console.log(`      Demand Load:    ${loadFlowResult.demandSummary.demandCurrent.toFixed(2)} A (${(loadFlowResult.demandSummary.demandFactor * 100).toFixed(1)}%)`);
-                        console.log(`      Diversity Load: ${loadFlowResult.demandSummary.diversityCurrent.toFixed(2)} A`);
-                        console.log(`      Demand Factor:  ${loadFlowResult.demandSummary.demandFactor.toFixed(3)}`);
-                        console.log(`      Diversity Factor: ${loadFlowResult.demandSummary.diversityFactor.toFixed(3)}`);
+                        console.log(`      Demand Load:    ${loadFlowResult.demandSummary.demandCurrent?.toFixed(2) || 'N/A'} A (${((loadFlowResult.demandSummary.demandFactor || 0) * 100).toFixed(1)}%)`);
+                        console.log(`      Diversity Load: ${loadFlowResult.demandSummary.diversityCurrent?.toFixed(2) || 'N/A'} A`);
+                        console.log(`      Demand Factor:  ${loadFlowResult.demandSummary.demandFactor?.toFixed(3) || 'N/A'}`);
+                        console.log(`      Diversity Factor: ${loadFlowResult.demandSummary.diversityFactor?.toFixed(3) || 'N/A'}`);
                     }
                 } else {
                     console.warn('   ⚠️ Method 1 PARTIAL: Function returned but demand factors not confirmed');
@@ -187,10 +187,14 @@ function calculateBus(busId) {
                     console.log('   ✅ Method 2 SUCCESS: Demand factors applied!');
                     
                     if (loadFlowResult.demandSummary) {
-                        console.log(`      Connected Load: ${loadFlowResult.demandSummary.connectedCurrent.toFixed(2)} A`);
-                        console.log(`      Demand Load:    ${loadFlowResult.demandSummary.demandCurrent.toFixed(2)} A`);
-                        console.log(`      Diversity Load: ${loadFlowResult.demandSummary.diversityCurrent.toFixed(2)} A`);
-                        console.log(`      Savings:        ${(loadFlowResult.demandSummary.connectedCurrent - loadFlowResult.demandSummary.diversityCurrent).toFixed(2)} A (${((1 - loadFlowResult.demandSummary.diversityCurrent / loadFlowResult.demandSummary.connectedCurrent) * 100).toFixed(1)}%)`);
+                        console.log(`      Connected Load: ${loadFlowResult.demandSummary.connectedCurrent?.toFixed(2) || 'N/A'} A`);
+                        console.log(`      Demand Load:    ${loadFlowResult.demandSummary.demandCurrent?.toFixed(2) || 'N/A'} A`);
+                        console.log(`      Diversity Load: ${loadFlowResult.demandSummary.diversityCurrent?.toFixed(2) || 'N/A'} A`);
+                        const connCurrent = loadFlowResult.demandSummary.connectedCurrent || 0;
+                        const divCurrent = loadFlowResult.demandSummary.diversityCurrent || 0;
+                        const savings = connCurrent - divCurrent;
+                        const savingsPercent = connCurrent > 0 ? ((1 - divCurrent / connCurrent) * 100) : 0;
+                        console.log(`      Savings:        ${savings.toFixed(2)} A (${savingsPercent.toFixed(1)}%)`);
                     }
                 } else {
                     console.warn('   ⚠️ Method 2 FAILED: Could not apply demand factors');
@@ -222,9 +226,9 @@ function calculateBus(busId) {
         // FINAL STATUS
         // ────────────────────────────────────────────────────────────────
         console.log('');
-        console. log('   📊 LOAD FLOW ANALYSIS COMPLETE:');
+        console.log('   📊 LOAD FLOW ANALYSIS COMPLETE:');
         console.log(`      Total Load: ${loadFlowResult.summary?.totalCurrent?.toFixed(2) || 'N/A'} A`);
-        console. log(`      Total Power: ${loadFlowResult.summary?.totalPowerKVA?.toFixed(2) || 'N/A'} kVA`);
+        console.log(`      Total Power: ${loadFlowResult.summary?.totalPowerKVA?.toFixed(2) || 'N/A'} kVA`);
         console.log(`      Demand Factors: ${demandFactorsApplied ? '✅ APPLIED' : '⚠️ NOT APPLIED'}`);
         console.log('');
 
@@ -253,11 +257,11 @@ function calculateBus(busId) {
             // Only update if NO manual load was specified (preserve manual inputs)
             const hadManualLoad = bus.loadCurrent && bus.loadCurrent > 0;
     
-            if (! hadManualLoad) {
+            if (!hadManualLoad) {
                 bus.loadCurrent = displayLoad;
-                console.log(`   ✅ Bus ${bus. name}: loadCurrent property updated to ${bus.loadCurrent.toFixed(2)} A (will show in tree)`);
+                console.log(`   ✅ Bus ${bus.name}: loadCurrent property updated to ${bus.loadCurrent.toFixed(2)} A (will show in tree)`);
             } else {
-                console.log(`   ℹ️ Bus ${bus. name}: Keeping manual load ${bus.loadCurrent.toFixed(2)} A (not overwriting)`);
+                console.log(`   ℹ️ Bus ${bus.name}: Keeping manual load ${bus.loadCurrent.toFixed(2)} A (not overwriting)`);
             }
         }
         console.log('');
