@@ -4,8 +4,19 @@
  * 
  * @author bfforex
  * @date 2025-10-27
- * @version 1.0.0
+ * @version 1.1.0
+ * @updated 2025-12-01 - Added transformer overload rules (Bug #6 fix)
  */
+
+// Named constants for recommendation rules
+const RECOMMENDATION_CONSTANTS = {
+    DEFAULT_VOLTAGE: 480,  // Default LV voltage in volts
+    OVERLOAD_CRITICAL_THRESHOLD: 100,  // % loading that triggers CRITICAL
+    OVERLOAD_HIGH_THRESHOLD: 80,  // % loading that triggers HIGH warning
+    HIGH_FAULT_CURRENT_THRESHOLD: 40,  // kA threshold for fault concerns
+    SECONDARY_FAULT_THRESHOLD: 30,  // kA threshold for secondary fault
+    LOW_IMPEDANCE_THRESHOLD: 4  // % impedance considered low
+};
 
 const RecommendationRules = {
     /**
@@ -285,8 +296,11 @@ const RecommendationRules = {
             id: 'TF-000',
             name: 'Transformer Overload Critical',
             condition: (bus, standards) => {
+                // Validate pathComponents exists before accessing
+                if (!bus.pathComponents || !Array.isArray(bus.pathComponents)) return false;
+                
                 // Check if this bus is fed by a transformer and calculate loading
-                const feedingTransformer = bus.pathComponents?.find(pc => 
+                const feedingTransformer = bus.pathComponents.find(pc => 
                     pc.component?.type === 'transformer' && pc.component?.toBus === bus.id
                 )?.component;
                 
@@ -304,13 +318,13 @@ const RecommendationRules = {
                     loadCurrent = parseFloat(bus.loadCurrent);
                 }
                 
-                // Calculate loading
-                const voltage = bus.voltage || 480;
+                // Calculate loading using constant for default voltage
+                const voltage = bus.voltage || RECOMMENDATION_CONSTANTS.DEFAULT_VOLTAGE;
                 const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
                 const loadingPercent = (loadKVA / rating) * 100;
                 
-                // Flag as critical if loading exceeds 100%
-                return loadingPercent > 100;
+                // Flag as critical if loading exceeds threshold
+                return loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD;
             },
             severity: 'CRITICAL',
             priority: 1,
@@ -349,7 +363,10 @@ const RecommendationRules = {
             id: 'TF-001B',
             name: 'Transformer High Loading Warning',
             condition: (bus, standards) => {
-                const feedingTransformer = bus.pathComponents?.find(pc => 
+                // Validate pathComponents exists
+                if (!bus.pathComponents || !Array.isArray(bus.pathComponents)) return false;
+                
+                const feedingTransformer = bus.pathComponents.find(pc => 
                     pc.component?.type === 'transformer' && pc.component?.toBus === bus.id
                 )?.component;
                 
@@ -365,12 +382,13 @@ const RecommendationRules = {
                     loadCurrent = parseFloat(bus.loadCurrent);
                 }
                 
-                const voltage = bus.voltage || 480;
+                const voltage = bus.voltage || RECOMMENDATION_CONSTANTS.DEFAULT_VOLTAGE;
                 const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
                 const loadingPercent = (loadKVA / rating) * 100;
                 
                 // Flag as HIGH when loading is between 80% and 100%
-                return loadingPercent > 80 && loadingPercent <= 100;
+                return loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_HIGH_THRESHOLD && 
+                       loadingPercent <= RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD;
             },
             severity: 'HIGH',
             priority: 2,

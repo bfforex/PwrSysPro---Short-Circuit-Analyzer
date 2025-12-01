@@ -4,8 +4,9 @@
  * 
  * @author bfforex
  * @date 2025-11-01 10:13:17 UTC
- * @version 1.0.0
+ * @version 1.1.0
  * @issue #6 - Enhanced System Report
+ * @updated 2025-12-01 - Bug #3 fix: Energy savings formula corrected
  * 
  * Features:
  * - Executive Summary
@@ -20,6 +21,16 @@
  */
 
 console.log('🔧 Loading Enhanced System Report Generator...');
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONSTANTS - Bug #3 Fix: Named constants for energy calculations
+// ═══════════════════════════════════════════════════════════════════════════════
+const ENERGY_CALCULATION_CONSTANTS = {
+    IEEE_141_LOAD_FACTOR: 0.70,      // IEEE 141 typical industrial load factor
+    MAX_SAVINGS_PERCENT: 0.40,        // Maximum reasonable diversity savings (40%)
+    ANNUAL_HOURS: 8760,               // Hours per year
+    DEFAULT_ENERGY_RATE: 0.12         // Default electricity rate ($/kWh)
+};
 
 /**
  * Generate comprehensive system report with all analysis sections
@@ -368,34 +379,31 @@ Power Savings:
   • Estimated Annual Energy Savings: ${(() => {
         // ✅ Bug #3 FIX: Use kW (not kVA), apply load factor, and validate
         const powerSavingsKW = totalPowerKW - diversityPowerKW;
-        const loadFactor = 0.70;  // IEEE 141 typical industrial load factor
-        const annualHours = 8760;
-        let energySavings = powerSavingsKW * annualHours * loadFactor;
+        const { IEEE_141_LOAD_FACTOR, MAX_SAVINGS_PERCENT, ANNUAL_HOURS } = ENERGY_CALCULATION_CONSTANTS;
+        let energySavings = powerSavingsKW * ANNUAL_HOURS * IEEE_141_LOAD_FACTOR;
         
-        // Validation: Energy savings cannot exceed 40% of total consumption
-        const totalConsumption = totalPowerKW * annualHours * loadFactor;
-        const maxSavingsPercent = 0.40;  // Maximum reasonable diversity savings
-        const maxSavings = totalConsumption * maxSavingsPercent;
+        // Validation: Energy savings cannot exceed MAX_SAVINGS_PERCENT of total consumption
+        const totalConsumption = totalPowerKW * ANNUAL_HOURS * IEEE_141_LOAD_FACTOR;
+        const maxSavings = totalConsumption * MAX_SAVINGS_PERCENT;
         
         if (energySavings > maxSavings) {
-            console.warn(`⚠️ Energy savings capped: ${energySavings.toFixed(0)} > ${maxSavings.toFixed(0)} kWh (40% limit)`);
+            console.warn(`⚠️ Energy savings capped: ${energySavings.toFixed(0)} > ${maxSavings.toFixed(0)} kWh (${MAX_SAVINGS_PERCENT * 100}% limit)`);
             energySavings = maxSavings;
         }
         
         return energySavings.toFixed(0);
     })()} kWh/year
-  • Cost Savings @ $0.12/kWh: $${(() => {
+  • Cost Savings @ $${ENERGY_CALCULATION_CONSTANTS.DEFAULT_ENERGY_RATE}/kWh: $${(() => {
         const powerSavingsKW = totalPowerKW - diversityPowerKW;
-        const loadFactor = 0.70;
-        const annualHours = 8760;
-        let energySavings = powerSavingsKW * annualHours * loadFactor;
+        const { IEEE_141_LOAD_FACTOR, MAX_SAVINGS_PERCENT, ANNUAL_HOURS, DEFAULT_ENERGY_RATE } = ENERGY_CALCULATION_CONSTANTS;
+        let energySavings = powerSavingsKW * ANNUAL_HOURS * IEEE_141_LOAD_FACTOR;
         
         // Apply same validation
-        const totalConsumption = totalPowerKW * annualHours * loadFactor;
-        const maxSavings = totalConsumption * 0.40;
+        const totalConsumption = totalPowerKW * ANNUAL_HOURS * IEEE_141_LOAD_FACTOR;
+        const maxSavings = totalConsumption * MAX_SAVINGS_PERCENT;
         if (energySavings > maxSavings) energySavings = maxSavings;
         
-        return (energySavings * 0.12).toFixed(0);
+        return (energySavings * DEFAULT_ENERGY_RATE).toFixed(0);
     })()}/year
 
 Standards Applied:
