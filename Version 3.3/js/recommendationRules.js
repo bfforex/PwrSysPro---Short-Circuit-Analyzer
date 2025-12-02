@@ -289,6 +289,7 @@ const RecommendationRules = {
         /**
          * TF-000: TRANSFORMER OVERLOAD CRITICAL
          * Added: 2025-12-01 - Bug #6 Fix
+         * Updated: 2025-12-02 - Fixed transformer detection logic
          * Flags transformers loaded >100% as CRITICAL (Priority 1)
          * Per IEEE C57.12.00 and NEC 450.3
          */
@@ -296,35 +297,81 @@ const RecommendationRules = {
             id: 'TF-000',
             name: 'Transformer Overload Critical',
             condition: (bus, standards) => {
-                // Validate pathComponents exists before accessing
-                if (!bus.pathComponents || !Array.isArray(bus.pathComponents)) return false;
-                
-                // Check if this bus is fed by a transformer and calculate loading
-                const feedingTransformer = bus.pathComponents.find(pc => 
-                    pc.component?.type === 'transformer' && pc.component?.toBus === bus.id
-                )?.component;
-                
-                if (!feedingTransformer) return false;
-                
-                // Calculate transformer loading percentage
-                const rating = parseFloat(feedingTransformer.rating) || 0;
-                if (rating === 0) return false;
-                
-                // Get load current from bus
-                let loadCurrent = 0;
-                if (bus.results?.loadFlow?.summary?.totalCurrent) {
-                    loadCurrent = bus.results.loadFlow.summary.totalCurrent;
-                } else if (bus.loadCurrent) {
-                    loadCurrent = parseFloat(bus.loadCurrent);
+                // Method 1: Check voltage drop results for transformer loading
+                if (bus.results?.voltageDrop?.components) {
+                    const xfmrComp = bus.results.voltageDrop.components.find(c => c.type === 'transformer');
+                    if (xfmrComp && xfmrComp.loading > RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD) {
+                        return true;
+                    }
                 }
                 
-                // Calculate loading using constant for default voltage
-                const voltage = bus.voltage || RECOMMENDATION_CONSTANTS.DEFAULT_VOLTAGE;
-                const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
-                const loadingPercent = (loadKVA / rating) * 100;
+                // Method 2: Look for feeding transformer in global components array
+                if (typeof components !== 'undefined' && Array.isArray(components)) {
+                    const feedingTransformer = components.find(c => 
+                        c.type === 'transformer' && c.toBus === bus.id
+                    );
+                    
+                    if (feedingTransformer) {
+                        const rating = parseFloat(feedingTransformer.rating) || 0;
+                        if (rating > 0) {
+                            // Get load current from bus
+                            let loadCurrent = 0;
+                            if (bus.results?.loadFlow?.summary?.totalCurrent) {
+                                loadCurrent = bus.results.loadFlow.summary.totalCurrent;
+                            } else if (bus.loadCurrent) {
+                                loadCurrent = parseFloat(bus.loadCurrent);
+                            }
+                            
+                            // Calculate loading
+                            const voltage = bus.voltage || RECOMMENDATION_CONSTANTS.DEFAULT_VOLTAGE;
+                            const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
+                            const loadingPercent = (loadKVA / rating) * 100;
+                            
+                            if (loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD) {
+                                return true;
+                            }
+                        }
+                    }
+                }
                 
-                // Flag as critical if loading exceeds threshold
-                return loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD;
+                // Method 3: Check pathComponents (original method with fallback)
+                if (bus.pathComponents && Array.isArray(bus.pathComponents)) {
+                    // Look for transformer in path - check component.type regardless of toBus
+                    const xfmrPath = bus.pathComponents.find(pc => pc.component?.type === 'transformer');
+                    if (xfmrPath && xfmrPath.component) {
+                        // Try to find matching transformer in global components to get rating
+                        const comp = xfmrPath.component;
+                        let rating = parseFloat(comp.rating) || 0;
+                        
+                        // If rating not in pathComponent, look up in global components
+                        if (rating === 0 && typeof components !== 'undefined') {
+                            const globalComp = components.find(c => 
+                                c.type === 'transformer' && 
+                                (c.tag === comp.tag || c.toBus === bus.id)
+                            );
+                            if (globalComp) {
+                                rating = parseFloat(globalComp.rating) || 0;
+                            }
+                        }
+                        
+                        if (rating > 0) {
+                            let loadCurrent = 0;
+                            if (bus.results?.loadFlow?.summary?.totalCurrent) {
+                                loadCurrent = bus.results.loadFlow.summary.totalCurrent;
+                            } else if (bus.loadCurrent) {
+                                loadCurrent = parseFloat(bus.loadCurrent);
+                            }
+                            
+                            const voltage = bus.voltage || RECOMMENDATION_CONSTANTS.DEFAULT_VOLTAGE;
+                            const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
+                            const loadingPercent = (loadKVA / rating) * 100;
+                            
+                            return loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD;
+                        }
+                    }
+                }
+                
+                return false;
             },
             severity: 'CRITICAL',
             priority: 1,
@@ -357,38 +404,80 @@ const RecommendationRules = {
         /**
          * TF-001B: TRANSFORMER HIGH LOADING WARNING
          * Added: 2025-12-01 - Bug #6 Fix enhancement
+         * Updated: 2025-12-02 - Fixed transformer detection logic
          * Warns when transformer is at 80-100% loading
          */
         {
             id: 'TF-001B',
             name: 'Transformer High Loading Warning',
             condition: (bus, standards) => {
-                // Validate pathComponents exists
-                if (!bus.pathComponents || !Array.isArray(bus.pathComponents)) return false;
+                // Helper function to calculate loading percentage
+                const calculateLoading = (rating, loadCurrent, voltage) => {
+                    if (rating <= 0 || loadCurrent <= 0) return 0;
+                    const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
+                    return (loadKVA / rating) * 100;
+                };
                 
-                const feedingTransformer = bus.pathComponents.find(pc => 
-                    pc.component?.type === 'transformer' && pc.component?.toBus === bus.id
-                )?.component;
-                
-                if (!feedingTransformer) return false;
-                
-                const rating = parseFloat(feedingTransformer.rating) || 0;
-                if (rating === 0) return false;
-                
-                let loadCurrent = 0;
-                if (bus.results?.loadFlow?.summary?.totalCurrent) {
-                    loadCurrent = bus.results.loadFlow.summary.totalCurrent;
-                } else if (bus.loadCurrent) {
-                    loadCurrent = parseFloat(bus.loadCurrent);
-                }
+                // Get load current from bus
+                const getLoadCurrent = (bus) => {
+                    if (bus.results?.loadFlow?.summary?.totalCurrent) {
+                        return bus.results.loadFlow.summary.totalCurrent;
+                    }
+                    return parseFloat(bus.loadCurrent) || 0;
+                };
                 
                 const voltage = bus.voltage || RECOMMENDATION_CONSTANTS.DEFAULT_VOLTAGE;
-                const loadKVA = (loadCurrent * voltage * Math.sqrt(3)) / 1000;
-                const loadingPercent = (loadKVA / rating) * 100;
+                const loadCurrent = getLoadCurrent(bus);
                 
-                // Flag as HIGH when loading is between 80% and 100%
-                return loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_HIGH_THRESHOLD && 
-                       loadingPercent <= RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD;
+                // Method 1: Check voltage drop results for transformer loading
+                if (bus.results?.voltageDrop?.components) {
+                    const xfmrComp = bus.results.voltageDrop.components.find(c => c.type === 'transformer');
+                    if (xfmrComp && xfmrComp.loading > RECOMMENDATION_CONSTANTS.OVERLOAD_HIGH_THRESHOLD &&
+                        xfmrComp.loading <= RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD) {
+                        return true;
+                    }
+                }
+                
+                // Method 2: Look for feeding transformer in global components array
+                if (typeof components !== 'undefined' && Array.isArray(components)) {
+                    const feedingTransformer = components.find(c => 
+                        c.type === 'transformer' && c.toBus === bus.id
+                    );
+                    
+                    if (feedingTransformer) {
+                        const rating = parseFloat(feedingTransformer.rating) || 0;
+                        const loadingPercent = calculateLoading(rating, loadCurrent, voltage);
+                        
+                        if (loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_HIGH_THRESHOLD &&
+                            loadingPercent <= RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD) {
+                            return true;
+                        }
+                    }
+                }
+                
+                // Method 3: Check pathComponents
+                if (bus.pathComponents && Array.isArray(bus.pathComponents)) {
+                    const xfmrPath = bus.pathComponents.find(pc => pc.component?.type === 'transformer');
+                    if (xfmrPath && xfmrPath.component) {
+                        let rating = parseFloat(xfmrPath.component.rating) || 0;
+                        
+                        if (rating === 0 && typeof components !== 'undefined') {
+                            const globalComp = components.find(c => 
+                                c.type === 'transformer' && 
+                                (c.tag === xfmrPath.component.tag || c.toBus === bus.id)
+                            );
+                            if (globalComp) {
+                                rating = parseFloat(globalComp.rating) || 0;
+                            }
+                        }
+                        
+                        const loadingPercent = calculateLoading(rating, loadCurrent, voltage);
+                        return loadingPercent > RECOMMENDATION_CONSTANTS.OVERLOAD_HIGH_THRESHOLD &&
+                               loadingPercent <= RECOMMENDATION_CONSTANTS.OVERLOAD_CRITICAL_THRESHOLD;
+                    }
+                }
+                
+                return false;
             },
             severity: 'HIGH',
             priority: 2,

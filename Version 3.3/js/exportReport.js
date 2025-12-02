@@ -727,76 +727,142 @@ function exportBusReport(busId) {
         }
     }
     
+    // ═══════════════════════════════════════════════════════════════════════
+    // ENGINEERING RECOMMENDATIONS SECTION
+    // Updated: 2025-12-02 - Added transformer overload detection fallback
+    // Issue: Report should NOT say "NO ISSUES" when transformer is overloaded
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    // Check for transformer overload (defense in depth - in case recommendation engine misses it)
+    let transformerOverloaded = false;
+    let transformerLoadingPercent = 0;
+    let transformerTag = '';
+    let transformerRating = 0;
+    
+    // Method 1: Check voltage drop results
+    if (bus.results?.voltageDrop?.components) {
+        const xfmrComp = bus.results.voltageDrop.components.find(c => c.type === 'transformer');
+        if (xfmrComp && xfmrComp.loading > 100) {
+            transformerOverloaded = true;
+            transformerLoadingPercent = xfmrComp.loading;
+            transformerTag = xfmrComp.tag || xfmrComp.name || 'Unknown';
+            transformerRating = xfmrComp.rating || 0;
+        }
+    }
+    
+    // Method 2: Check load flow against transformer rating
+    if (!transformerOverloaded && typeof components !== 'undefined' && Array.isArray(components)) {
+        const feedingTransformer = components.find(c => c.type === 'transformer' && c.toBus === bus.id);
+        if (feedingTransformer && bus.results?.loadFlow?.summary?.totalCurrent) {
+            const rating = parseFloat(feedingTransformer.rating) || 0;
+            const loadCurrent = bus.results.loadFlow.summary.totalCurrent;
+            if (rating > 0) {
+                const loadKVA = (loadCurrent * bus.voltage * Math.sqrt(3)) / 1000;
+                const loading = (loadKVA / rating) * 100;
+                if (loading > 100) {
+                    transformerOverloaded = true;
+                    transformerLoadingPercent = loading;
+                    transformerTag = feedingTransformer.tag || feedingTransformer.name || 'Unknown';
+                    transformerRating = rating;
+                }
+            }
+        }
+    }
+    
     // Recommendations
-    if (recommendations.length > 0) {
+    if (recommendations.length > 0 || transformerOverloaded) {
         report += `\n${'='.repeat(100)}\n`;
         report += `ENGINEERING RECOMMENDATIONS\n`;
         report += `${'='.repeat(100)}\n\n`;
         
-        const criticalCount = recommendations.filter(r => r.severity === 'CRITICAL').length;
-        const highCount = recommendations.filter(r => r.severity === 'HIGH').length;
-        const mediumCount = recommendations.filter(r => r.severity === 'MEDIUM').length;
+        // Add transformer overload as a critical issue if detected but not in recommendations
+        const hasTransformerOverloadRec = recommendations.some(r => 
+            r.id === 'TF-000' || r.name?.toLowerCase().includes('overload')
+        );
         
-        report += `SUMMARY:\n`;
-        report += `${'-'.repeat(100)}\n`;
-        report += `Total Recommendations: ${recommendations.length}\n`;
-        report += `  - Critical Issues: ${criticalCount}\n`;
-        report += `  - High Priority: ${highCount}\n`;
-        report += `  - Medium Priority: ${mediumCount}\n\n`;
-        
-        if (criticalCount > 0) {
-            report += `⚠️  WARNING: ${criticalCount} CRITICAL ISSUE${criticalCount > 1 ? 'S' : ''} REQUIRE${criticalCount === 1 ? 'S' : ''} IMMEDIATE ATTENTION!\n\n`;
+        if (transformerOverloaded && !hasTransformerOverloadRec) {
+            report += `❌ OVERLOADED TRANSFORMER IDENTIFIED\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `Transformer: ${transformerTag}\n`;
+            report += `Rating: ${transformerRating} kVA\n`;
+            report += `Loading: ${transformerLoadingPercent.toFixed(1)}% (exceeds 100% nameplate)\n\n`;
+            report += `Per IEEE C57.91 and NEC 450.3, continuous operation at >${'100'}% rated load\n`;
+            report += `will cause accelerated thermal aging of insulation and potential failure.\n\n`;
+            report += `REQUIRED ACTIONS:\n`;
+            report += `  1. IMMEDIATE: Reduce load on secondary bus\n`;
+            report += `  2. Transfer loads to other available feeders\n`;
+            report += `  3. Install larger transformer (min. ${Math.ceil(transformerRating * transformerLoadingPercent / 80)} kVA for 80% loading)\n`;
+            report += `  4. Consider adding parallel transformer\n\n`;
+            report += `${'-'.repeat(100)}\n\n`;
         }
         
-        report += `DETAILED RECOMMENDATIONS:\n`;
-        report += `${'-'.repeat(100)}\n\n`;
-        
-        recommendations.forEach((rec, index) => {
-            report += `${index + 1}. [${rec.severity || 'UNKNOWN'}] ${rec.name || 'Unnamed'}\n`;
-            report += `   ID: ${rec.id || 'N/A'}\n`;
-            report += `   Category: ${rec.category || 'General'}\n`;
-            report += `   Priority: ${rec.priority || 'N/A'}\n`;
-            report += `   Standard Reference: ${rec.standard || 'N/A'}\n`;
-            report += `\n`;
-            report += `   FINDING:\n`;
-            report += `   ${rec.recommendation || 'No description available'}\n`;
-            report += `\n`;
-            report += `   REQUIRED ACTION:\n`;
-            report += `   ${rec.action || 'No action specified'}\n`;
-            report += `\n`;
-            report += `   IMPACT:\n`;
-            report += `   ${rec.impact || 'No impact assessment available'}\n`;
-            report += `\n`;
-            report += `   IMPLEMENTATION:\n`;
-            report += `   Cost Impact: ${rec.cost || 'Unknown'}\n`;
-            report += `   Effort Required: ${rec.effort || 'Unknown'}\n`;
-            report += `\n`;
+        if (recommendations.length > 0) {
+            const criticalCount = recommendations.filter(r => r.severity === 'CRITICAL').length + 
+                                  (transformerOverloaded && !hasTransformerOverloadRec ? 1 : 0);
+            const highCount = recommendations.filter(r => r.severity === 'HIGH').length;
+            const mediumCount = recommendations.filter(r => r.severity === 'MEDIUM').length;
             
-            if (rec.context) {
-                report += `   CONTEXT:\n`;
-                if (rec.context.faultCurrent !== undefined) {
-                    report += `   - Fault Current: ${rec.context.faultCurrent.toFixed(2)} kA\n`;
-                }
-                if (rec.context.xrRatio !== undefined) {
-                    report += `   - X/R Ratio: ${rec.context.xrRatio.toFixed(2)}\n`;
-                }
-                if (rec.context.voltageDrop !== undefined) {
-                    report += `   - Voltage Drop: ${rec.context.voltageDrop.toFixed(3)}%\n`;
-                }
-                if (rec.context.hasTransformer) {
-                    report += `   - Path contains transformer\n`;
-                }
-                if (rec.context.hasMotor) {
-                    report += `   - Motor contribution present\n`;
-                }
-                if (rec.context.hasGenerator) {
-                    report += `   - Generator contribution present\n`;
-                }
-                report += `\n`;
+            report += `SUMMARY:\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `Total Recommendations: ${recommendations.length + (transformerOverloaded && !hasTransformerOverloadRec ? 1 : 0)}\n`;
+            report += `  - Critical Issues: ${criticalCount}\n`;
+            report += `  - High Priority: ${highCount}\n`;
+            report += `  - Medium Priority: ${mediumCount}\n\n`;
+            
+            if (criticalCount > 0) {
+                report += `⚠️  WARNING: ${criticalCount} CRITICAL ISSUE${criticalCount > 1 ? 'S' : ''} REQUIRE${criticalCount === 1 ? 'S' : ''} IMMEDIATE ATTENTION!\n\n`;
             }
             
+            report += `DETAILED RECOMMENDATIONS:\n`;
             report += `${'-'.repeat(100)}\n\n`;
-        });
+            
+            recommendations.forEach((rec, index) => {
+                report += `${index + 1}. [${rec.severity || 'UNKNOWN'}] ${rec.name || 'Unnamed'}\n`;
+                report += `   ID: ${rec.id || 'N/A'}\n`;
+                report += `   Category: ${rec.category || 'General'}\n`;
+                report += `   Priority: ${rec.priority || 'N/A'}\n`;
+                report += `   Standard Reference: ${rec.standard || 'N/A'}\n`;
+                report += `\n`;
+                report += `   FINDING:\n`;
+                report += `   ${rec.recommendation || 'No description available'}\n`;
+                report += `\n`;
+                report += `   REQUIRED ACTION:\n`;
+                report += `   ${rec.action || 'No action specified'}\n`;
+                report += `\n`;
+                report += `   IMPACT:\n`;
+                report += `   ${rec.impact || 'No impact assessment available'}\n`;
+                report += `\n`;
+                report += `   IMPLEMENTATION:\n`;
+                report += `   Cost Impact: ${rec.cost || 'Unknown'}\n`;
+                report += `   Effort Required: ${rec.effort || 'Unknown'}\n`;
+                report += `\n`;
+                
+                if (rec.context) {
+                    report += `   CONTEXT:\n`;
+                    if (rec.context.faultCurrent !== undefined) {
+                        report += `   - Fault Current: ${rec.context.faultCurrent.toFixed(2)} kA\n`;
+                    }
+                    if (rec.context.xrRatio !== undefined) {
+                        report += `   - X/R Ratio: ${rec.context.xrRatio.toFixed(2)}\n`;
+                    }
+                    if (rec.context.voltageDrop !== undefined) {
+                        report += `   - Voltage Drop: ${rec.context.voltageDrop.toFixed(3)}%\n`;
+                    }
+                    if (rec.context.hasTransformer) {
+                        report += `   - Path contains transformer\n`;
+                    }
+                    if (rec.context.hasMotor) {
+                        report += `   - Motor contribution present\n`;
+                    }
+                    if (rec.context.hasGenerator) {
+                        report += `   - Generator contribution present\n`;
+                    }
+                    report += `\n`;
+                }
+                
+                report += `${'-'.repeat(100)}\n\n`;
+            });
+        }
     } else {
         report += `\n${'='.repeat(100)}\n`;
         report += `ENGINEERING RECOMMENDATIONS\n`;
