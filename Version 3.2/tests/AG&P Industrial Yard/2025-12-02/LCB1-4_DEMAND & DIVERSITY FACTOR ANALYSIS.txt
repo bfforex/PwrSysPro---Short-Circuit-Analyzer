@@ -1,0 +1,50 @@
+════════════════════════════════════════════════════════════════════════════════
+DEMAND & DIVERSITY FACTOR ANALYSIS
+════════════════════════════════════════════════════════════════════════════════
+
+📊 BUS INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Bus:                       LCB1-4
+Bus Voltage:               440V
+Bus Classification:        Mixed Load Bus
+
+📊 LOAD SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+Connected Load:            2923.03 A (100.0%)
+Motor Count:               0
+Transformer Count:         0
+Total Components:          6
+
+📐 DEMAND FACTOR APPLICATION
+────────────────────────────────────────────────────────────────────────────────
+Demand Factor:             0.850 (85.0%)
+Note:                      Mixed loads - 85% demand factor (IEEE 141-1993)
+Demand Load:               2484.58 A (85.0%)
+Formula:                   Demand = Connected × Demand Factor
+                           2484.58 A = 2923.03 A × 0.850
+
+📐 DIVERSITY FACTOR APPLICATION
+────────────────────────────────────────────────────────────────────────────────
+Diversity Factor:          1.200 (IEEE 141-1993)
+Application Level:         Bus-Level
+Diversity Load:            2070.48 A (70.8%)
+Formula:                   Diversity = Demand / Diversity Factor
+                           2070.48 A = 2484.58 A / 1.200
+
+💰 POWER SAVINGS
+────────────────────────────────────────────────────────────────────────────────
+Connected Power:           2227.65 kVA
+Demand Power:              1893.50 kVA
+Diversity Power:           1577.92 kVA
+
+Power Reduction:           649.73 kVA
+Percentage Reduction:      29.2%
+
+📋 STANDARDS COMPLIANCE
+────────────────────────────────────────────────────────────────────────────────
+✓ NEC Article 220 - Demand Factors
+✓ IEEE 141-1993 - Diversity Factors
+
+════════════════════════════════════════════════════════════════════════════════
+END OF DEMAND & DIVERSITY ANALYSIS
+════════════════════════════════════════════════════════════════════════════════
