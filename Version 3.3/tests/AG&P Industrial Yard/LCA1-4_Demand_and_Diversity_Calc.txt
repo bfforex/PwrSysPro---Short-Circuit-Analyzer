@@ -1,0 +1,54 @@
+Demand & Diversity Factor Calculations
+💡 About Demand & Diversity Factors:
+These calculations apply NEC Article 220 and IEEE 141-1993 standards to determine realistic operating loads based on equipment usage patterns. This ensures conservative design while accounting for actual system behavior.
+
+════════════════════════════════════════════════════════════════════════════════
+DEMAND & DIVERSITY FACTOR ANALYSIS
+════════════════════════════════════════════════════════════════════════════════
+
+📊 BUS INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Bus:                       LCA1-4
+Bus Voltage:               440V
+Bus Classification:        Mixed Load Bus
+
+📊 LOAD SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+Connected Load:            1734.12 A (100.0%)
+Motor Count:               0
+Transformer Count:         0
+Total Components:          4
+
+📐 DEMAND FACTOR APPLICATION
+────────────────────────────────────────────────────────────────────────────────
+Demand Factor:             0.850 (85.0%)
+Note:                      Mixed loads - 85% demand factor (IEEE 141-1993)
+Demand Load:               1474.00 A (85.0%)
+Formula:                   Demand = Connected × Demand Factor
+                           1474.00 A = 1734.12 A × 0.850
+
+📐 DIVERSITY FACTOR APPLICATION
+────────────────────────────────────────────────────────────────────────────────
+Diversity Factor:          1.000 (IEEE 141-1993)
+Application Level:         Bus-Level
+Diversity Load:            1474.00 A (85.0%)
+Formula:                   Diversity = Demand / Diversity Factor
+                           1474.00 A = 1474.00 A / 1.000
+
+💰 POWER SAVINGS
+────────────────────────────────────────────────────────────────────────────────
+Connected Power:           1321.58 kVA
+Demand Power:              1123.34 kVA
+Diversity Power:           1123.34 kVA
+
+Power Reduction:           198.24 kVA
+Percentage Reduction:      15.0%
+
+📋 STANDARDS COMPLIANCE
+────────────────────────────────────────────────────────────────────────────────
+✓ NEC Article 220 - Demand Factors
+✓ IEEE 141-1993 - Diversity Factors
+
+════════════════════════════════════════════════════════════════════════════════
+END OF DEMAND & DIVERSITY ANALYSIS
+════════════════════════════════════════════════════════════════════════════════

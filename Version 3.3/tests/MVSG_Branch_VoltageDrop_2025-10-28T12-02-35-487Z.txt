@@ -1,0 +1,53 @@
+====================================================================================================
+VOLTAGE DROP ANALYSIS REPORT - BUS: MVSG Branch
+====================================================================================================
+
+Project: Test Yard Project
+Project Number: Test Project 3
+Engineer: B. P. Faraon
+Date: 2025-10-28 20:02:15 UTC
+Software: PwrSys Pro - Voltage Drop Analyzer v1.0
+Author: Engr. B. P. Faraon
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: MVSG Branch
+Voltage: 13200 V
+System Type: branch
+Calculation Method: per-unit
+
+VOLTAGE DROP SUMMARY:
+----------------------------------------------------------------------------------------------------
+Total Voltage Drop: 0.130% (17.169 V)
+Maximum Single Component: 0.114%
+Power Factor: 0.9
+Temperature: 75°C
+
+IEEE 141 COMPLIANCE CHECK:
+----------------------------------------------------------------------------------------------------
+Feeder Circuits: 3% maximum (recommended)
+Branch Circuits: 5% maximum (recommended)
+Combined System: 7% maximum (absolute limit)
+
+✅ EXCELLENT - Well within recommended limits
+
+Actual Voltage Drop: 0.130%
+
+COMPONENT-BY-COMPONENT ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Step  Type          Component Name          Current(A)  Drop(V)  Drop(%)  Cumulative(%)  Status
+----------------------------------------------------------------------------------------------------
+1     cable         500 COPPER - 65ft            437.0    2.161    0.016          0.016  OK
+2     cable         250 COPPER - 5905ft           20.0   15.008    0.114          0.130  OK
+----------------------------------------------------------------------------------------------------
+
+GENERAL RECOMMENDATIONS:
+----------------------------------------------------------------------------------------------------
+✅ SYSTEM ACCEPTABLE:
+   Voltage drop is within recommended limits.
+   No immediate action required.
+   Continue normal operation and monitoring.
+
+====================================================================================================
+END OF VOLTAGE DROP REPORT
+====================================================================================================

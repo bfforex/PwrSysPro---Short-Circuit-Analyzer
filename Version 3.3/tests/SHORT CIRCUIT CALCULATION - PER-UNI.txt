@@ -1,0 +1,441 @@
+SHORT CIRCUIT CALCULATION - PER-UNIT METHOD
+================================================================================
+
+Date/Time: 2025-11-02 19:35:09 UTC
+Engineer: Engr. Benjie Faraon
+Temperature: 75°C
+Method: Per-Unit System
+System Frequency: 60 Hz
+Breaker Contact Time: 50.00 ms
+Motor Time Point: 3 cycles
+
+PER-UNIT BASE VALUES:
+  Base kVA: 10000 kVA
+  Base Voltage: 440 V
+  Base Impedance: 0.019360 Ω
+  Base Current: 13121.60 A
+
+NOTE: Per-unit method automatically handles voltage level changes.
+      Zero sequence (Z0) tracked for line-to-ground faults.
+
+STEP 1: SOURCE BUS - MERALCO-CCP
+--------------------------------------------------------------------------------
+Bus Voltage: 13200 V
+Available Fault Current: 26.00 kA
+Source X/R Ratio: 6
+
+Source Impedance (Ohmic):
+Z1: R = 0.048188 Ω, X = 0.289128 Ω
+Z0: R0 = 0.072282 Ω, X0 = 0.433692 Ω
+
+Converted to Per-Unit:
+Z_base at 13200V = 17.424000 Ω
+Z1: R_pu = 0.002766 pu, X_pu = 0.016594 pu
+Z0: R0_pu = 0.004148 pu, X0_pu = 0.024891 pu
+
+Running Total:
+Z1: R_pu = 0.002766, X_pu = 0.016594
+Z0: R0_pu = 0.004148, X0_pu = 0.024891
+
+STEP 2: CABLE
+--------------------------------------------------------------------------------
+Cable: 500 COPPER, 100 ft
+Temperature: 75°C
+Voltage Level: 13200V
+
+Cable Impedance (Ohmic):
+Z1: R = 0.003138 Ω, X = 0.003600 Ω
+Z0: R0 = 0.009413 Ω, X0 = 0.010800 Ω
+
+Conversion to Per-Unit:
+Z_base at 13200V = 17.424000 Ω
+Z1: R_pu = 0.000180, X_pu = 0.000207
+Z0: R0_pu = 0.000540, X0_pu = 0.000620
+
+Running Total:
+Z1: R_pu = 0.002946, X_pu = 0.016800
+Z0: R0_pu = 0.004689, X0_pu = 0.025510
+
+STEP 3: CABLE
+--------------------------------------------------------------------------------
+Cable: 250 COPPER, 412.3 ft
+Temperature: 75°C
+Voltage Level: 13200V
+
+Cable Impedance (Ohmic):
+Z1: R = 0.025823 Ω, X = 0.016080 Ω
+Z0: R0 = 0.077469 Ω, X0 = 0.048239 Ω
+
+Conversion to Per-Unit:
+Z_base at 13200V = 17.424000 Ω
+Z1: R_pu = 0.001482, X_pu = 0.000923
+Z0: R0_pu = 0.004446, X0_pu = 0.002769
+
+Running Total:
+Z1: R_pu = 0.004428, X_pu = 0.017723
+Z0: R0_pu = 0.009135, X0_pu = 0.028279
+
+STEP 4: CABLE
+--------------------------------------------------------------------------------
+Cable: 250 COPPER, 709 ft
+Temperature: 75°C
+Voltage Level: 13200V
+
+Cable Impedance (Ohmic):
+Z1: R = 0.044406 Ω, X = 0.027651 Ω
+Z0: R0 = 0.133218 Ω, X0 = 0.082953 Ω
+
+Conversion to Per-Unit:
+Z_base at 13200V = 17.424000 Ω
+Z1: R_pu = 0.002549, X_pu = 0.001587
+Z0: R0_pu = 0.007646, X0_pu = 0.004761
+
+Running Total:
+Z1: R_pu = 0.006976, X_pu = 0.019310
+Z0: R0_pu = 0.016780, X0_pu = 0.033040
+
+STEP 5: CABLE
+--------------------------------------------------------------------------------
+Cable: 250 COPPER, 140 ft
+Temperature: 75°C
+Voltage Level: 13200V
+
+Cable Impedance (Ohmic):
+Z1: R = 0.008768 Ω, X = 0.005460 Ω
+Z0: R0 = 0.026305 Ω, X0 = 0.016380 Ω
+
+Conversion to Per-Unit:
+Z_base at 13200V = 17.424000 Ω
+Z1: R_pu = 0.000503, X_pu = 0.000313
+Z0: R0_pu = 0.001510, X0_pu = 0.000940
+
+Running Total:
+Z1: R_pu = 0.007480, X_pu = 0.019623
+Z0: R0_pu = 0.018290, X0_pu = 0.033980
+
+STEP 6: CABLE
+--------------------------------------------------------------------------------
+Cable: 250 COPPER, 604 ft
+Temperature: 75°C
+Voltage Level: 13200V
+
+Cable Impedance (Ohmic):
+Z1: R = 0.037830 Ω, X = 0.023556 Ω
+Z0: R0 = 0.113489 Ω, X0 = 0.070668 Ω
+
+Conversion to Per-Unit:
+Z_base at 13200V = 17.424000 Ω
+Z1: R_pu = 0.002171, X_pu = 0.001352
+Z0: R0_pu = 0.006513, X0_pu = 0.004056
+
+Running Total:
+Z1: R_pu = 0.009651, X_pu = 0.020975
+Z0: R0_pu = 0.024803, X0_pu = 0.038036
+
+STEP 7: TRANSFORMER
+--------------------------------------------------------------------------------
+Primary: 13200 V → Secondary: 440 V
+Rating: 1000 kVA
+Impedance: 4% on own base
+X/R: 2.91
+
+Transformer Impedance (Per-Unit on 10000 kVA base):
+Z1: R_pu = 0.129996, X_pu = 0.378287
+Z0: R0_pu = 0.129996, X0_pu = 0.378287
+
+Running Total:
+Z1: R_pu = 0.139646, X_pu = 0.399262
+Z0: R0_pu = 0.154799, X0_pu = 0.416323
+
+
+MOTOR 1:
+════════════════════════════════════════════════════════════════════════════════
+MOTOR CONTRIBUTION TO SHORT CIRCUIT
+════════════════════════════════════════════════════════════════════════════════
+
+Motor: Comp-001
+HP: 250
+Type: induction
+Motor Bus Voltage: 440V
+Efficiency: 90.0%
+Power Factor: 0.85
+
+IEEE 141 Classification: induction_medium
+X/R Ratio: 4.5
+X" (Subtransient Reactance): 17% on motor base
+Contribution Factor: 4× FLC (interrupting)
+
+FULL LOAD CURRENT:
+FLC = (HP × 746 W/HP) / (√3 × V × η × PF)
+FLC = (250 × 746) / (1.7321 × 440 × 0.900 × 0.85)
+FLC = 319.89 A
+
+LOCKED ROTOR CURRENT (Approximate):
+LRC ≈ 4 × FLC = 4 × 319.89
+LRC ≈ 1279.57 A
+
+MOTOR IMPEDANCE (at 440V):
+Z_motor = V / (√3 × I_LRC)
+Z_motor = 440 / (1.7321 × 1279.57)
+Z_motor = 0.198531 Ω
+
+Component Separation (X/R = 4.5):
+X_motor = 0.193803 Ω
+R_motor = 0.043067 Ω
+
+MOTOR FAULT CONTRIBUTION (at 440V):
+I_motor = V_fault / (√3 × Z_referred)
+I_motor = 440 / (1.7321 × 0.198531)
+I_motor = 1279.57 A = 1.280 kA
+
+ASYMMETRICAL CONTRIBUTION:
+Multiplier = √(1 + 2e^(-4R/X)) = 1.3499
+I_asym = 1.280 × 1.3499
+I_asym = 1.727 kA
+
+Per IEEE 141-1993:
+  • Motor contribution decays rapidly (typically 3-5 cycles)
+  • Primarily affects momentary/instantaneous duty
+  • Must be considered for breaker interrupting ratings
+  • NEC 430.52 requires motor contribution in fault calculations
+
+
+════════════════════════════════════════════════════════════════════════════════
+TOTAL MOTOR CONTRIBUTION (1 motors in parallel)
+════════════════════════════════════════════════════════════════════════════════
+
+All motor impedances referred to fault point: 440V
+
+Parallel Combination of Motor Impedances:
+Total R_motor = 0.043067 Ω
+Total X_motor = 0.193803 Ω
+Total Z_motor = 0.198531 Ω
+X/R Ratio = 4.500
+
+Total Motor Fault Current (Symmetrical):
+I_motor_total = 440 / (√3 × 0.198531)
+I_motor_total = 1279.57 A = 1.280 kA
+
+Total Motor Fault Current (Asymmetrical):
+Multiplier = √(1 + 2e^(-4R/X)) = 1.3499
+I_asym = 1.280 × 1.3499
+I_asym = 1.727 kA
+
+✅ Per IEEE 141-1993 Section 5.3.2:
+   ALL downstream motors included in fault calculation
+   Impedances properly referred to fault voltage level
+
+════════════════════════════════════════════════════════════════════════════════
+MOTOR CONTRIBUTION (PER-UNIT)
+════════════════════════════════════════════════════════════════════════════════
+
+Motor Impedance (Ohmic):
+  R = 0.043067 Ω
+  X = 0.193803 Ω
+  Z = 0.198531 Ω
+
+Conversion to Per-Unit:
+  Z_base at 440V = 0.019360 Ω
+  R_pu = 0.043067 / 0.019360 = 2.224555 pu
+  X_pu = 0.193803 / 0.019360 = 10.010497 pu
+  Z_pu = 10.254692 pu
+
+SYSTEM + MOTOR CONTRIBUTION (PARALLEL IN PER-UNIT)
+--------------------------------------------------------------------------------
+System Only: R_pu = 0.139646, X_pu = 0.399262
+Motor: R_pu = 2.224555, X_pu = 10.010497
+
+Combined (Parallel): R_pu = 0.132362, X_pu = 0.384168
+
+
+================================================================================
+FINAL SHORT CIRCUIT CALCULATION (PER-UNIT METHOD)
+================================================================================
+
+Target Bus: LCB1-4 (440V)
+
+Total System Impedance (Per-Unit) WITH MOTORS:
+--------------------------------------------------------------------------------
+Z1 (Positive Sequence):
+  R_pu = 0.132362 pu
+  X_pu = 0.384168 pu
+  Z_pu = 0.406331 pu
+  X/R Ratio = 2.902
+
+Z0 (Zero Sequence):
+  R0_pu = 0.154799 pu
+  X0_pu = 0.416323 pu
+  Z0_pu = 0.444170 pu
+  Z0/Z1 Ratio = 1.093
+
+Z2 (Negative Sequence):
+  Z2_pu ≈ Z1_pu = 0.406331 pu
+
+Total System Impedance (Ohmic Equivalent):
+  Z1: R = 0.002563 Ω, X = 0.007437 Ω, Z = 0.007867 Ω
+  Z0: R0 = 0.002997 Ω, X0 = 0.008060 Ω, Z0 = 0.008599 Ω
+
+════════════════════════════════════════════════════════════════════════════════
+THREE-PHASE SYMMETRICAL FAULT CURRENT
+════════════════════════════════════════════════════════════════════════════════
+Per IEEE 141 Section 5.2 (Per-Unit Method):
+
+Per-Unit Calculation:
+I_pu = V_pu / Z_pu = 1.0 / 0.406331 = 2.461048 pu
+
+Conversion to Actual Current:
+I_actual = I_pu × I_base
+I_actual = 2.461048 × 13121.60
+I_sc = 32292.89 A
+I_sc = 32.293 kA
+
+⚡ INCLUDES MOTOR CONTRIBUTION: 1.280 kA
+   1 motor(s) downstream from fault point
+   Per IEEE 141-1993 Section 5.3.2, IEC 60909, and NEC Article 430
+
+════════════════════════════════════════════════════════════════════════════════
+ASYMMETRICAL (PEAK) FAULT CURRENT
+════════════════════════════════════════════════════════════════════════════════
+Per IEEE 141 Section 5.2.3 and ANSI C37.010:
+
+DC Time Constant:
+τ = X/(ωR) = 0.007437 / (2π × 60 × 0.002563)
+τ = 7.699 ms
+
+DC Offset Multiplier:
+K = √(1 + 2e^(-t/τ))
+where t = 50.00 ms
+K = 1.0015
+
+Asymmetrical Current:
+I_asym = 32.293 kA × 1.0015
+I_asym = 32.342 kA
+
+════════════════════════════════════════════════════════════════════════════════
+LINE-TO-GROUND FAULT CURRENT
+════════════════════════════════════════════════════════════════════════════════
+Per IEEE 141 Section 5.4 (Per-Unit Method):
+
+Formula:
+I_LG_pu = 3 × V_pu / (Z1_pu + Z2_pu + Z0_pu)
+
+Per-Unit Calculation:
+V_pu = 1.0 pu (at fault point)
+Z_total_pu = Z1_pu + Z2_pu + Z0_pu
+Z_total_pu = 0.406331 + 0.406331 + 0.444170
+Z_total_pu = 1.256832 pu
+
+I_LG_pu = 3.0 / 1.256832 = 2.386953 pu
+
+Conversion to Actual Current:
+I_LG = I_LG_pu × I_base
+I_LG = 2.386953 × 13121.60
+I_LG = 31320.64 A
+I_LG = 31.321 kA
+
+✓ 3-phase fault (32.293 kA) is limiting case.
+
+════════════════════════════════════════════════════════════════════════════════
+FAULT CURRENT SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+Fault Type                    | Symmetrical (kA) | Asymmetrical (kA)
+--------------------------------------------------------------------------------
+Three-Phase (L-L-L)           |           32.293 |            32.342
+Line-to-Ground (L-G)          |           31.321 |            31.368
+Line-to-Line (L-L)            |           27.966 |            28.008
+================================================================================
+
+PER-UNIT SYSTEM ADVANTAGES:
+  ✓ Voltage level changes handled automatically
+  ✓ Transformer ratios built into per-unit conversion
+  ✓ Easy parallel/series impedance combinations
+  ✓ Standard for multi-voltage level systems
+  ✓ Sequence impedances (Z0, Z1, Z2) easily tracked
+
+Standards Compliance:
+✓ IEEE 141-1993 (Red Book) - Short-Circuit Studies
+✓ IEC 60909 - Short-Circuit Currents in Three-Phase Systems
+✓ ANSI C37.010 - AC High-Voltage Circuit Breakers
+✓ NEC Article 110.24 - Available Fault Current
+✓ IEEE 142 (Green Book) - Grounding of Industrial Power Systems
+
+
+
+
+MOTOR 1:
+════════════════════════════════════════════════════════════════════════════════
+MOTOR CONTRIBUTION TO SHORT CIRCUIT
+════════════════════════════════════════════════════════════════════════════════
+
+Motor: Comp-001
+HP: 250
+Type: induction
+Motor Bus Voltage: 440V
+Efficiency: 90.0%
+Power Factor: 0.85
+
+IEEE 141 Classification: induction_medium
+X/R Ratio: 4.5
+X" (Subtransient Reactance): 17% on motor base
+Contribution Factor: 4× FLC (interrupting)
+
+FULL LOAD CURRENT:
+FLC = (HP × 746 W/HP) / (√3 × V × η × PF)
+FLC = (250 × 746) / (1.7321 × 440 × 0.900 × 0.85)
+FLC = 319.89 A
+
+LOCKED ROTOR CURRENT (Approximate):
+LRC ≈ 4 × FLC = 4 × 319.89
+LRC ≈ 1279.57 A
+
+MOTOR IMPEDANCE (at 440V):
+Z_motor = V / (√3 × I_LRC)
+Z_motor = 440 / (1.7321 × 1279.57)
+Z_motor = 0.198531 Ω
+
+Component Separation (X/R = 4.5):
+X_motor = 0.193803 Ω
+R_motor = 0.043067 Ω
+
+MOTOR FAULT CONTRIBUTION (at 440V):
+I_motor = V_fault / (√3 × Z_referred)
+I_motor = 440 / (1.7321 × 0.198531)
+I_motor = 1279.57 A = 1.280 kA
+
+ASYMMETRICAL CONTRIBUTION:
+Multiplier = √(1 + 2e^(-4R/X)) = 1.3499
+I_asym = 1.280 × 1.3499
+I_asym = 1.727 kA
+
+Per IEEE 141-1993:
+  • Motor contribution decays rapidly (typically 3-5 cycles)
+  • Primarily affects momentary/instantaneous duty
+  • Must be considered for breaker interrupting ratings
+  • NEC 430.52 requires motor contribution in fault calculations
+
+
+════════════════════════════════════════════════════════════════════════════════
+TOTAL MOTOR CONTRIBUTION (1 motors in parallel)
+════════════════════════════════════════════════════════════════════════════════
+
+All motor impedances referred to fault point: 440V
+
+Parallel Combination of Motor Impedances:
+Total R_motor = 0.043067 Ω
+Total X_motor = 0.193803 Ω
+Total Z_motor = 0.198531 Ω
+X/R Ratio = 4.500
+
+Total Motor Fault Current (Symmetrical):
+I_motor_total = 440 / (√3 × 0.198531)
+I_motor_total = 1279.57 A = 1.280 kA
+
+Total Motor Fault Current (Asymmetrical):
+Multiplier = √(1 + 2e^(-4R/X)) = 1.3499
+I_asym = 1.280 × 1.3499
+I_asym = 1.727 kA
+
+✅ Per IEEE 141-1993 Section 5.3.2:
+   ALL downstream motors included in fault calculation
+   Impedances properly referred to fault voltage level
+

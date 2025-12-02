@@ -1,0 +1,68 @@
+====================================================================================================
+SHORT CIRCUIT ANALYSIS REPORT - BUS: MVSG Branch
+====================================================================================================
+
+Project: Test Yard Project
+Project Number: Test Project 3
+Engineer: B. P. Faraon
+Date: 2025-10-28 20:02:15 UTC
+Software: PwrSys Pro - Short Circuit Analyzer v1.0
+Author: Engr. B. P. Faraon
+Calculation Method: per-unit
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: MVSG Branch
+Voltage: 13200 V
+Type: branch
+
+FAULT CURRENT RESULTS:
+----------------------------------------------------------------------------------------------------
+Symmetrical Fault Current: 3.630 kA (3630.19 A)
+Asymmetrical (Peak) Current: 4.111 kA (4110.87 A)
+Line-to-Ground Fault: 3.086 kA
+Line-to-Line Fault: 3.144 kA
+X/R Ratio: 2.043
+Total Impedance: 2.099349 Ω
+
+PER-UNIT BASE VALUES AT TARGET BUS:
+----------------------------------------------------------------------------------------------------
+Base kVA: 10000 kVA (CONSTANT for entire system)
+Base Voltage: 13200 V
+Base Impedance: N/A Ω
+Base Current: N/A A
+
+PATH FROM SOURCE:
+----------------------------------------------------------------------------------------------------
+1. Utility (13200V) - SOURCE
+2. Main MVSG (13200V) - CABLE
+3. MVSG Branch (13200V) - CABLE
+
+VOLTAGE DROP ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Total Voltage Drop: 0.130% (17.169 V)
+Maximum Single Component Drop: 0.114%
+IEEE 141 Compliance: ✓ COMPLIANT
+Power Factor: 0.9
+
+COMPONENT BREAKDOWN:
+----------------------------------------------------------------------------------------------------
+Step  Type          Name                    Current(A)  Drop(V)   Drop(%)   Status
+----------------------------------------------------------------------------------------------------
+1     cable         500 COPPER - 65ft         437.0     2.161     0.016  OK
+2     cable         250 COPPER - 5905ft        20.0    15.008     0.114  OK
+
+
+====================================================================================================
+ENGINEERING RECOMMENDATIONS
+====================================================================================================
+
+✅ NO ISSUES DETECTED
+
+This bus meets all IEEE standards and design criteria.
+No corrective actions are required at this time.
+
+
+====================================================================================================
+END OF REPORT
+====================================================================================================

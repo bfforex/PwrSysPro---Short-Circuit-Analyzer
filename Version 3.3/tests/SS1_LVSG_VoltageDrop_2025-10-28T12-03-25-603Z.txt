@@ -1,0 +1,55 @@
+====================================================================================================
+VOLTAGE DROP ANALYSIS REPORT - BUS: SS1 LVSG
+====================================================================================================
+
+Project: Test Yard Project
+Project Number: Test Project 3
+Engineer: B. P. Faraon
+Date: 2025-10-28 20:03:07 UTC
+Software: PwrSys Pro - Voltage Drop Analyzer v1.0
+Author: Engr. B. P. Faraon
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: SS1 LVSG
+Voltage: 440 V
+System Type: distribution
+Calculation Method: per-unit
+
+VOLTAGE DROP SUMMARY:
+----------------------------------------------------------------------------------------------------
+Total Voltage Drop: 1.154% (21.855 V)
+Maximum Single Component: 1.022%
+Power Factor: 0.9
+Temperature: 75°C
+
+IEEE 141 COMPLIANCE CHECK:
+----------------------------------------------------------------------------------------------------
+Feeder Circuits: 3% maximum (recommended)
+Branch Circuits: 5% maximum (recommended)
+Combined System: 7% maximum (absolute limit)
+
+✅ EXCELLENT - Well within recommended limits
+
+Actual Voltage Drop: 1.154%
+
+COMPONENT-BY-COMPONENT ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Step  Type          Component Name          Current(A)  Drop(V)  Drop(%)  Cumulative(%)  Status
+----------------------------------------------------------------------------------------------------
+1     cable         500 COPPER - 65ft            437.0    2.161    0.016          0.016  OK
+2     cable         250 COPPER - 5905ft           20.0   15.008    0.114          0.130  OK
+3     cable         4/0 COPPER - 65ft             20.0    0.189    0.001          0.132  OK
+4     transformer   1000 kVA (13200V / 440       600.0    4.497    1.022          1.154  OK
+----------------------------------------------------------------------------------------------------
+
+GENERAL RECOMMENDATIONS:
+----------------------------------------------------------------------------------------------------
+✅ SYSTEM ACCEPTABLE:
+   Voltage drop is within recommended limits.
+   No immediate action required.
+   Continue normal operation and monitoring.
+
+====================================================================================================
+END OF VOLTAGE DROP REPORT
+====================================================================================================
