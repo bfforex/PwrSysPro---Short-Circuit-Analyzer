@@ -1,0 +1,110 @@
+================================================================================
+                         PwrSys Pro - VD III
+                   Voltage Drop Calculation Report
+                        ANSI Standard
+================================================================================
+
+Generated: 11/5/2025, 3:46:58 PM
+User: 
+
+INPUT PARAMETERS:
+--------------------------------------------------------------------------------
+Electrical Standard:     ANSI
+Cable Type:              THHN
+Conductor Size:          500 kcmil × 2 parallel
+Conductor Material:      Copper
+System Voltage:          440 V
+Load Current:            413 A
+Cable Length:            1336 ft
+Power Factor:            0.8
+System Type:             Three Phase
+Ambient Temperature:     86 °F
+Installation Method:     CONDUIT
+Max Voltage Drop:        3%
+
+RESULTS:
+--------------------------------------------------------------------------------
+Cable Capacity:          817.0 A (50.6% utilized)
+Voltage Drop:            15.37 V
+Percentage Voltage Drop: 3.49 %
+Power Loss:              7.490 kW
+Terminal Voltage:        424.63 V
+Resistance:              0.0146 Ω
+Reactance:               0.0163 Ω
+Annual Energy Loss:      65611 kWh/year
+
+ASSESSMENT:
+--------------------------------------------------------------------------------
+Cable Capacity:          GOOD - 50.6% utilization ✓
+                         Safe margin: 404.0A
+
+Voltage Drop:            EXCEEDS LIMIT ⚠
+                         3.49% > 3% maximum
+
+DETAILED CALCULATION STEPS:
+--------------------------------------------------------------------------------
+
+Step 0: Cable Capacity Verification (ANSI Standard)
+  Formula:     Capacity check for 2 parallel conductors
+  Calculation: Base capacity × Temp factor × 2 conductors × Parallel factor
+  Result:      Total Cable Capacity: 817.0 A | Load Current: 413.0 A | Utilization: 50.6% ✓
+
+Step 1: Material Properties (ANSI Standard)
+  Formula:     Resistivity (ρ₂₀) = 0.0175 Ω·mm²/m at 20°C
+  Calculation: Temperature coefficient (α) = 0.00393 /°C | Input: 86°F = 30.0°C
+  Result:      Material: Copper | Conductor: 500 kcmil × 2
+
+Step 2: Temperature Correction
+  Formula:     ρ(T) = ρ₂₀ × [1 + α × (T - 20)]
+  Calculation: ρ(30.0°C) = 0.0175 × [1 + 0.00393 × (30.0 - 20)]
+  Result:      ρ(30.0°C) = 0.018188 Ω·mm²/m
+
+Step 3: Calculate Single Conductor Resistance
+  Formula:     R_single = ρ × L / A
+  Calculation: R_single = 0.018188 × 407.21m / 253mm² (1336ft converted)
+  Result:      Single Conductor Resistance = 0.0293 Ω
+
+Step 4: Parallel Conductors Adjustment
+  Formula:     R_total = R_single / N
+  Calculation: R_total = 0.0293 / 2
+  Result:      Total Resistance = 0.0146 Ω
+
+Step 5: Calculate Reactance
+  Formula:     X = (X_per_km × L / 1000) / N
+  Calculation: X = (0.08 × 407.21 / 1000) / 2
+  Result:      Reactance (X) = 0.0163 Ω
+
+Step 6: Power Factor Components
+  Formula:     cos φ = 0.8, sin φ = √(1 - cos²φ)
+  Calculation: sin φ = √(1 - 0.8²) = 0.6000
+  Result:      cos φ = 0.8, sin φ = 0.6000
+
+Step 7: Calculate Voltage Drop (Three Phase)
+  Formula:     Vd = √3 × I × (R × cos φ + X × sin φ)
+  Calculation: Vd = 1.732 × 413 × (0.0146 × 0.8 + 0.0163 × 0.6000)
+  Result:      Voltage Drop = 15.37 V
+
+Step 8: Calculate Percentage Voltage Drop
+  Formula:     %Vd = (Vd / V) × 100
+  Calculation: %Vd = (15.37 / 440) × 100
+  Result:      Percentage Voltage Drop = 3.49%
+
+Step 9: Calculate Power Loss
+  Formula:     P_loss = I² × R × 3 / 1000
+  Calculation: P_loss = 413² × 0.0146 × 3 / 1000
+  Result:      Power Loss = 7.490 kW
+
+Step 10: Calculate Terminal Voltage
+  Formula:     V_terminal = V_source - Vd
+  Calculation: V_terminal = 440 - 15.37
+  Result:      Terminal Voltage = 424.63 V
+
+Step 11: Annual Energy Loss
+  Formula:     E_loss = P_loss × Hours_per_year
+  Calculation: E_loss = 7.490 × 8760
+  Result:      Annual Energy Loss = 65610.80 kWh/year
+
+================================================================================
+End of Report
+PwrSys Pro - VD III | ANSI Standard | 11/5/2025, 3:46:58 PM
+================================================================================

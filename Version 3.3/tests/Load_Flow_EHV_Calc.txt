@@ -1,0 +1,392 @@
+════════════════════════════════════════════════════════════════════════════════
+LOAD FLOW CALCULATION - ENHANCED
+════════════════════════════════════════════════════════════════════════════════
+
+📋 CALCULATION INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Date/Time:           2025-11-05 12:04:09 UTC
+Engineer:            B. P. Faraon
+Target Bus:          EHV1 (EHV1)
+Bus Voltage:         13200V
+Power Factor:        0.85
+Method:              Recursive Downstream Load Traversal
+
+📖 CALCULATION METHODOLOGY
+────────────────────────────────────────────────────────────────────────────────
+• Traces all downstream components from target bus
+• Calculates load at each voltage level
+• Refers transformer secondary loads to primary side
+• Sums total current and power requirements
+• Component tags displayed for full traceability
+
+════════════════════════════════════════════════════════════════════════════════
+LOAD FLOW TRAVERSAL
+════════════════════════════════════════════════════════════════════════════════
+
+📍 EHV1 (EHV1) - 13200V
+    📍 DS01 (DS01) - 13200V
+        📍 LCJ1-1 (LCJ1-1) - 13200V
+
+          ────────────────────────────────────────────────────────────────────
+          🔧 TRANSFORMER - XFMR1
+          ────────────────────────────────────────────────────────────────────
+            📍 LCJ1-4 (LCJ1-4) - 440V
+              💡 Direct Load: 916.00 A (698.09 kVA)
+              ├─ 📊 Subtotal: 916.00 A (698.09 kVA)
+
+          Component Tag:       XFMR1
+          Component Type:      TRANSFORMER
+          Rating:              1000 kVA
+          Voltage Ratio:       13200V / 440V
+          Turns Ratio:         30.0000:1
+          From Bus:            LCJ1-1 (LCJ1-1)
+          To Bus:              LCJ1-4 (LCJ1-4)
+
+          📊 LOADING ANALYSIS
+          ────────────────────────────────────────────────────────────────────
+          SECONDARY SIDE (440V):
+            Current:           916.00 A
+            Full Load:         1312.16 A
+            Loading:           69.8% ✅
+
+          PRIMARY SIDE (13200V):
+            Formula:           I_pri = I_sec / (V_pri / V_sec)
+            Current:           30.53 A
+            Power:             698.09 kVA
+
+          ├─ 📊 Subtotal: 30.53 A (698.09 kVA)
+
+      🔌 Cable C-13k2-DS01-LCJ1-01: 30.53 A (698.09 kVA)
+        📍 DS02 (DS02) - 13200V
+            📍 LCH1-1 (LCH1-1) - 13200V
+
+              ────────────────────────────────────────────────────────────────
+              🔧 TRANSFORMER - XFMR2
+              ────────────────────────────────────────────────────────────────
+                📍 LCH1-4 (LCH1-4) - 440V
+                  💡 Direct Load: 984.00 A (749.91 kVA)
+                  ├─ 📊 Subtotal: 984.00 A (749.91 kVA)
+
+              Component Tag:       XFMR2
+              Component Type:      TRANSFORMER
+              Rating:              1000 kVA
+              Voltage Ratio:       13200V / 440V
+              Turns Ratio:         30.0000:1
+              From Bus:            LCH1-1 (LCH1-1)
+              To Bus:              LCH1-4 (LCH1-4)
+
+              📊 LOADING ANALYSIS
+              ────────────────────────────────────────────────────────────────
+              SECONDARY SIDE (440V):
+                Current:           984.00 A
+                Full Load:         1312.16 A
+                Loading:           75.0% ✅
+
+              PRIMARY SIDE (13200V):
+                Formula:           I_pri = I_sec / (V_pri / V_sec)
+                Current:           32.80 A
+                Power:             749.91 kVA
+
+              ├─ 📊 Subtotal: 32.80 A (749.91 kVA)
+
+          🔌 Cable C-13k2-DS02-LCH1-01: 32.80 A (749.91 kVA)
+            📍 DS03 (DS03) - 13200V
+                📍 LCC1-1 (LCC1-1) - 13200V
+
+                  ────────────────────────────────────────────────────────────
+                  🔧 TRANSFORMER - XFMR3
+                  ────────────────────────────────────────────────────────────
+                    📍 LCC1-4 (LCC1-4) - 440V
+                      💡 Direct Load: 972.00 A (740.76 kVA)
+                      ├─ 📊 Subtotal: 972.00 A (740.76 kVA)
+
+                  Component Tag:       XFMR3
+                  Component Type:      TRANSFORMER
+                  Rating:              1000 kVA
+                  Voltage Ratio:       13200V / 440V
+                  Turns Ratio:         30.0000:1
+                  From Bus:            LCC1-1 (LCC1-1)
+                  To Bus:              LCC1-4 (LCC1-4)
+
+                  📊 LOADING ANALYSIS
+                  ────────────────────────────────────────────────────────────
+                  SECONDARY SIDE (440V):
+                    Current:           972.00 A
+                    Full Load:         1312.16 A
+                    Loading:           74.1% ✅
+
+                  PRIMARY SIDE (13200V):
+                    Formula:           I_pri = I_sec / (V_pri / V_sec)
+                    Current:           32.40 A
+                    Power:             740.76 kVA
+
+                  ├─ 📊 Subtotal: 32.40 A (740.76 kVA)
+
+              🔌 Cable C-13k2-DS03-LCC1-01: 32.40 A (740.76 kVA)
+                📍 DS04 (DS04) - 13200V
+                    📍 LCC2-1 (LCC2-1) - 13200V
+
+                      ────────────────────────────────────────────────────────
+                      🔧 TRANSFORMER - XFMR4
+                      ────────────────────────────────────────────────────────
+                        📍 LCC2-4 (LCC2-4) - 440V
+
+                          ────────────────────────────────────────────────────
+                          ⚙️ MOTOR - M-LCC2-4-50-1
+                          ────────────────────────────────────────────────────
+                          Component Tag:       M-LCC2-4-50-1
+                          Component Type:      MOTOR
+                          Horsepower:          50 HP
+                          Motor Type:          induction
+                          From Bus:            LCC2-4 (LCC2-4)
+                          To Bus:              FPMOTOR (FPMOTOR)
+                          Voltage:             440V
+
+                          📊 LOAD CALCULATION
+                          Formula:  I = HP × 746 / (√3 × V × η × PF)
+                          Current:  63.98 A
+                          Power:    48.76 kVA (41.44 kW)
+                          PF:       0.85
+
+
+                          ────────────────────────────────────────────────────
+                          ⚙️ MOTOR - M-LCC2-4-10-1
+                          ────────────────────────────────────────────────────
+                          Component Tag:       M-LCC2-4-10-1
+                          Component Type:      MOTOR
+                          Horsepower:          10 HP
+                          Motor Type:          induction
+                          From Bus:            LCC2-4 (LCC2-4)
+                          To Bus:              OHC1 (OHC1)
+                          Voltage:             440V
+
+                          📊 LOAD CALCULATION
+                          Formula:  I = HP × 746 / (√3 × V × η × PF)
+                          Current:  12.80 A
+                          Power:    9.75 kVA (8.29 kW)
+                          PF:       0.85
+
+
+                          ────────────────────────────────────────────────────
+                          ⚙️ MOTOR - M-LCC2-4-10-2
+                          ────────────────────────────────────────────────────
+                          Component Tag:       M-LCC2-4-10-2
+                          Component Type:      MOTOR
+                          Horsepower:          10 HP
+                          Motor Type:          induction
+                          From Bus:            LCC2-4 (LCC2-4)
+                          To Bus:              OHC2 (OHC2)
+                          Voltage:             440V
+
+                          📊 LOAD CALCULATION
+                          Formula:  I = HP × 746 / (√3 × V × η × PF)
+                          Current:  12.80 A
+                          Power:    9.75 kVA (8.29 kW)
+                          PF:       0.85
+
+                          ├─ 📊 Subtotal: 89.57 A (68.26 kVA)
+
+                      Component Tag:       XFMR4
+                      Component Type:      TRANSFORMER
+                      Rating:              300 kVA
+                      Voltage Ratio:       13200V / 440V
+                      Turns Ratio:         30.0000:1
+                      From Bus:            LCC2-1 (LCC2-1)
+                      To Bus:              LCC2-4 (LCC2-4)
+
+                      📊 LOADING ANALYSIS
+                      ────────────────────────────────────────────────────────
+                      SECONDARY SIDE (440V):
+                        Current:           89.57 A
+                        Full Load:         393.65 A
+                        Loading:           22.8% ✅
+
+                      PRIMARY SIDE (13200V):
+                        Formula:           I_pri = I_sec / (V_pri / V_sec)
+                        Current:           2.99 A
+                        Power:             68.26 kVA
+
+                      ├─ 📊 Subtotal: 2.99 A (68.26 kVA)
+
+                  🔌 Cable C-13k2-DS04-LCC2-01: 2.99 A (68.26 kVA)
+                    📍 LCD1-1 (LCD1-1) - 13200V
+
+                      ────────────────────────────────────────────────────────
+                      🔧 TRANSFORMER - XFMR5
+                      ────────────────────────────────────────────────────────
+                        📍 LCD1-4 (LCD1-4) - 440V
+                          💡 Direct Load: 511.00 A (389.43 kVA)
+                          ├─ 📊 Subtotal: 511.00 A (389.43 kVA)
+
+                      Component Tag:       XFMR5
+                      Component Type:      TRANSFORMER
+                      Rating:              500 kVA
+                      Voltage Ratio:       13200V / 440V
+                      Turns Ratio:         30.0000:1
+                      From Bus:            LCD1-1 (LCD1-1)
+                      To Bus:              LCD1-4 (LCD1-4)
+
+                      📊 LOADING ANALYSIS
+                      ────────────────────────────────────────────────────────
+                      SECONDARY SIDE (440V):
+                        Current:           511.00 A
+                        Full Load:         656.08 A
+                        Loading:           77.9% ✅
+
+                      PRIMARY SIDE (13200V):
+                        Formula:           I_pri = I_sec / (V_pri / V_sec)
+                        Current:           17.03 A
+                        Power:             389.43 kVA
+
+                      ├─ 📊 Subtotal: 17.03 A (389.43 kVA)
+
+                  🔌 Cable C-13k2-DS04-LCD1-01: 17.03 A (389.43 kVA)
+                  ├─ 📊 Subtotal: 20.02 A (457.70 kVA)
+
+              🔌 Cable C-13k2-DS03-DS04-01: 20.02 A (457.70 kVA)
+              ├─ 📊 Subtotal: 52.42 A (1198.46 kVA)
+
+          🔌 Cable C-13k2-DS02-DS03-01: 52.42 A (1198.46 kVA)
+          ├─ 📊 Subtotal: 85.22 A (1948.37 kVA)
+
+      🔌 Cable C-13k2-DS01-DS02-01: 85.22 A (1948.37 kVA)
+      ├─ 📊 Subtotal: 115.75 A (2646.45 kVA)
+
+  🔌 Cable C-13k2-EHV1-DS01-01: 115.75 A (2646.45 kVA)
+    📍 DS05 (DS05) - 13200V
+        📍 LCA1-1 (LCA1-1) - 13200V
+
+          ────────────────────────────────────────────────────────────────────
+          🔧 TRANSFORMER - XFMR6
+          ────────────────────────────────────────────────────────────────────
+            📍 LCA1-4 (LCA1-4) - 440V
+          Component Tag:       XFMR6
+          Component Type:      TRANSFORMER
+          Rating:              1000 kVA
+          From Bus:            LCA1-1
+          To Bus:              LCA1-4
+
+          ℹ️ No downstream load detected
+          Using 80% of rating as default
+          Current: 34.99 A
+
+          ├─ 📊 Subtotal: 34.99 A (800.00 kVA)
+
+      🔌 Cable C-13k2-DS05-LCA1-01: 34.99 A (800.00 kVA)
+        📍 DS06 (DS06) - 13200V
+            📍 LCB1-1 (LCB1-1) - 13200V
+
+              ────────────────────────────────────────────────────────────────
+              🔧 TRANSFORMER - XFMR07
+              ────────────────────────────────────────────────────────────────
+                📍 LCB1-4 (LCB1-4) - 440V
+                  💡 Direct Load: 321.00 A (244.63 kVA)
+                  ├─ 📊 Subtotal: 321.00 A (244.63 kVA)
+
+              Component Tag:       XFMR07
+              Component Type:      TRANSFORMER
+              Rating:              1000 kVA
+              Voltage Ratio:       13200V / 440V
+              Turns Ratio:         30.0000:1
+              From Bus:            LCB1-1 (LCB1-1)
+              To Bus:              LCB1-4 (LCB1-4)
+
+              📊 LOADING ANALYSIS
+              ────────────────────────────────────────────────────────────────
+              SECONDARY SIDE (440V):
+                Current:           321.00 A
+                Full Load:         1312.16 A
+                Loading:           24.5% ✅
+
+              PRIMARY SIDE (13200V):
+                Formula:           I_pri = I_sec / (V_pri / V_sec)
+                Current:           10.70 A
+                Power:             244.63 kVA
+
+              ├─ 📊 Subtotal: 10.70 A (244.63 kVA)
+
+          🔌 Cable C-13k2-DS06-LCB1-01: 10.70 A (244.63 kVA)
+          ├─ 📊 Subtotal: 10.70 A (244.63 kVA)
+
+      🔌 Cable C-13k2-DS05-DS06-01: 10.70 A (244.63 kVA)
+        📍 LCU1-1 (LCU1-1) - 13200V
+
+          ────────────────────────────────────────────────────────────────────
+          🔧 TRANSFORMER - XFMR8
+          ────────────────────────────────────────────────────────────────────
+            📍 LCU1-4 (LCU1-4) - 440V
+              💡 Direct Load: 313.00 A (238.54 kVA)
+              ├─ 📊 Subtotal: 313.00 A (238.54 kVA)
+
+          Component Tag:       XFMR8
+          Component Type:      TRANSFORMER
+          Rating:              2000 kVA
+          Voltage Ratio:       13200V / 440V
+          Turns Ratio:         30.0000:1
+          From Bus:            LCU1-1 (LCU1-1)
+          To Bus:              LCU1-4 (LCU1-4)
+
+          📊 LOADING ANALYSIS
+          ────────────────────────────────────────────────────────────────────
+          SECONDARY SIDE (440V):
+            Current:           313.00 A
+            Full Load:         2624.32 A
+            Loading:           11.9% ✅
+
+          PRIMARY SIDE (13200V):
+            Formula:           I_pri = I_sec / (V_pri / V_sec)
+            Current:           10.43 A
+            Power:             238.54 kVA
+
+          ├─ 📊 Subtotal: 10.43 A (238.54 kVA)
+
+      🔌 Cable C-13k2-DS05-LCU1-01: 10.43 A (238.54 kVA)
+      ├─ 📊 Subtotal: 56.12 A (1283.17 kVA)
+
+  🔌 Cable C-13k2-EHV-DS05-01: 56.12 A (1283.17 kVA)
+  ├─ 📊 Subtotal: 171.88 A (3929.63 kVA)
+
+════════════════════════════════════════════════════════════════════════════════
+LOAD FLOW SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+📊 TOTAL LOAD AT EHV1
+────────────────────────────────────────────────────────────────────────────────
+Total Load Current:      171.88 A
+Total Apparent Power:    3929.63 kVA
+Total Active Power:      3340.18 kW
+Power Factor:            0.85
+Components Analyzed:     25
+
+📋 BREAKDOWN BY COMPONENT TYPE (AT 13200V LEVEL)
+────────────────────────────────────────────────────────────────────────────────
+Type          Count  Current (A)  Power (kVA)  Percentage  Note
+────────────────────────────────────────────────────────────────────────────────
+Transformers      8       171.88      3929.63       100.0%  Reflected from secondary
+  └─ XFMR1                 30.53       698.09        17.8%  13200V → 440V
+  └─ XFMR2                 32.80       749.91        19.1%  13200V → 440V
+  └─ XFMR3                 32.40       740.76        18.9%  13200V → 440V
+  └─ XFMR4                  2.99        68.26         1.7%  13200V → 440V
+  └─ XFMR5                 17.03       389.43         9.9%  13200V → 440V
+  └─ XFMR6                 34.99       800.00        20.4%  13200V → 440V
+  └─ XFMR07                10.70       244.63         6.2%  13200V → 440V
+  └─ XFMR8                 10.43       238.54         6.1%  13200V → 440V
+Motors (440V)      1        63.98        48.76            -  Via XFMR1
+Motors (440V)      1        12.80         9.75            -  Via XFMR1
+Motors (440V)      1        12.80         9.75            -  Via XFMR1
+Cables           14  (conveyance)        -         -  Pass-through only
+────────────────────────────────────────────────────────────────────────────────
+TOTAL AT 13200V              171.88      3929.63            100.0%
+────────────────────────────────────────────────────────────────────────────────
+
+ℹ️ Note:
+   • Direct load of 0.00A is specified at this bus (13200V)
+   • 3 motor(s) at other voltage levels are reflected via transformers
+   • Cables convey power but are not loads (not counted in percentages)
+   • Transformers show primary current (reflected from secondary loads)
+   • Total represents all downstream loads referred to 13200V
+   • Percentages are of ACTUAL consumed load (171.88A)
+
+════════════════════════════════════════════════════════════════════════════════
+END OF LOAD FLOW CALCULATION
+════════════════════════════════════════════════════════════════════════════════

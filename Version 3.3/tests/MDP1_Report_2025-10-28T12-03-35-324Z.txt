@@ -1,0 +1,74 @@
+====================================================================================================
+SHORT CIRCUIT ANALYSIS REPORT - BUS: MDP1
+====================================================================================================
+
+Project: Test Yard Project
+Project Number: Test Project 3
+Engineer: B. P. Faraon
+Date: 2025-10-28 20:03:33 UTC
+Software: PwrSys Pro - Short Circuit Analyzer v1.0
+Author: Engr. B. P. Faraon
+Calculation Method: per-unit
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: MDP1
+Voltage: 440 V
+Type: branch
+
+FAULT CURRENT RESULTS:
+----------------------------------------------------------------------------------------------------
+Symmetrical Fault Current: 20.857 kA (20856.83 A)
+Asymmetrical (Peak) Current: 24.980 kA (24980.22 A)
+Line-to-Ground Fault: 17.728 kA
+Line-to-Line Fault: 18.062 kA
+X/R Ratio: 2.620
+Total Impedance: 0.012180 Ω
+
+PER-UNIT BASE VALUES AT TARGET BUS:
+----------------------------------------------------------------------------------------------------
+Base kVA: 10000 kVA (CONSTANT for entire system)
+Base Voltage: 440 V
+Base Impedance: N/A Ω
+Base Current: N/A A
+
+PATH FROM SOURCE:
+----------------------------------------------------------------------------------------------------
+1. Utility (13200V) - SOURCE
+2. Main MVSG (13200V) - CABLE
+3. MVSG Branch (13200V) - CABLE
+4. SS1 MVSG (13200V) - CABLE
+5. SS1 LVSG (440V) - TRANSFORMER
+6. MDP1 (440V) - CABLE
+
+VOLTAGE DROP ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Total Voltage Drop: 1.791% (24.661 V)
+Maximum Single Component Drop: 1.022%
+IEEE 141 Compliance: ✓ COMPLIANT
+Power Factor: 0.9
+
+COMPONENT BREAKDOWN:
+----------------------------------------------------------------------------------------------------
+Step  Type          Name                    Current(A)  Drop(V)   Drop(%)   Status
+----------------------------------------------------------------------------------------------------
+1     cable         500 COPPER - 65ft         437.0     2.161     0.016  OK
+2     cable         250 COPPER - 5905ft        20.0    15.008     0.114  OK
+3     cable         4/0 COPPER - 65ft          20.0     0.189     0.001  OK
+4     transformer   1000 kVA (13200V / 4      600.0     4.497     1.022  OK
+5     cable         300 COPPER (2×) - 85      600.0     2.805     0.638  OK
+
+
+====================================================================================================
+ENGINEERING RECOMMENDATIONS
+====================================================================================================
+
+✅ NO ISSUES DETECTED
+
+This bus meets all IEEE standards and design criteria.
+No corrective actions are required at this time.
+
+
+====================================================================================================
+END OF REPORT
+====================================================================================================

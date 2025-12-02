@@ -1,0 +1,66 @@
+====================================================================================================
+SHORT CIRCUIT ANALYSIS REPORT - BUS: Main MVSG
+====================================================================================================
+
+Project: Test Yard Project
+Project Number: Test Project 3
+Engineer: B. P. Faraon
+Date: 2025-10-28 20:01:50 UTC
+Software: PwrSys Pro - Short Circuit Analyzer v1.0
+Author: Engr. B. P. Faraon
+Calculation Method: per-unit
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: Main MVSG
+Voltage: 13200 V
+Type: distribution
+
+FAULT CURRENT RESULTS:
+----------------------------------------------------------------------------------------------------
+Symmetrical Fault Current: 4.367 kA (4366.68 A)
+Asymmetrical (Peak) Current: 5.394 kA (5393.51 A)
+Line-to-Ground Fault: 3.712 kA
+Line-to-Line Fault: 3.782 kA
+X/R Ratio: 2.993
+Total Impedance: 1.745265 Ω
+
+PER-UNIT BASE VALUES AT TARGET BUS:
+----------------------------------------------------------------------------------------------------
+Base kVA: 10000 kVA (CONSTANT for entire system)
+Base Voltage: 13200 V
+Base Impedance: N/A Ω
+Base Current: N/A A
+
+PATH FROM SOURCE:
+----------------------------------------------------------------------------------------------------
+1. Utility (13200V) - SOURCE
+2. Main MVSG (13200V) - CABLE
+
+VOLTAGE DROP ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Total Voltage Drop: 0.016% (2.161 V)
+Maximum Single Component Drop: 0.016%
+IEEE 141 Compliance: ✓ COMPLIANT
+Power Factor: 0.9
+
+COMPONENT BREAKDOWN:
+----------------------------------------------------------------------------------------------------
+Step  Type          Name                    Current(A)  Drop(V)   Drop(%)   Status
+----------------------------------------------------------------------------------------------------
+1     cable         500 COPPER - 65ft         437.0     2.161     0.016  OK
+
+
+====================================================================================================
+ENGINEERING RECOMMENDATIONS
+====================================================================================================
+
+✅ NO ISSUES DETECTED
+
+This bus meets all IEEE standards and design criteria.
+No corrective actions are required at this time.
+
+
+====================================================================================================
+END OF REPORT
+====================================================================================================

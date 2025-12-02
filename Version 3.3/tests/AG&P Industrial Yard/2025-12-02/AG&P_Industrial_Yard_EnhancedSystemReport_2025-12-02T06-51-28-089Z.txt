@@ -1,0 +1,1767 @@
+====================================================================================================
+COMPREHENSIVE SYSTEM ANALYSIS REPORT
+====================================================================================================
+
+Project: AG&P Industrial Yard
+Project Number: AGP-25101-CAL-ELE-1001.00
+Engineer: B. P. Faraon
+Date: 12/2/2025, 2:51:28 PM UTC
+Software: PwrSys Pro - Short Circuit Analyzer v1.0
+Author: Engr. B. P. Faraon
+Report Type: Enhanced System Report (Issue #6)
+
+====================================================================================================
+EXECUTIVE SUMMARY
+====================================================================================================
+
+PROJECT OVERVIEW:
+----------------------------------------------------------------------------------------------------
+System Voltage Levels: 13200V, 440V
+Total Buses Analyzed: 37
+Total Components: 36
+Analysis Method: per-unit
+Temperature: 75°C
+Power Factor: 0.87
+
+SYSTEM HEALTH STATUS:
+----------------------------------------------------------------------------------------------------
+Overall Status: 🔴 CRITICAL - IMMEDIATE ACTION REQUIRED
+
+System Metrics:
+  • Average Fault Current: 10.92 kA
+  • Maximum Fault Current: 36.84 kA (LCU1-4)
+  • Average Voltage Drop: 3.58%
+  • Maximum Voltage Drop: 11.30% (SH2-C12)
+
+Issues Detected:
+  • Critical Issues: 8 ⚠️ IMMEDIATE ACTION REQUIRED
+  • High Priority: 23 ⚠️
+  • Medium Priority: 41 ⚠️
+  • Low Priority: 0 ✓
+
+KEY FINDINGS:
+----------------------------------------------------------------------------------------------------
+1. 🔴 CRITICAL: Voltage drop exceeds IEEE 141 limit (11.30% > 7%)
+2. ✅ Fault currents within typical breaker rating capabilities
+3. ✅ Load diversity factors applied to 37 buses per IEEE 141-1993
+4. ✅ 32/37 buses compliant with IEEE 141 voltage drop limits
+
+IMMEDIATE ACTIONS REQUIRED:
+----------------------------------------------------------------------------------------------------
+1. [CRITICAL] LCC2-4: Transformer Overload Critical
+   → IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.
+   Timeline: IMMEDIATE (1-7 days)
+   Estimated Cost: VERY HIGH
+
+2. [CRITICAL] LCA1-4: Transformer Overload Critical
+   → IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.
+   Timeline: IMMEDIATE (1-7 days)
+   Estimated Cost: VERY HIGH
+
+3. [CRITICAL] LCB1-4: Transformer Overload Critical
+   → IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.
+   Timeline: IMMEDIATE (1-7 days)
+   Estimated Cost: VERY HIGH
+
+4. [CRITICAL] SH2-B12: Critical Voltage Drop Violation
+   → IMMEDIATE: Resize conductors or install voltage regulation equipment. System may not operate properly.
+   Timeline: IMMEDIATE (1-7 days)
+   Estimated Cost: HIGH
+
+5. [CRITICAL] SH2-C12: Critical Voltage Drop Violation
+   → IMMEDIATE: Resize conductors or install voltage regulation equipment. System may not operate properly.
+   Timeline: IMMEDIATE (1-7 days)
+   Estimated Cost: HIGH
+
+
+====================================================================================================
+SYSTEM LOAD ANALYSIS
+====================================================================================================
+
+CONNECTED LOAD SUMMARY:
+----------------------------------------------------------------------------------------------------
+Total Connected Load: 15844.59 A
+Total Connected Power: 163504.70 kVA (142249.09 kW @ PF=0.87)
+System Power Factor: 0.87
+Average Voltage Level: 5958 V
+
+DEMAND & DIVERSITY ANALYSIS (Feature #5):
+----------------------------------------------------------------------------------------------------
+Buses with Diversity Applied: 37 of 37
+
+Load Summary:
+  • Connected Load:    15844.59 A  |  163504.70 kVA  (100.0%)
+  • Demand Load:       13555.50 A  |  139882.97 kVA  (85.6%)
+  • Diversity Load:    11991.79 A  |  123746.62 kVA  (75.7%)
+
+Factors Applied:
+  • Average Demand Factor:      0.856 (85.6%)
+  • Average Diversity Factor:   1.130
+  • Combined Reduction:         24.3%
+
+Power Savings:
+  • Load Reduction:     3852.80 A
+  • Power Savings:      39758.08 kVA (34589.53 kW)
+  • Estimated Annual Energy Savings: 212103001 kWh/year
+  • Cost Savings @ $0.12/kWh: $25452360/year
+
+Standards Applied:
+  ✓ IEEE 141-1993 Table 3-5 - Diversity Factors for Industrial Loads
+  ✓ NEC Article 220 - Demand Factors for Load Calculations
+
+
+DIVERSITY FACTOR STRATEGY BY BUS TYPE:
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Bus Type            Default DF     Applied To          Rationale (IEEE 141-1993)                    
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Source              1.00           1 buses             Utility/generator - no diversity applicable  
+Distribution        1.20           24 buses            Multiple feeders, mixed loads (Table 3-5)    
+Branch              1.25           12 buses            Individual circuits, receptacles (Table 3-5) 
+────────────────────────────────────────────────────────────────────────────────────────────────────
+TOTAL: 37 buses analyzed
+
+DEMAND FACTOR STRATEGY BY LOAD TYPE:
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Load Type           Demand Factor     Applied To          Standard Reference                        
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Single Motor        1.00 (100%)       0 buses             NEC 430.24 (single motor = 100% FLC)      
+2-4 Motors          0.95 (95%)        1 buses             NEC 430.24 (motor group demand)           
+5-10 Motors         0.85 (85%)        0 buses             NEC 430.24 (motor group demand)           
+10+ Motors          0.80 (80%)        0 buses             NEC 430.24 (motor group demand)           
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Transformers        0.80 (80%)        8 units             IEEE 141 typical industrial loading       
+General Load        0.85 (85%)        Mixed               IEEE 141-1993 conservative approach       
+────────────────────────────────────────────────────────────────────────────────────────────────────
+TOTAL EQUIPMENT: 36 components (3 motors, 8 transformers, 25 cables)
+
+MOTOR LOAD SUMMARY:
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Total Motor Count:          3
+Total Motor HP:             70.0 HP
+Single Motor Buses:         0 (100% demand factor)
+2-4 Motor Groups:           1 (95% demand factor)
+5-10 Motor Groups:          0 (85% demand factor)
+10+ Motor Groups:           0 (80% demand factor)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+APPLICATION RATIONALE:
+────────────────────────────────────────────────────────────────────────────────────────────────────
+• Diversity factors applied per IEEE 141-1993 Table 3-5 (Industrial Power Systems)
+• Demand factors applied per NEC Article 220 and 430.24 (Load Calculations)
+• Single motor = 100% demand factor (no reduction) per NEC 430.24
+• Multiple motors use reduced demand factors (80-95%) based on motor count
+• Conservative approach: Design at 100% FLC, operate at diversity-adjusted load
+• Result: 24.3% load reduction while maintaining design safety margin
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+DESIGN PHILOSOPHY:
+────────────────────────────────────────────────────────────────────────────────────────────────────
+CONSERVATIVE DESIGN APPROACH:
+  ✓ Cable sizing based on 100% Full Load Current (FLC)
+  ✓ Equipment ratings based on worst-case connected load
+  ✓ Protection settings account for maximum fault current
+  ✓ Safety factors built into all calculations
+
+REALISTIC OPERATING ANALYSIS:
+  ✓ Diversity factors account for non-simultaneous operation
+  ✓ Demand factors account for equipment usage patterns
+  ✓ Operating conditions typically 15-30% lower than design
+  ✓ Energy cost estimates based on actual operating load
+
+BENEFITS:
+  ✓ Reduced energy consumption (operating at 75.7% of connected load)
+  ✓ Lower utility demand charges
+  ✓ Extended equipment life (reduced thermal stress)
+  ✓ Spare capacity for future expansion
+  ✓ More accurate energy cost projections
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+STANDARDS COMPLIANCE:
+────────────────────────────────────────────────────────────────────────────────────────────────────
+✓ NEC 2023 Article 220 - Branch Circuit, Feeder, and Service Load Calculations
+✓ NEC 2023 Article 430.24 - Motor Load Calculations and Demand Factors
+✓ IEEE 141-1993 (Red Book) - Electric Power Distribution for Industrial Plants
+✓ IEEE 141-1993 Table 3-5 - Diversity Factors for Industrial Loads
+✓ IEEE 242-2001 (Buff Book) - Protection and Coordination of Industrial Power Systems
+✓ API RP 540 - Electrical Installations in Petroleum and Chemical Plants
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+CALCULATION METHODOLOGY:
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Step 1: CONNECTED LOAD
+  - Sum all equipment nameplate ratings
+  - Use Full Load Current (FLC) for motors
+  - Total: 15844.59 A (163504.70 kVA)
+
+Step 2: DEMAND LOAD
+  - Apply demand factors per equipment type
+  - Motors: Demand factor based on count (NEC 430.24)
+  - Transformers: 80% typical loading
+  - Result: 13555.50 A (139882.97 kVA)
+  - Demand Factor: 0.856
+
+Step 3: DIVERSITY LOAD (OPERATING)
+  - Apply diversity factors per bus type
+  - Distribution buses: 1.20 diversity factor
+  - Branch circuits: 1.25 diversity factor
+  - Result: 11991.79 A (123746.62 kVA)
+  - Diversity Factor: 1.130
+  - Combined Factor: 0.757
+
+Step 4: DESIGN VALIDATION
+  - Cable sizing: Based on 100% FLC (conservative)
+  - Voltage drop: Calculated at full load
+  - Short circuit: Maximum available fault current
+  - Operating load: 75.7% of connected
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+LOAD BREAKDOWN BY VOLTAGE LEVEL:
+----------------------------------------------------------------------------------------------------
+Voltage(V)    Buses    Total Current(A)    Total Power(kVA)    Utilization
+----------------------------------------------------------------------------------------------------
+   13200       16               1572.16              35944.36           12.4%
+     440       21              14272.43              10877.05          112.6%
+----------------------------------------------------------------------------------------------------
+Total                           15844.59             163504.70
+----------------------------------------------------------------------------------------------------
+
+LOAD DISTRIBUTION BY BUS TYPE:
+----------------------------------------------------------------------------------------------------
+Bus Type         Count    Average Load(A)    Total Power(kVA)    Diversity Factor
+----------------------------------------------------------------------------------------------------
+source                1               319.52               7305.13                 1.0
+distribution         24               451.59              35944.36                 1.2
+branch               12               390.58               3571.92                 1.3
+
+====================================================================================================
+EQUIPMENT SUMMARY
+====================================================================================================
+
+TRANSFORMERS (8):
+----------------------------------------------------------------------------------------------------
+Equipment Tag                Rating(kVA)   Primary(V)   Secondary(V)   Loading(%)   Tap Setting   Status
+----------------------------------------------------------------------------------------------------
+XFMR1                         1000         13200            440        69.8%             0  ✓ OK
+XFMR2                         1000         13200            440        75.0%             0  ✓ OK
+XFMR3                         1000         13200            440        74.1%             0  ✓ OK
+XFMR4                          300         13200            440       121.8%             0  ❌ OVERLOAD
+XFMR5                          500         13200            440        77.9%             0  ✓ OK
+XFMR6                         1000         13200            440       134.4%           2.5  ❌ OVERLOAD
+XFMR07                        1000         13200            440       222.8%           2.5  ❌ OVERLOAD
+XFMR8                         2000         13200            440        39.5%             0  ✓ OK
+----------------------------------------------------------------------------------------------------
+Total Capacity: 7800 kVA
+Total Load: 7305 kVA (93.7% avg loading)
+Spare Capacity: 495 kVA (6.3%)
+Status: ⚠️ High Utilization
+
+CABLES (25):
+----------------------------------------------------------------------------------------------------
+Voltage Level   Count   Total Length(ft)   Avg Size        Material    Parallel Runs
+----------------------------------------------------------------------------------------------------
+        13200       15             13393.0    250             copper      None
+          440       10              5694.1    500             copper      8×
+----------------------------------------------------------------------------------------------------
+Total: 25 cables, 19087 ft total length
+Estimated Cable Investment: $286306 (estimated @ $15/ft avg)
+Status: ✓ All cables within thermal limits
+
+MOTORS (3):
+----------------------------------------------------------------------------------------------------
+Tag/Name                HP      Voltage(V)   FLC(A)      Type              Status
+----------------------------------------------------------------------------------------------------
+M-LCC2-4-50-1             50           440        64.0  induction         ✓ OK
+M-LCC2-4-10-1             10           440        12.8  induction         ✓ OK
+M-LCC2-4-10-2             10           440        12.8  induction         ✓ OK
+----------------------------------------------------------------------------------------------------
+Total Motor Load: 70 HP (89.6 A, 68.3 kVA)
+Motor Contribution to Fault: ~537.4 A (6× FLC typical)
+Status: ✓ Operating within design parameters
+
+====================================================================================================
+VOLTAGE DROP ANALYSIS - SYSTEM SUMMARY
+====================================================================================================
+
+OVERALL SYSTEM PERFORMANCE:
+----------------------------------------------------------------------------------------------------
+Worst Case Voltage Drop: 11.30% (SH2-C12)
+System Average Drop: 3.58%
+IEEE 141 Compliance: ⚠️ MOSTLY COMPLIANT
+NEC Compliance: ⚠️ REVIEW REQUIRED
+
+Compliance Summary:
+  • Compliant Buses: 32 of 37 (86.5%)
+  • Warnings: 5
+  • Violations: 5
+
+VOLTAGE DROP BY SYSTEM SECTION:
+----------------------------------------------------------------------------------------------------
+Section                     Voltage Drop(%)   Status      Compliance Limit
+----------------------------------------------------------------------------------------------------
+Primary Feeders (>1kV)                0.33        ✓ OK     3% (NEC 215.2)
+Transformers                          3.31        ✓ OK     4% (IEEE 141)
+Secondary Feeders (<1kV)              6.07        ⚠️ HIGH     3% (NEC 215.2)
+Combined System                       3.58        ✓ OK    7% (IEEE 141)
+
+CRITICAL VOLTAGE DROP COMPONENTS (>3%):
+----------------------------------------------------------------------------------------------------
+Component                Type          Drop(%)   Drop(V)   Status      Action Required
+----------------------------------------------------------------------------------------------------
+XFMR4 - 300kVA (1320  transformer       5.44     23.93  HIGH        Resize/Replace
+XFMR4 - 300kVA (1320  transformer       5.44     23.93  HIGH        Resize/Replace
+XFMR4 - 300kVA (1320  transformer       5.44     23.93  HIGH        Resize/Replace
+XFMR4 - 300kVA (1320  transformer       5.44     23.93  HIGH        Resize/Replace
+XFMR6 - 1000kVA (132  transformer       3.93     17.72  HIGH        Monitor
+XFMR07 - 1000kVA (13  transformer       6.51     29.37  HIGH        Resize/Replace
+XFMR6 - 1000kVA (132  transformer       3.93     17.72  HIGH        Monitor
+XFMR6 - 1000kVA (132  transformer       3.93     17.72  HIGH        Monitor
+XFMR6 - 1000kVA (132  transformer       3.93     17.72  HIGH        Monitor
+XFMR6 - 1000kVA (132  transformer       3.93     17.72  HIGH        Monitor
+
+VOLTAGE REGULATION IMPROVEMENT OPPORTUNITIES:
+----------------------------------------------------------------------------------------------------
+1. Transformer Tap Adjustment:
+   • Current taps applied: 2 of 8 transformers
+   • Available range: -5% to +5% (±2.5% steps typical)
+   • Estimated improvement: 2-5% voltage boost available
+
+2. Cable Upsizing:
+   • 16 cables could benefit from larger conductors
+   • Estimated improvement: 0.5% - 1.5% voltage drop reduction per cable
+   • Cost: Medium to High (cable replacement during maintenance)
+
+3. Load Balancing:
+   • Redistribute loads among parallel feeders
+   • Estimated improvement: 0.2% - 0.5% voltage drop reduction
+   • Cost: Minimal (operational change)
+
+====================================================================================================
+SHORT CIRCUIT ANALYSIS - SYSTEM SUMMARY
+====================================================================================================
+
+FAULT CURRENT SUMMARY:
+----------------------------------------------------------------------------------------------------
+Maximum Fault Current: 36.84 kA @ LCU1-4
+Minimum Fault Current: 3.47 kA @ LCC1-1
+Average Fault Current: 10.92 kA
+Average X/R Ratio: 2.96
+System Analysis Method: per-unit
+
+FAULT CURRENT BY VOLTAGE LEVEL:
+----------------------------------------------------------------------------------------------------
+Voltage Level   Buses   Avg Fault(kA)   Max Fault(kA)   Min Fault(kA)   Avg X/R
+----------------------------------------------------------------------------------------------------
+MV (≥1kV)          16            4.00            4.40            3.47     4.12
+LV (<1kV)          21           16.19           36.84            7.35     2.07
+
+EQUIPMENT INTERRUPTING RATING REQUIREMENTS:
+----------------------------------------------------------------------------------------------------
+Medium Voltage Circuit Breakers (≥1kV):
+  • Minimum Rating Required: 46 kA sym (25% safety margin)
+  • Recommended Rating: 50 kA sym (next standard rating)
+  • Typical Equipment: Medium Voltage VCB/OCB
+  • Status: ✓ Standard equipment adequate
+
+Low Voltage Circuit Breakers (<1kV):
+  • Minimum Rating Required: 46 kA sym
+  • Recommended Rating: 42 kA sym
+  • Typical Equipment: MCCB/ACB
+  • Status: ✓ Standard MCCB adequate
+
+MOTOR CONTRIBUTION:
+----------------------------------------------------------------------------------------------------
+Total Motor HP: 70 HP
+Motor Full Load Current: 89.6 A
+Estimated Fault Contribution: 537.4 A (6× FLC typical)
+Decay Time: 0.5 - 1.0 seconds (typical induction motor)
+Impact on Protection: ✓ Accounted for in system analysis
+
+====================================================================================================
+CRITICAL PATH ANALYSIS
+====================================================================================================
+
+LONGEST ELECTRICAL PATHS:
+----------------------------------------------------------------------------------------------------
+Path #1: MERALCO-CCP → LCC1-1
+  • Total Length: 8325.0 ft
+  • Voltage Levels: 13200V
+  • Components: 5 (5 cables)
+  • Total Impedance: 2.195842 Ω (at 13200V)
+  • Voltage Drop: 0.60% (COMPLIANT)
+  • Fault Current: 3.47 kA
+  • Status: ✓ Acceptable
+
+Path #2: MERALCO-CCP → LCC1-4
+  • Total Length: 8325.0 ft
+  • Voltage Levels: 13200V → 440V
+  • Components: 6 (5 cables + 1 transformer)
+  • Total Impedance: 0.010182 Ω (at 440V)
+  • Voltage Drop: 2.82% (COMPLIANT)
+  • Fault Current: 24.95 kA
+  • Status: ✓ Acceptable
+
+Path #3: MERALCO-CCP → LCD1-1
+  • Total Length: 7814.0 ft
+  • Voltage Levels: 13200V
+  • Components: 6 (6 cables)
+  • Total Impedance: 2.169913 Ω (at 13200V)
+  • Voltage Drop: 0.58% (COMPLIANT)
+  • Fault Current: 3.51 kA
+  • Status: ✓ Acceptable
+
+Path #4: MERALCO-CCP → LCD1-4
+  • Total Length: 7814.0 ft
+  • Voltage Levels: 13200V → 440V
+  • Components: 7 (6 cables + 1 transformer)
+  • Total Impedance: 0.015803 Ω (at 440V)
+  • Voltage Drop: 3.19% (COMPLIANT)
+  • Fault Current: 16.08 kA
+  • Status: ✓ Acceptable
+
+Path #5: MERALCO-CCP → LCC2-1
+  • Total Length: 7115.0 ft
+  • Voltage Levels: 13200V
+  • Components: 6 (6 cables)
+  • Total Impedance: 2.112672 Ω (at 13200V)
+  • Voltage Drop: 0.56% (COMPLIANT)
+  • Fault Current: 3.61 kA
+  • Status: ✓ Acceptable
+
+MOST CRITICAL COMPONENTS:
+----------------------------------------------------------------------------------------------------
+Component                     Criticality   Reason                              Risk Level
+----------------------------------------------------------------------------------------------------
+XFMR8                         HIGH          High fault current + loading        MEDIUM
+C-13k2-DS01-DS02-01           MEDIUM        Long run (3409ft)                   LOW
+C-13k2-DS02-DS03-01           MEDIUM        Long run (2198ft)                   LOW
+C-13k2-DS03-LCC1-01           MEDIUM        Long run (2198ft)                   LOW
+C-13k2-DS03-DS04-01           MEDIUM        Long run (840ft)                    LOW
+C-13k2-DS04-LCD1-01           MEDIUM        Long run (847ft)                    LOW
+MERALCO-CCP (Utility Feed)    HIGH          Single point of failure             MEDIUM
+
+====================================================================================================
+COST IMPACT ANALYSIS
+====================================================================================================
+
+IMMEDIATE ACTIONS (0-30 DAYS):
+----------------------------------------------------------------------------------------------------
+Action                                          Priority   Est. Cost      Timeline
+----------------------------------------------------------------------------------------------------
+1. Transformer Overload Critical                  CRITICAL   $VERY HIGH      1-7 days
+2. Transformer Overload Critical                  CRITICAL   $VERY HIGH      1-7 days
+3. Transformer Overload Critical                  CRITICAL   $VERY HIGH      1-7 days
+4. Critical Voltage Drop Violation                CRITICAL   $HIGH           1-7 days
+5. Critical Voltage Drop Violation                CRITICAL   $HIGH           1-7 days
+6. Critical Voltage Drop Violation                CRITICAL   $HIGH           1-7 days
+7. Critical Voltage Drop Violation                CRITICAL   $HIGH           1-7 days
+8. Critical Voltage Drop Violation                CRITICAL   $HIGH           1-7 days
+----------------------------------------------------------------------------------------------------
+Subtotal Immediate Actions: $250,000-$700,000
+
+SHORT-TERM ACTIONS (1-6 MONTHS):
+----------------------------------------------------------------------------------------------------
+Action                                          Priority   Est. Cost      Timeline
+----------------------------------------------------------------------------------------------------
+No short-term actions identified.
+
+LONG-TERM IMPROVEMENTS (6-24 MONTHS):
+----------------------------------------------------------------------------------------------------
+Action                                          Priority   Est. Cost      Timeline
+----------------------------------------------------------------------------------------------------
+1. Cable upsizing (5 cables @ 500+ ft)            MEDIUM     $50K-150K     12-18 months
+2. Power factor correction                        MEDIUM     $15K-30K      6-12 months
+3. Monitoring system installation                 MEDIUM     $10K-25K      3-6 months
+----------------------------------------------------------------------------------------------------
+Subtotal Long-Term Improvements: $75,000-$205,000
+
+TOTAL ESTIMATED COST (ALL RECOMMENDATIONS): $325,000-$905,000
+
+COST AVOIDANCE THROUGH DIVERSITY FACTORS:
+----------------------------------------------------------------------------------------------------
+By applying IEEE 141-1993 diversity factors, the system design can realize:
+  • Load Reduction: 20-30% through diversity (typical for industrial systems)
+  • Transformer Capacity Saved: ~500 kVA (reduced oversizing)
+  • Cable Size Reduction: ~2 AWG sizes smaller than without diversity
+  • Estimated Capital Savings: $50,000 - $100,000
+  • ROI: Immediate (design phase savings - no additional cost)
+
+Note: Diversity factors are already applied in this analysis per Feature #5.
+
+INVESTMENT PAYBACK ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Design Approach: Conservative with Diversity Factors Applied
+
+Capital Investment Impact:
+  Traditional Approach (no diversity):   $500,000 (estimated)
+  With Diversity Factors:                $450,000 (estimated)
+  Upfront Savings:                        $50,000 (10.0% reduction)
+
+Operational Savings (Annual):
+  Energy Cost Reduction:                  34589.5 kW × 8760 hrs × 70% LF × $0.12/kWh
+  Annual Energy Savings:                  $25,452,360
+  Annual Demand Charge Savings:           34589.5 kW × 12 months × $15/kW-month
+  Annual Demand Savings:                  $6,226,115
+  Total Annual Savings:                   $31,678,476
+  Payback Period:                         IMMEDIATE (savings > upfront investment)
+
+Conservative Safety Margin:
+  Design Sizing:                          100% FLC (conservative)
+  Operating Load:                         75.7% (with diversity)
+  Safety Margin:                          24.3% spare capacity
+  Equipment Life Extension:               15-20% (reduced stress and thermal cycling)
+
+ROI Analysis:
+  Year 1 Total Savings:                   $50,000 capital + $31,678,476 operational = $31,728,476
+  5-Year NPV @ 5% discount:               $137,201,221
+  Internal Rate of Return (IRR):          >100% (immediate positive cash flow)
+  Break-Even Point:                       Year 0 (immediate)
+
+Conclusion: Diversity factor application provides IMMEDIATE positive ROI
+            with no compromise to safety or reliability.
+
+FUTURE CAPACITY ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Current System Utilization:
+  Connected Load:                         15844.59 A
+  Design Capacity:                        19805.73 A (conservatively sized at 125% FLC)
+  Current Utilization:                    80.0%
+  Spare Capacity:                         3961.15 A (20.0%)
+
+With Diversity Factors:
+  Operating Load:                         11991.79 A (75.7% of connected)
+  Available for Growth:                   7813.94 A (39.5% growth potential)
+
+5-Year Load Growth Projections:
+  Assumed Annual Growth: 3% (typical industrial)
+----------------------------------------------------------------------------------------------------
+  Year   Connected(A)   Diversity(A)   Utilization   Status
+----------------------------------------------------------------------------------------------------
+  1        16319.93       12351.54          62.4%   ✓ OK
+  2        16809.52       12722.09          64.2%   ✓ OK
+  3        17313.81       13103.75          66.2%   ✓ OK
+  4        17833.22       13496.87          68.1%   ✓ OK
+  5        18368.22       13901.77          70.2%   ✓ OK
+----------------------------------------------------------------------------------------------------
+
+Recommendation:
+  • Sufficient capacity for >10 years of growth at 3% annual rate
+  • Continue monitoring load trends annually
+  • Re-evaluate if growth rate exceeds 3%
+  • Diversity factors provide 20.0% buffer for unexpected growth
+  • System designed conservatively (125% of FLC) ensures adequate margin
+
+RISK ANALYSIS - DIVERSITY FACTOR APPLICATION:
+----------------------------------------------------------------------------------------------------
+Risk: Simultaneous operation exceeds diversity assumptions
+
+Probability: LOW (5-10%)
+  • IEEE 141-1993 diversity factors based on >50 years of field data
+  • Conservative 1.32 diversity factor = 75.7% simultaneous load (industry-proven)
+  • 3 motors - demand factor per NEC 430.24 applied
+  • Statistical probability of all loads peaking simultaneously: <5%
+
+Impact: MEDIUM
+  • Voltage drop increases from 11.30% to 14.93% (worst case)
+  • Worst-case voltage drop exceeds IEEE 141 limit - mitigated by conservative design
+  • Equipment operates at design ratings (no overload)
+  • Conservative FLC design sizing provides built-in 20.0% margin
+  • No equipment damage or safety hazard (designed for 100% FLC)
+
+Mitigation:
+  ✓ Design at 100% FLC (conservative sizing maintained)
+  ✓ Monitor actual load patterns first 6-12 months post-commissioning
+  ✓ Install power monitoring system for real-time load tracking
+  ✓ Adjust diversity factors if measured data significantly differs
+  ✓ Spare capacity available (20.0% margin)
+  ✓ Equipment thermal withstand verified for continuous operation
+
+Residual Risk: VERY LOW
+  • Multiple layers of conservatism:
+    - Design at 100% FLC (no diversity applied to sizing)
+    - Equipment rated for continuous duty
+    - 20.0% spare capacity margin
+    - IEEE 141 diversity factors (industry-validated)
+  • Equipment designed for worst-case conditions
+  • Operating conditions typically well within limits
+  • Historical data supports diversity assumptions
+
+Risk Acceptance: RECOMMENDED
+  • Industry-standard approach per IEEE 141-1993
+  • Validated by millions of installations worldwide
+  • Cost savings ($31,678,476/year) far outweigh minimal risk
+  • Conservative design maintains safety margin
+  • Monitoring and adjustment capability built in
+
+RISK MATRIX SUMMARY:
+----------------------------------------------------------------------------------------------------
+Risk Category          Probability   Impact      Mitigation        Residual Risk
+----------------------------------------------------------------------------------------------------
+Overload               Very Low      Medium      Conservative      Very Low
+Voltage Drop Excess    Low           Low         Design Margin     Very Low
+Equipment Failure      Very Low      High        Rated Design      Very Low
+Safety Hazard          Very Low      Critical    NEC Compliance    Very Low
+Financial Loss         Very Low      Low         Proven Method     Very Low
+----------------------------------------------------------------------------------------------------
+Overall Risk Level: ACCEPTABLE (multiple mitigation layers, conservative design)
+
+====================================================================================================
+STANDARDS COMPLIANCE DETAILED ANALYSIS
+====================================================================================================
+
+NEC 2023 COMPLIANCE:
+----------------------------------------------------------------------------------------------------
+Article 210.19(A) - Branch Circuit Conductors:
+  ✓ Compliant Buses: 0 of 12 branch circuits
+  • Limit: 5% maximum voltage drop
+  • Worst Case: 11.30%
+  • Status: ⚠️ REVIEW REQUIRED
+
+Article 215.2(A)(1) - Feeder Conductors:
+  ✓ Compliant Buses: 19 of 25 feeders
+  • Limit: 3% maximum voltage drop (recommended)
+  • Worst Case: 6.82%
+  • Status: ⚠️ REVIEW REQUIRED
+
+Article 220 - Branch-Circuit, Feeder, and Service Load Calculations:
+  ✓ Demand factors applied per NEC tables
+  ✓ Method: IEEE 141 diversity factors (more conservative than NEC minimum)
+  • Status: ✓ Meets or exceeds NEC requirements
+
+Article 430.24 - Motor Load Calculations:
+  ✓ Motor FLC used with 125% multiplier for continuous duty
+  ✓ Motor contribution to fault current accounted for
+  • Status: ✓ Proper motor load calculations applied
+
+IEEE 141-1993 (RED BOOK) COMPLIANCE:
+----------------------------------------------------------------------------------------------------
+Section 3.4 - Voltage Drop:
+  ✓ Compliant Buses: 32 of 37
+  • System Limit: 7% maximum (combined feeder + branch)
+  • Method: Component-by-component with voltage tracking
+  • Worst Case: 11.30%
+  • Status: ❌ NON-COMPLIANT
+
+Section 5 - Short Circuit Analysis:
+  ✓ Point-to-point method applied
+  ✓ Motor contribution included per Section 5.3
+  ✓ X/R ratios calculated and verified
+  • Status: ✓ Proper short circuit methodology
+
+Table 3-5 - Diversity Factors:
+  ✓ Applied 1.2-1.3 diversity factors per bus type
+  ✓ Result: 20-30% load reduction (typical)
+  • Status: ✓ Conservative application of diversity
+
+IEEE C57.12.00 - TRANSFORMER STANDARDS:
+----------------------------------------------------------------------------------------------------
+Section 5.3 - Short-Time Overload Capability:
+  ⚠️ VERIFICATION REQUIRED
+  • Transformers Analyzed: 8
+  • Overloaded: 3
+  • Action: Verify thermal withstand per manufacturer data
+  • Timeline: 30 days
+
+Section 7 - Temperature Rise:
+  ✓ All transformers < 100% rated load
+  • Average Loading: 101.9%
+  • Status: ✓ Normal operating conditions
+
+IEEE 242-2001 (BUFF BOOK) - PROTECTION:
+----------------------------------------------------------------------------------------------------
+Chapter 3 - Protective Device Coordination:
+  ⚠️ REVIEW REQUIRED
+  • Motor Contribution: Present - may affect coordination
+  • Action: Update time-current curves to account for motor contribution
+  • Timeline: 60 days
+
+Chapter 6 - Transformer Protection:
+  ✓ Primary and secondary protection recommended
+  • Status: ✓ Adequate protection scheme assumed
+
+====================================================================================================
+SYSTEM EFFICIENCY METRICS
+====================================================================================================
+
+POWER QUALITY INDICATORS:
+----------------------------------------------------------------------------------------------------
+System Power Factor: 0.87 (ACCEPTABLE)
+  • Target: 0.90 or higher
+  • Improvement Opportunity: 0.03 (3.0%)
+  • Method: Power factor correction capacitors
+  • Estimated Cost: $15,000 - $30,000
+  • Annual Savings: $3,000 - $6,000 (reduced demand charges)
+  • Payback Period: 5-10 years
+
+Total Harmonic Distortion (THD): Not measured
+  • Recommendation: Conduct power quality study
+  • Typical Acceptable Limit: < 5% (IEEE 519)
+  • Cost: $5,000 - $10,000
+
+Voltage Unbalance: Not measured
+  • Recommendation: Monitor phase voltages
+  • Acceptable Limit: < 2% (NEMA MG-1)
+  • Impact: Motor derating, reduced efficiency
+
+SYSTEM LOSSES:
+----------------------------------------------------------------------------------------------------
+Cable I²R Losses:
+  • MV System (≥1kV): ~35.4 kW
+  • LV System (<1kV): ~106.5 kW
+  • Total Cable Losses: ~141.9 kW
+
+Transformer Losses:
+  • No-Load Losses: ~23.4 kW (8 transformers)
+  • Load Losses: ~141.4 kW @ current loading
+  • Total Transformer Losses: ~164.8 kW
+
+Total System Losses: ~306.7 kW (0.75% of total load)
+Annual Energy Loss: 2686685 kWh
+Annual Cost @ $0.12/kWh: $322402
+Improvement Opportunity: Reduce losses by 0.5% = $214101/year
+
+ENERGY EFFICIENCY RECOMMENDATIONS:
+----------------------------------------------------------------------------------------------------
+1. Power Factor Correction
+   • Investment: $15,000 - $30,000
+   • Annual Savings: $3,000 - $6,000 (reduced demand charges)
+   • Payback: 5-10 years
+   • Priority: MEDIUM
+
+2. Transformer Upgrade to Higher Efficiency Units
+   • Investment: $60,000 - $120,000
+   • Annual Savings: $4,000 - $8,000 (reduced losses)
+   • Payback: 15-20 years (long-term)
+   • Priority: LOW (consider during replacement cycle)
+
+3. Cable Upsizing (reduce I²R losses)
+   • Investment: $50,000 - $150,000
+   • Annual Savings: $5,000 - $10,000
+   • Payback: 10-15 years
+   • Priority: MEDIUM (combine with voltage drop improvements)
+
+4. Load Balancing
+   • Investment: $2,000 - $5,000
+   • Annual Savings: $1,000 - $2,000
+   • Payback: 2-5 years
+   • Priority: HIGH (RECOMMENDED - Quick win)
+
+====================================================================================================
+MAINTENANCE RECOMMENDATIONS
+====================================================================================================
+
+PREVENTIVE MAINTENANCE SCHEDULE:
+----------------------------------------------------------------------------------------------------
+Monthly:
+  □ Visual inspection of transformers for oil leaks, unusual sounds
+  □ Check for abnormal heating at all connections
+  □ Verify cooling fan operation (if applicable)
+  □ Inspect for signs of moisture, corrosion, or wildlife intrusion
+  □ Review load data from monitoring systems (if installed)
+
+Quarterly:
+  □ Thermographic inspection of all electrical connections
+  □ Measure and record phase currents at all distribution points
+  □ Check transformer oil level and temperature
+  □ Inspect cable terminations and splices
+  □ Test ground fault protection systems
+  □ Clean and inspect switchgear, MCCs, and panelboards
+
+Semi-Annually:
+  □ Transformer oil analysis (dissolved gas analysis - DGA)
+  □ Insulation resistance testing (Megger) on cables
+  □ Ground resistance testing
+  □ Battery backup system testing
+  □ Verify voltage drop measurements at critical loads
+  □ Review and update protective relay settings
+
+Annually:
+  □ Comprehensive transformer inspection
+  □ Breaker contact resistance testing
+  □ Protective relay testing and calibration
+  □ Arc flash label verification and update
+  □ Single-line diagram update with any system changes
+  □ Emergency shutdown and backup power testing
+  □ Review and update maintenance logs
+
+Every 3-5 Years:
+  □ Transformer internal inspection and BIL testing
+  □ Cable hi-pot testing (insulation integrity)
+  □ Major breaker overhaul or replacement
+  □ Ground grid integrity testing
+  □ Power quality study (harmonics, voltage variations)
+  □ Short circuit study update
+  □ Load flow study update
+  □ Arc flash hazard analysis update
+
+MONITORING RECOMMENDATIONS:
+----------------------------------------------------------------------------------------------------
+1. Install Power Quality Meters at Main Feeders
+   • Cost: $5,000 - $10,000
+   • Benefits:
+     - Real-time monitoring of voltage, current, power factor
+     - Early fault detection
+     - Load trending and forecasting
+     - Energy consumption tracking
+   • ROI: 3-5 years (reduced downtime, optimized maintenance)
+   • Priority: HIGH
+
+2. Transformer Temperature Monitoring
+   • Cost: $3,000 - $6,000 per transformer
+   • Benefits:
+     - Overload protection
+     - Predictive maintenance (detect cooling system failures)
+     - Extend transformer life through optimized loading
+   • ROI: 2-3 years (prevent catastrophic failures)
+   • Priority: MEDIUM (install on critical transformers first)
+
+3. Motor Condition Monitoring
+   • Cost: $2,000 - $4,000 per motor
+   • Benefits:
+     - Early bearing failure detection
+     - Winding insulation monitoring
+     - Vibration analysis
+     - Energy efficiency tracking
+   • ROI: 1-2 years (prevent unplanned downtime)
+   • Priority: MEDIUM (install on critical process motors)
+
+4. Automated Load Management System
+   • Cost: $15,000 - $30,000
+   • Benefits:
+     - Automatic load shedding during peak demand
+     - Demand response participation
+     - Energy cost optimization
+     - Real-time diversity factor verification
+   • ROI: 2-4 years (reduced demand charges)
+   • Priority: LOW (consider for future expansion)
+
+SPARE PARTS RECOMMENDATIONS:
+----------------------------------------------------------------------------------------------------
+Critical Spare Parts to Maintain:
+  □ Circuit breakers (common frame sizes)
+  □ Motor starters and contactors
+  □ Control power transformers
+  □ Fuses (all ratings used in system)
+  □ Cable connectors and lugs (common sizes)
+  □ Ground fault and arc fault relays
+  □ Emergency lighting battery packs
+  □ Transformer oil (for oil-filled units)
+  □ Cable pulling lubricant and splicing materials
+
+Recommended Stock Levels:
+  • Molded Case Circuit Breakers: 1-2 per common frame size
+  • Motor Starters: 1 per common HP rating (critical motors)
+  • Control Transformers: 2-3 units (various VA ratings)
+  • Fuses: 10-20 per rating (high-usage ratings)
+  • Cable Lugs/Connectors: 20-50 per common size
+
+====================================================================================================
+CONCLUSION AND NEXT STEPS
+====================================================================================================
+
+OVERALL SYSTEM ASSESSMENT:
+----------------------------------------------------------------------------------------------------
+The electrical distribution system is OPERATING WITH CRITICAL ISSUES that require 
+IMMEDIATE ATTENTION.
+
+System Rating: CRITICAL
+
+Key Strengths:
+  ✓ Acceptable voltage drop (avg 3.58% < 5%)
+  ✓ Fault currents within standard breaker ratings
+  ✓ Proper application of diversity factors (37 buses)
+  ✓ Adequate cable sizing for thermal limits
+
+AREAS REQUIRING ATTENTION:
+----------------------------------------------------------------------------------------------------
+  ❌ 8 CRITICAL ISSUES - IMMEDIATE ACTION REQUIRED
+  ⚠️ 23 High Priority Issues requiring attention within 30 days
+  ⚠️ 41 Medium Priority issues - plan for next maintenance cycle
+  ⚠️ 5 buses exceed IEEE 141 voltage drop limits
+  ⚠️ Power factor below optimal (0.87) - consider correction
+
+RECOMMENDED PRIORITY ACTIONS:
+----------------------------------------------------------------------------------------------------
+Priority 1 (0-30 days) - IMMEDIATE:
+  1. LCC2-4: Transformer Overload Critical
+     → IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.
+     Cost: VERY HIGH | Timeline: 1-7 days
+  2. LCA1-4: Transformer Overload Critical
+     → IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.
+     Cost: VERY HIGH | Timeline: 1-7 days
+  3. LCB1-4: Transformer Overload Critical
+     → IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.
+     Cost: VERY HIGH | Timeline: 1-7 days
+
+Priority 2 (1-6 months) - SHORT-TERM:
+
+Priority 3 (6-24 months) - LONG-TERM:
+  • Cable upsizing for long runs (>500 ft)
+  • Power factor correction evaluation
+  • Transformer efficiency upgrade (during replacement)
+  • Develop 5-year capital improvement plan
+
+ESTIMATED INVESTMENT:
+----------------------------------------------------------------------------------------------------
+Immediate Actions (Priority 1): $10K-30K
+Short-Term Actions (Priority 2): $20K-50K
+Long-Term Improvements (Priority 3): $100K-250K
+----------------------------------------------------------------------------------------------------
+Total Program Cost: $130K-330K
+
+Note: Costs are estimates and may vary based on:
+  • Local labor rates and material costs
+  • System accessibility and outage requirements
+  • Specific equipment manufacturer selections
+  • Regulatory compliance requirements
+
+EXPECTED BENEFITS:
+----------------------------------------------------------------------------------------------------
+Immediate Benefits (0-12 months):
+  • Improved system reliability and safety
+  • Reduced risk of equipment failure
+  • Regulatory compliance maintained
+  • Enhanced worker safety (arc flash mitigation)
+
+Operational Benefits (1-5 years):
+  • Lower maintenance costs (predictive vs reactive)
+  • Reduced unplanned downtime
+  • Extended equipment life
+  • Improved power quality
+
+Financial Benefits (5-10 years):
+  • Energy cost savings: $10,000 - $20,000/year (potential)
+  • Avoided replacement costs from premature failures
+  • Reduced insurance premiums (improved safety)
+  • Increased system capacity for future growth
+
+FINAL RECOMMENDATIONS:
+----------------------------------------------------------------------------------------------------
+Based on this comprehensive analysis, the following approach is recommended:
+
+1. IMMEDIATE (Within 30 days):
+   → Address 8 critical issues identified in this report
+   → Verify all circuit breaker ratings meet fault current requirements
+   → Update arc flash labels if system changes have occurred
+
+2. SHORT-TERM (3-6 months):
+   → Conduct detailed cable sizing review for voltage drop optimization
+   → Implement load balancing strategies
+   → Install power quality monitoring at main feeders
+   → Review and update protective device coordination study
+
+3. LONG-TERM (1-3 years):
+   → Develop 5-year electrical infrastructure capital plan
+   → Evaluate power factor correction economics
+   → Plan for cable upsizing during maintenance outages
+   → Consider energy efficiency upgrades (LED lighting, VFDs, etc.)
+
+4. ONGOING:
+   → Maintain preventive maintenance schedule per recommendations
+   → Monitor load growth and diversity factors
+   → Update electrical studies every 3-5 years
+   → Train staff on proper operation and emergency procedures
+
+====================================================================================================
+SUMMARY OF ALL BUSES
+====================================================================================================
+
+Bus Name                          Voltage(V)   Fault(kA)   X/R Ratio   VDrop(%)   Demand(A)   Status
+----------------------------------------------------------------------------------------------------
+MERALCO-CCP                           13200         4.40         5.98        0.00       290.76   ✓ OK
+EHV1                                  13200         4.39         5.93        0.02       290.76   ✓ OK
+DS01                                  13200         4.34         5.49        0.07       117.16   ✓ OK
+LCJ1-1                                13200         4.31         5.47        0.07        25.95   ✓ OK
+LCJ1-4                                  440        26.21         3.23        2.16       778.60   ✓ OK
+DS02                                  13200         3.94         3.54        0.40        89.38   ✓ OK
+LCH1-1                                13200         3.86         3.31        0.41        27.88   ✓ OK
+LCH1-4                                  440        25.57         2.99        2.66       836.40   ⚠ HIGH
+DS03                                  13200         3.71         2.94        0.53        59.53   ✓ OK
+LCC1-1                                13200         3.47         2.54        0.60        27.54   ✓ OK
+LCC1-4                                  440        24.95         2.81        2.82       826.20   ⚠ MEDIUM
+DS04                                  13200         3.62         2.77        0.56        30.05   ✓ OK
+LCC2-1                                13200         3.61         2.73        0.56        14.55   ✓ OK
+LCC2-4                                  440         8.03         1.66        6.00       436.41   ❌ CRITICAL
+FPMOTOR                                 440         7.35         1.55        6.00          N/A   ⚠ HIGH
+OHC1                                    440         7.35         1.55        6.00          N/A   ⚠ HIGH
+OHC2                                    440         7.35         1.55        6.00          N/A   ⚠ HIGH
+LCD1-1                                13200         3.51         2.59        0.58        14.48   ✓ OK
+LCD1-4                                  440        16.08         1.17        3.19       434.35   ⚠ MEDIUM
+DS05                                  13200         4.21         4.81        0.25       162.15   ✓ OK
+LCA1-1                                13200         4.21         4.77        0.25        49.98   ✓ OK
+LCA1-4                                  440        26.07         3.17        4.18      1499.32   ❌ CRITICAL
+DS06                                  13200         4.14         4.41        0.31        82.82   ✓ OK
+LCB1-1                                13200         4.14         4.38        0.31        82.82   ✓ OK
+LCB1-4                                  440        25.97         3.14        6.82      2484.58   ❌ CRITICAL
+LCU1-1                                13200         4.11         4.20        0.28        29.35   ✓ OK
+LCU1-4                                  440        36.84         3.29        1.75       880.60   ⚠ HIGH
+SH1-A16                                 440        10.08         1.59        6.57       351.31   ⚠ HIGH
+SH1-B16                                 440        10.70         1.62        6.56       385.47   ⚠ HIGH
+SH1-C16                                 440        12.02         1.70        6.09       377.06   ⚠ HIGH
+SH1-D16                                 440        12.65         1.74        5.95       385.47   ⚠ HIGH
+SH2-B12                                 440        11.24         1.84        9.55       503.29   ❌ CRITICAL
+SH2-C12                                 440         9.18         1.54       11.30       570.26   ❌ CRITICAL
+SH3-E1                                  440        15.58         1.94        8.31       510.00   ❌ CRITICAL
+SH5-D1                                  440        10.51         1.61       11.15       682.13   ❌ CRITICAL
+LCB1-P                                  440        24.53         2.70        6.86       111.54   ⚠ HIGH
+SH3-E2                                  440        11.70         1.15        7.47       107.35   ❌ CRITICAL
+
+CABLE TAG DIRECTORY:
+----------------------------------------------------------------------------------------------------
+Tag               Description                     From                    To                      Size/Material
+----------------------------------------------------------------------------------------------------
+C-13k2-CCP-EHV1-01 Main Service Feeder              MERALCO-CCP              EHV1                     500 copper
+C-13k2-EHV1-DS01-01 MV Feeder to DS01                EHV1                     DS01                     250 copper
+C-13k2-DS01-LCJ1-01 Sub Feeder to LCJ1               DS01                     LCJ1-1                   4/0 copper
+C-13k2-DS01-DS02-01 MV Feeder to DS02                DS01                     DS02                     250 copper
+C-13k2-DS02-LCH1-01 Sub Feeder to LCH1               DS02                     LCH1-1                   3/0 copper
+C-13k2-DS02-DS03-01 MV Feeder to DS03                DS02                     DS03                     250 copper
+C-13k2-DS03-LCC1-01 Sub Feeder to LCC1               DS03                     LCC1-1                   250 copper
+C-13k2-DS03-DS04-01 MV Feeder to DS04                DS03                     DS04                     250 copper
+C-13k2-DS04-LCC2-01 Sub Feeder to LCC2               DS04                     LCC2                     3/0 copper
+C-13k2-DS04-LCD1-01 MV Feeder to LCD1                DS04                     LCD1-1                   4/0 copper
+C-13k2-EHV-DS05-01 MV Feeder to DS05                EHV1                     DS05                     250 copper
+C-13k2-DS05-LCA1-01 Sub Feeder to LCA1               DS05                     LCA1-1                   3/0 copper
+C-13k2-DS05-DS06-01 MV Feeder to DS06                DS05                     DS06                     250 copper
+C-13k2-DS06-LCB1-01 Sub Feeder to LCB1               DS06                     LCB1-1                   3/0 copper
+C-13k2-DS05-LCU1-01 Sub Feeder to LCU1               DS05                     LCU1-1                   4/0 copper
+C-440-LCA14-SH1A16-01 Branch Feed LCA1 to SH1-A16      LCA1-4                   SH1-A16                  500 copper (2×)
+C-440-LCA14-SH1B16-01 Branch Feed LCA1 to SH1-B16      LCA1-4                   SH1-B16                  500 copper (2×)
+C-440-LCA14-SH1C16-01 Branch Feed LCA1 to SH1-C16      LCA1-4                   SH1-C16                  500 copper (2×)
+C-440-LCA14-SH1D16-01 Branch Feeder LCA1 to SH1-D16    LCA1-4                   SH1-D16                  500 copper (2×)
+C-440-LCB14-SH2B12-01 Branch Feed LCB1 to SH2-B12      LCB1-4                   SH2-B12                  600 copper (3×)
+C-440-LCB14-SH2C12-01 Branch Feed LCB1 to SH2-C12      LCB1-4                   SH2-C12                  500 copper (3×)
+C-440-LCB14-SH3E1-01 Branch Feed LCB1 to SH3-E1       LCB1-4                   SH3-E1                   500 copper (2×)
+C-440-LCB14-SH5D1-01 Branch Feed LCB1 to SH5-D1       LCB1-4                   SH5-D1                   500 copper (3×)
+C-440-LCB14-LCB1P-01 Branch Feed LCB1 to LCB1-P       LCB1-4                   LCB1-P                   250 copper
+C-440-LCB14-SH3E2  Branch Feed LCB1 to SH3-E2       LCB1-4                   SH3-E2                   250 copper
+
+SYSTEM-WIDE RECOMMENDATIONS:
+----------------------------------------------------------------------------------------------------
+Total Recommendations: 72
+  - Critical Issues: 8
+  - High Priority: 23
+  - Medium Priority: 41
+  - Low Priority: 0
+
+⚠️ WARNING: 8 CRITICAL ISSUES DETECTED!
+    IMMEDIATE ACTION REQUIRED TO ENSURE SYSTEM SAFETY!
+
+RECOMMENDATIONS BY CATEGORY:
+----------------------------------------------------------------------------------------------------
+Cable: 31
+Transformer: 5
+Voltage Drop: 33
+Protection Coordination: 3
+
+
+ALL RECOMMENDATIONS BY BUS:
+----------------------------------------------------------------------------------------------------
+
+BUS: LCH1-4 (440V)
+····································································································
+
+1. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+2. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+
+BUS: LCC1-4 (440V)
+····································································································
+
+1. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+
+BUS: LCC2-4 (440V)
+····································································································
+
+1. [CRITICAL] Transformer Overload Critical
+   Category: Transformer
+   Finding: Transformer OVERLOADED - Loading exceeds 100% of nameplate rating
+   Action: IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.
+   Impact: Transformer thermal damage, accelerated insulation aging, potential failure
+   Cost: VERY HIGH | Effort: High (load transfer or transformer replacement required)
+   Standard: IEEE C57.12.00, NEC 450.3
+
+2. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: FPMOTOR (440V)
+····································································································
+
+1. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+2. [MEDIUM] Motor Contribution Significant
+   Category: Protection Coordination
+   Finding: Motor contribution to fault current detected
+   Action: Ensure protective device coordination accounts for motor contribution. Review time-current curves.
+   Impact: Protection may not coordinate properly
+   Cost: LOW | Effort: Low (protection study update)
+   Standard: IEEE 242-2001 Buff Book
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: OHC1 (440V)
+····································································································
+
+1. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+2. [MEDIUM] Motor Contribution Significant
+   Category: Protection Coordination
+   Finding: Motor contribution to fault current detected
+   Action: Ensure protective device coordination accounts for motor contribution. Review time-current curves.
+   Impact: Protection may not coordinate properly
+   Cost: LOW | Effort: Low (protection study update)
+   Standard: IEEE 242-2001 Buff Book
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: OHC2 (440V)
+····································································································
+
+1. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+2. [MEDIUM] Motor Contribution Significant
+   Category: Protection Coordination
+   Finding: Motor contribution to fault current detected
+   Action: Ensure protective device coordination accounts for motor contribution. Review time-current curves.
+   Impact: Protection may not coordinate properly
+   Cost: LOW | Effort: Low (protection study update)
+   Standard: IEEE 242-2001 Buff Book
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: LCD1-4 (440V)
+····································································································
+
+1. [MEDIUM] Feeder Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Feeder voltage drop exceeds recommended limit (3%)
+   Action: Consider upsizing feeder conductors or reducing load.
+   Impact: Reduced voltage regulation margin
+   Cost: MEDIUM | Effort: Medium (cable replacement)
+   Standard: IEEE 141-1993 Red Book
+
+2. [MEDIUM] Low Transformer Impedance
+   Category: Transformer
+   Finding: Transformer impedance below typical range (<4%)
+   Action: Low impedance transformer increases fault current. Consider: 1) Higher impedance unit during replacement, 2) Current-limiting reactor.
+   Impact: Higher fault currents downstream
+   Cost: NONE (future consideration) | Effort: None (for future replacement)
+   Standard: IEEE C57.12.00
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+
+BUS: LCA1-4 (440V)
+····································································································
+
+1. [CRITICAL] Transformer Overload Critical
+   Category: Transformer
+   Finding: Transformer OVERLOADED - Loading exceeds 100% of nameplate rating
+   Action: IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.
+   Impact: Transformer thermal damage, accelerated insulation aging, potential failure
+   Cost: VERY HIGH | Effort: High (load transfer or transformer replacement required)
+   Standard: IEEE C57.12.00, NEC 450.3
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Feeder Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Feeder voltage drop exceeds recommended limit (3%)
+   Action: Consider upsizing feeder conductors or reducing load.
+   Impact: Reduced voltage regulation margin
+   Cost: MEDIUM | Effort: Medium (cable replacement)
+   Standard: IEEE 141-1993 Red Book
+
+4. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+5. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: LCB1-4 (440V)
+····································································································
+
+1. [CRITICAL] Transformer Overload Critical
+   Category: Transformer
+   Finding: Transformer OVERLOADED - Loading exceeds 100% of nameplate rating
+   Action: IMMEDIATE: 1) Reduce load on secondary bus, 2) Transfer loads to other feeders, 3) Install larger transformer, 4) Add parallel transformer. Continued overload will cause thermal damage and reduced transformer life.
+   Impact: Transformer thermal damage, accelerated insulation aging, potential failure
+   Cost: VERY HIGH | Effort: High (load transfer or transformer replacement required)
+   Standard: IEEE C57.12.00, NEC 450.3
+
+2. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+3. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+4. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+5. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: LCU1-4 (440V)
+····································································································
+
+1. [HIGH] Transformer Secondary Fault High
+   Category: Transformer
+   Finding: High secondary fault current - verify transformer thermal capability
+   Action: Check transformer: 1) Thermal withstand time, 2) Primary protection settings, 3) Secondary protection coordination.
+   Impact: Potential transformer thermal damage
+   Cost: MEDIUM | Effort: Low (verification and protection adjustment)
+   Standard: IEEE C57.12.00, IEEE 242
+
+
+BUS: SH1-A16 (440V)
+····································································································
+
+1. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: SH1-B16 (440V)
+····································································································
+
+1. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: SH1-C16 (440V)
+····································································································
+
+1. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: SH1-D16 (440V)
+····································································································
+
+1. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: SH2-B12 (440V)
+····································································································
+
+1. [CRITICAL] Critical Voltage Drop Violation
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds IEEE 141 maximum limit (7%)
+   Action: IMMEDIATE: Resize conductors or install voltage regulation equipment. System may not operate properly.
+   Impact: Equipment may malfunction, motors may overheat, lights may be dim
+   Cost: HIGH | Effort: High (conductor replacement or voltage regulator)
+   Standard: IEEE 141-1993 Red Book, NEC 215.2
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: SH2-C12 (440V)
+····································································································
+
+1. [CRITICAL] Critical Voltage Drop Violation
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds IEEE 141 maximum limit (7%)
+   Action: IMMEDIATE: Resize conductors or install voltage regulation equipment. System may not operate properly.
+   Impact: Equipment may malfunction, motors may overheat, lights may be dim
+   Cost: HIGH | Effort: High (conductor replacement or voltage regulator)
+   Standard: IEEE 141-1993 Red Book, NEC 215.2
+
+2. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+3. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: SH3-E1 (440V)
+····································································································
+
+1. [CRITICAL] Critical Voltage Drop Violation
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds IEEE 141 maximum limit (7%)
+   Action: IMMEDIATE: Resize conductors or install voltage regulation equipment. System may not operate properly.
+   Impact: Equipment may malfunction, motors may overheat, lights may be dim
+   Cost: HIGH | Effort: High (conductor replacement or voltage regulator)
+   Standard: IEEE 141-1993 Red Book, NEC 215.2
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: SH5-D1 (440V)
+····································································································
+
+1. [CRITICAL] Critical Voltage Drop Violation
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds IEEE 141 maximum limit (7%)
+   Action: IMMEDIATE: Resize conductors or install voltage regulation equipment. System may not operate properly.
+   Impact: Equipment may malfunction, motors may overheat, lights may be dim
+   Cost: HIGH | Effort: High (conductor replacement or voltage regulator)
+   Standard: IEEE 141-1993 Red Book, NEC 215.2
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: LCB1-P (440V)
+····································································································
+
+1. [HIGH] High Voltage Drop Warning
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds recommended branch circuit limit (5%)
+   Action: Review cable sizing. Consider: 1) Larger conductors, 2) Parallel cables, 3) Higher voltage level.
+   Impact: Reduced efficiency, potential equipment performance issues
+   Cost: MEDIUM | Effort: Medium (cable upsizing)
+   Standard: IEEE 141-1993 Red Book
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+BUS: SH3-E2 (440V)
+····································································································
+
+1. [CRITICAL] Critical Voltage Drop Violation
+   Category: Voltage Drop
+   Finding: Voltage drop exceeds IEEE 141 maximum limit (7%)
+   Action: IMMEDIATE: Resize conductors or install voltage regulation equipment. System may not operate properly.
+   Impact: Equipment may malfunction, motors may overheat, lights may be dim
+   Cost: HIGH | Effort: High (conductor replacement or voltage regulator)
+   Standard: IEEE 141-1993 Red Book, NEC 215.2
+
+2. [HIGH] Small Conductor High Fault Current
+   Category: Cable
+   Finding: Small conductor (<4 AWG) with high fault current (>10 kA)
+   Action: Verify: 1) Cable short-circuit withstand (I²t), 2) Overcurrent protection response time, 3) Cable insulation rating.
+   Impact: Potential cable damage during fault
+   Cost: LOW | Effort: Low (verification) to High (if replacement needed)
+   Standard: IEEE 242-2001, NEC 110.10
+
+3. [MEDIUM] Long Cable Run High Drop
+   Category: Cable
+   Finding: Long cable run (>500 ft) with voltage drop >2%
+   Action: Consider: 1) Larger conductor size, 2) Parallel cables, 3) Intermediate voltage boost.
+   Impact: Poor voltage regulation
+   Cost: MEDIUM | Effort: High (cable replacement)
+   Standard: IEEE 141-1993
+
+4. [MEDIUM] Single Component High Drop
+   Category: Voltage Drop
+   Finding: Single component contributing >3% voltage drop
+   Action: Identify and review specific component causing high drop. May need resizing.
+   Impact: Inefficient system design
+   Cost: LOW to MEDIUM | Effort: Variable (depends on component)
+   Standard: IEEE 141-1993
+
+
+====================================================================================================
+IEEE STANDARDS COMPLIANCE SUMMARY
+====================================================================================================
+
+⚠️ COMPLIANCE ISSUES DETECTED
+
+The following buses require attention:
+
+  - LCH1-4: 1 High Priority
+  - LCC2-4: 1 Critical, 1 High Priority
+  - FPMOTOR: 1 High Priority
+  - OHC1: 1 High Priority
+  - OHC2: 1 High Priority
+  - LCA1-4: 1 Critical, 1 High Priority
+  - LCB1-4: 1 Critical, 2 High Priority
+  - LCU1-4: 1 High Priority
+  - SH1-A16: 2 High Priority
+  - SH1-B16: 2 High Priority
+  - SH1-C16: 2 High Priority
+  - SH1-D16: 2 High Priority
+  - SH2-B12: 1 Critical, 1 High Priority
+  - SH2-C12: 1 Critical, 
+  - SH3-E1: 1 Critical, 1 High Priority
+  - SH5-D1: 1 Critical, 1 High Priority
+  - LCB1-P: 2 High Priority
+  - SH3-E2: 1 Critical, 1 High Priority
+
+====================================================================================================
+REPORT PREPARED BY
+====================================================================================================
+
+Engineer: B. P. Faraon
+Software: PwrSys Pro - Short Circuit Analyzer v1.0
+Analysis Date: 12/2/2025, 2:51:28 PM UTC
+Report Generated: 12/2/2025, 2:51:28 PM UTC
+
+Standards Applied:
+  ✓ NEC 2023 (NFPA 70)
+  ✓ IEEE 141-1993 (Red Book - Industrial Power Systems)
+  ✓ IEEE 242-2001 (Buff Book - Protection & Coordination)
+  ✓ IEEE C57.12.00 (Transformer Standards)
+  ✓ IEEE 519 (Harmonic Control)
+  ✓ API RP 540 (Petroleum Facilities)
+  ✓ NEMA MG-1 (Motors and Generators)
+
+This report represents a comprehensive analysis of the electrical distribution system based on
+provided data and industry-standard calculation methods. Field verification and manufacturer
+specifications should be confirmed for critical components before implementation.
+
+====================================================================================================
+END OF COMPREHENSIVE SYSTEM REPORT
+====================================================================================================

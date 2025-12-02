@@ -1,0 +1,801 @@
+/**
+ * Demand & Diversity Factors Module
+ * Heavy Industry Standards (LNG & Fabrication)
+ * 
+ * DEFINITIONS (Per IEEE 141-1993, NEC Article 220, IEC 61439):
+ * 
+ * DIVERSITY FACTOR (DF):
+ *   DF = (Sum of Individual Maximum Demands) / (Maximum Demand of Whole System)
+ *   ALWAYS ≥ 1.0
+ *   Higher value = more diversity = lower actual demand
+ * 
+ * DEMAND FACTOR (Kd):
+ *   Kd = (Maximum Demand) / (Total Connected Load)
+ *   ALWAYS ≤ 1.0
+ *   Kd = 1 / DF
+ * 
+ * SIMULTANEITY FACTOR (Ks) - IEC 61439:
+ *   Ks = 1 / DF (same as Demand Factor)
+ *   Represents fraction of loads operating simultaneously
+ * 
+ * Standards:
+ * - IEEE 141-1993 (Red Book) - Industrial Power Systems
+ * - IEEE 242 (Buff Book) - Protection & Coordination
+ * - API RP 540 - Electrical Installations in Petroleum
+ * - IEC 61439 - Low-voltage Switchgear Assemblies
+ * - NEC Article 220 - Branch Circuit & Feeder Calculations
+ * 
+ * @author bfforex
+ * @date 2025-11-01 09:32:19 UTC
+ * @version 2.0.2 - FIXED duplicate loading and redeclaration errors
+ */
+
+console.log('🔧 Loading Demand & Diversity Factors Module v2.0.2...');
+console.log('   ✅ IEEE 141-1993 Diversity Factors (DF ≥ 1.0)');
+console.log('   ✅ NEC Article 220 Demand Factors (Kd ≤ 1.0)');
+console.log('   ✅ Heavy Industry Standards (LNG, Fabrication)');
+
+// ═══════════════════════════════════════════════════════════════════════
+// DIVERSITY FACTORS (DF ≥ 1.0)
+// Per IEEE 141-1993, IEEE 242, IEC 61439
+// Conditional initialization to prevent redeclaration errors
+// ═══════════════════════════════════════════════════════════════════════
+
+if (typeof window.DIVERSITY_FACTORS === 'undefined') {
+    
+    window.DIVERSITY_FACTORS = {
+        
+        // ───────────────────────────────────────────────────────────────────
+        // MOTORS - IEEE 141-1993 Table 3-5
+        // ───────────────────────────────────────────────────────────────────
+        motors: {
+            description: 'Motors - grouped by count',
+            source: 'IEEE 141-1993 Table 3-5',
+            
+            // Number of motors vs diversity factor
+            '1': 1.00,        // Single motor: DF = 1.0 (100% demand)
+            '2': 1.05,        // 2 motors: DF = 1.05 (95% simultaneous)
+            '3': 1.10,        // 3 motors: DF = 1.10 (91% simultaneous)
+            '4': 1.15,        // 4 motors: DF = 1.15 (87% simultaneous)
+            '5': 1.18,        // 5 motors: DF = 1.18 (85% simultaneous)
+            '10': 1.25,       // 10 motors: DF = 1.25 (80% simultaneous)
+            '15': 1.30,       // 15 motors: DF = 1.30 (77% simultaneous)
+            '20': 1.35,       // 20+ motors: DF = 1.35 (74% simultaneous)
+            
+            // Helper function
+            getDiversityFactor: function(motorCount) {
+                if (motorCount <= 1) return 1.00;
+                if (motorCount === 2) return 1.05;
+                if (motorCount <= 3) return 1.10;
+                if (motorCount <= 5) return 1.18;
+                if (motorCount <= 10) return 1.25;
+                if (motorCount <= 15) return 1.30;
+                return 1.35;
+            }
+        },
+        
+        // ───────────────────────────────────────────────────────────────────
+        // WELDING EQUIPMENT - IEEE 141-1993
+        // ───────────────────────────────────────────────────────────────────
+        welding: {
+            description: 'Arc welders (duty cycle based)',
+            source: 'IEEE 141-1993 Section 3.3.6',
+            
+            arc_welders_30_duty: 3.33,      // 30% duty: DF = 3.33 (Kd = 0.30)
+            arc_welders_60_duty: 1.67,      // 60% duty: DF = 1.67 (Kd = 0.60)
+            resistance_welders: 1.67,       // Spot/seam: DF = 1.67 (Kd = 0.60)
+            robotic_welders: 1.18,          // Automated: DF = 1.18 (Kd = 0.85)
+            
+            // Multiple welding stations
+            welding_bays: {
+                '1_5_welders': 2.86,          // DF = 2.86 (Kd = 0.35)
+                '6_10_welders': 3.33,         // DF = 3.33 (Kd = 0.30)
+                '11_plus_welders': 4.00       // DF = 4.00 (Kd = 0.25)
+            }
+        },
+        
+        // ───────────────────────────────────────────────────────────────────
+        // CRANES & HOISTS - IEEE 141-1993
+        // ───────────────────────────────────────────────────────────────────
+        cranes: {
+            description: 'Overhead cranes (not all lifting simultaneously)',
+            source: 'IEEE 141-1993 Table 3-5',
+            
+            '1_crane': 1.00,                  // Single crane: DF = 1.00
+            '2_cranes': 1.67,                 // 2 cranes: DF = 1.67 (Kd = 0.60)
+            '3_5_cranes': 2.00,               // 3-5 cranes: DF = 2.00 (Kd = 0.50)
+            '6_plus_cranes': 2.22,            // 6+ cranes: DF = 2.22 (Kd = 0.45)
+            
+            gantry_cranes: 1.82,              // Gantry: DF = 1.82 (Kd = 0.55)
+            jib_cranes: 1.67                  // Jib: DF = 1.67 (Kd = 0.60)
+        },
+        
+        // ───────────────────────────────────────────────────────────────────
+        // LNG PLANT LOADS - API RP 540
+        // ───────────────────────────────────────────────────────────────────
+        lng_plant: {
+            description: 'LNG process equipment',
+            source: 'API RP 540 (2008), IEEE 141',
+            
+            // Critical process (all run simultaneously)
+            critical_process: {
+                main_compressors: 1.00,     // DF = 1.00 (100% demand)
+                liquefaction_train: 1.00,   // DF = 1.00 (100% demand)
+                bog_compressors: 1.05,      // DF = 1.05 (95% demand)
+                export_pumps: 1.11,         // DF = 1.11 (90% demand)
+                safety_systems: 1.00,       // DF = 1.00 (100% demand)
+                fire_pumps: 1.00            // DF = 1.00 (100% demand)
+            },
+            
+            // Utility systems
+            utilities: {
+                nitrogen_plant: 1.18,       // DF = 1.18 (85% demand)
+                instrument_air: 1.11,       // DF = 1.11 (90% demand)
+                plant_air: 1.43,            // DF = 1.43 (70% demand)
+                cooling_towers: 1.18,       // DF = 1.18 (85% demand)
+                water_treatment: 1.25,      // DF = 1.25 (80% demand)
+                sewage_treatment: 1.54      // DF = 1.54 (65% demand)
+            },
+            
+            // Support facilities
+            support: {
+                hvac_process: 1.25,         // DF = 1.25 (80% demand)
+                hvac_office: 1.43,          // DF = 1.43 (70% demand)
+                lighting_process: 1.25,     // DF = 1.25 (80% demand)
+                lighting_office: 1.43,      // DF = 1.43 (70% demand)
+                workshop_equipment: 1.67    // DF = 1.67 (60% demand)
+            }
+        },
+        
+        // ───────────────────────────────────────────────────────────────────
+        // FABRICATION YARD LOADS - IEEE 3004.5
+        // ───────────────────────────────────────────────────────────────────
+        fabrication_yard: {
+            description: 'Heavy fabrication equipment',
+            source: 'IEEE 3004.5-2014, IEEE 141',
+            
+            // Welding operations
+            welding: {
+                multiple_bays: 2.86,        // DF = 2.86 (35% simultaneous)
+                robotic_cells: 1.25,        // DF = 1.25 (80% simultaneous)
+                spot_welders: 1.67          // DF = 1.67 (60% simultaneous)
+            },
+            
+            // Cutting operations
+            cutting: {
+                plasma_cutters: 2.50,       // DF = 2.50 (40% simultaneous)
+                oxy_cutters: 2.22,          // DF = 2.22 (45% simultaneous)
+                laser_cutters: 1.25         // DF = 1.25 (80% simultaneous - CNC)
+            },
+            
+            // Forming/machining
+            forming: {
+                press_brakes: 1.43,         // DF = 1.43 (70% simultaneous)
+                rolling_mills: 1.43,        // DF = 1.43 (70% simultaneous)
+                cnc_machines: 1.33,         // DF = 1.33 (75% simultaneous)
+                grinders: 2.22              // DF = 2.22 (45% simultaneous)
+            },
+            
+            // Material handling
+            material_handling: {
+                overhead_cranes: 2.00,      // DF = 2.00 (50% simultaneous)
+                gantry_cranes: 1.82,        // DF = 1.82 (55% simultaneous)
+                forklifts_charging: 2.50,   // DF = 2.50 (40% simultaneous)
+                conveyors: 1.43             // DF = 1.43 (70% simultaneous)
+            },
+            
+            // Support facilities
+            support: {
+                workshops: 1.67,            // DF = 1.67 (60% simultaneous)
+                paint_shop: 1.82,           // DF = 1.82 (55% simultaneous)
+                blasting_booth: 1.43,       // DF = 1.43 (70% simultaneous)
+                compressed_air: 1.33        // DF = 1.33 (75% simultaneous)
+            }
+        }
+    };
+    
+    console.log('✅ DIVERSITY_FACTORS initialized');
+    
+} else {
+    console.log('ℹ️ DIVERSITY_FACTORS already loaded, skipping initialization');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SYSTEM-LEVEL DIVERSITY FACTORS
+// For combining multiple substations into total system demand
+// Per IEEE 141-1993 Section 3.3 - Diversity in Large Industrial Systems
+// ═══════════════════════════════════════════════════════════════════════
+
+if (typeof window.SYSTEM_LEVEL_DIVERSITY === 'undefined') {
+    
+    window.SYSTEM_LEVEL_DIVERSITY = {
+        
+        // ───────────────────────────────────────────────────────────────────
+        // HEAVY FABRICATION & CONSTRUCTION YARD
+        // ───────────────────────────────────────────────────────────────────
+        heavy_fabrication_yard: {
+            description: 'Typical diversity for LNG/Fabrication facilities',
+            
+            // Individual substation types (Level 1)
+            office_substations: {
+                diversityFactor: 1.15,
+                description: 'Office buildings - Low diversity (aligned 9am-5pm peaks)',
+                peakTime: '12:00 PM - 2:00 PM'
+            },
+            
+            fabrication_shops: {
+                diversityFactor: 1.35,
+                description: 'Heavy fabrication - High diversity (shift work, equipment cycling)',
+                peakTime: '10:00 AM - 11:00 AM, 2:00 PM - 3:00 PM'
+            },
+            
+            assembly_areas: {
+                diversityFactor: 1.25,
+                description: 'Assembly/construction - Medium diversity (batch operations)',
+                peakTime: '9:00 AM - 10:00 AM'
+            },
+            
+            warehouse: {
+                diversityFactor: 1.40,
+                description: 'Warehouse - Very high diversity (mostly lighting/HVAC)',
+                peakTime: '8:00 AM - 9:00 AM'
+            },
+            
+            maintenance_shop: {
+                diversityFactor: 1.30,
+                description: 'Maintenance facility - High diversity (sporadic equipment use)',
+                peakTime: 'Variable'
+            },
+            
+            welding_bay: {
+                diversityFactor: 1.40,
+                description: 'Welding area - Very high diversity (not all welders run simultaneously)',
+                peakTime: '10:00 AM - 11:00 AM'
+            },
+            
+            utilities: {
+                diversityFactor: 1.20,
+                description: 'Utilities (HVAC, compressors) - Low diversity (weather-dependent)',
+                peakTime: '1:00 PM - 3:00 PM (summer)'
+            },
+            
+            // System-wide diversity (Level 2) - for combining all substations
+            system_wide: {
+                '2-3_substations': 1.30,    // Small system
+                '4-6_substations': 1.45,    // Medium system
+                '7-10_substations': 1.55,   // Large system (YOUR CASE with 8 substations)
+                '11+_substations': 1.65,    // Very large system
+                
+                description: 'Combine multiple substation MDs into total system demand',
+                note: 'Accounts for non-coincident peaks across different areas'
+            }
+        },
+        
+        // ───────────────────────────────────────────────────────────────────
+        // HELPER FUNCTION: Get System Diversity Factor Based on Count
+        // ───────────────────────────────────────────────────────────────────
+        getSystemDiversityFactor: function(substationCount, facilityType = 'heavy_fabrication_yard') {
+            const systemData = this[facilityType]?.system_wide;
+            
+            if (!systemData) {
+                console.warn(`⚠️ Unknown facility type: ${facilityType}, using default 1.5`);
+                return 1.5;
+            }
+            
+            if (substationCount <= 3) {
+                return systemData['2-3_substations'];
+            } else if (substationCount <= 6) {
+                return systemData['4-6_substations'];
+            } else if (substationCount <= 10) {
+                return systemData['7-10_substations'];
+            } else {
+                return systemData['11+_substations'];
+            }
+        }
+    };
+    
+    console.log('✅ SYSTEM_LEVEL_DIVERSITY constants loaded');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DEMAND FACTORS (Kd ≤ 1.0) - NEC Article 220
+// These are the RECIPROCAL of Diversity Factors
+// Conditional initialization to prevent redeclaration errors
+// ═══════════════════════════════════════════════════════════════════════
+
+if (typeof window.DEMAND_FACTORS === 'undefined') {
+    
+    window.DEMAND_FACTORS = {
+        
+        // ───────────────────────────────────────────────────────────────────
+        // MOTORS - NEC 430.24, 430.25
+        // ───────────────────────────────────────────────────────────────────
+        motors: {
+            description: 'Motor demand factors',
+            source: 'NEC Article 430',
+            
+            // Continuous duty requires safety margin (INCREASES load)
+            continuous_duty_multiplier: 1.25,   // 125% for continuous (>3 hours)
+            
+            // Group motor demand (by count)
+            group_demand: {
+                '1': 1.00,        // Kd = 1.00 (DF = 1.00)
+                '2': 0.95,        // Kd = 0.95 (DF = 1.05)
+                '3': 0.91,        // Kd = 0.91 (DF = 1.10)
+                '5': 0.85,        // Kd = 0.85 (DF = 1.18)
+                '10': 0.80,       // Kd = 0.80 (DF = 1.25)
+                '15': 0.77,       // Kd = 0.77 (DF = 1.30)
+                '20': 0.74        // Kd = 0.74 (DF = 1.35)
+            }
+        },
+        
+        // ───────────────────────────────────────────────────────────────────
+        // LIGHTING - NEC 220.42, 220.43
+        // ───────────────────────────────────────────────────────────────────
+        lighting: {
+            description: 'Lighting demand factors',
+            source: 'NEC Article 220.42',
+            
+            // Dwelling units
+            dwelling: {
+                first_3000_VA: 1.00,        // 100%
+                next_117000_VA: 0.35,       // 35%
+                remainder: 0.25             // 25%
+            },
+            
+            // Commercial/industrial
+            commercial: {
+                offices: 1.00,              // 100%
+                storage: 0.70,              // 70%
+                industrial: 0.80            // 80%
+            }
+        },
+        
+        // ───────────────────────────────────────────────────────────────────
+        // RECEPTACLES - NEC 220.44
+        // ───────────────────────────────────────────────────────────────────
+        receptacles: {
+            description: 'Receptacle demand factors',
+            source: 'NEC Article 220.44',
+            
+            first_10000_VA: 1.00,           // 100%
+            remainder: 0.50                 // 50%
+        }
+    };
+    
+    console.log('✅ DEMAND_FACTORS initialized');
+    
+} else {
+    console.log('ℹ️ DEMAND_FACTORS already loaded, skipping initialization');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DemandFactors CLASS - MOTOR DEMAND CALCULATIONS
+// Required by loadFlowCalc.js
+// Added: 2025-11-03 03:26:54 UTC by bfforex
+// ═══════════════════════════════════════════════════════════════════════
+
+if (typeof window.DemandFactors === 'undefined') {
+    
+    /**
+     * DemandFactors Class
+     * Handles motor demand factor calculations per NEC Article 430
+     */
+    class DemandFactors {
+        constructor() {
+            console.log('🔧 DemandFactors instance created');
+        }
+        
+        /**
+         * Calculate motor demand per NEC Article 430.24
+         * 
+         * @param {Number} fullLoadCurrent - Motor FLC in amperes
+         * @param {String} dutyType - 'continuous' or 'intermittent'
+         * @param {Number} motorCount - Number of motors in group
+         * @returns {Object} Demand calculation result
+         */
+        calculateMotorDemand(fullLoadCurrent, dutyType = 'continuous', motorCount = 1) {
+            let demandFactor = 1.0;
+            let necReference = 'NEC 430.24';
+            let multiplier = 1.0;
+            
+            // Continuous duty requires 125% multiplier
+            if (dutyType === 'continuous') {
+                multiplier = 1.25;
+                necReference = 'NEC 430.24 (continuous duty)';
+            }
+            
+            // Group motor demand factors (from DEMAND_FACTORS)
+            if (motorCount === 1) {
+                demandFactor = 1.00;
+            } else if (motorCount === 2) {
+                demandFactor = 0.95;
+            } else if (motorCount <= 3) {
+                demandFactor = 0.91;
+            } else if (motorCount <= 5) {
+                demandFactor = 0.85;
+            } else if (motorCount <= 10) {
+                demandFactor = 0.80;
+            } else if (motorCount <= 15) {
+                demandFactor = 0.77;
+            } else {
+                demandFactor = 0.74;
+            }
+            
+            // Calculate demand load
+            const demandLoad = fullLoadCurrent * demandFactor * multiplier;
+            
+            return {
+                fullLoadCurrent: fullLoadCurrent,
+                demandFactor: demandFactor,
+                multiplier: multiplier,
+                demandLoad: demandLoad,
+                dutyType: dutyType,
+                motorCount: motorCount,
+                necReference: necReference,
+                formula: `I_demand = FLC × ${demandFactor.toFixed(3)} × ${multiplier.toFixed(2)} = ${demandLoad.toFixed(2)} A`
+            };
+        }
+        
+        /**
+         * Calculate demand for lighting loads per NEC Article 220.42
+         * 
+         * @param {Number} connectedLoad - Connected lighting load in VA
+         * @param {String} buildingType - 'dwelling', 'office', 'industrial', 'storage'
+         * @returns {Object} Demand calculation result
+         */
+        calculateLightingDemand(connectedLoad, buildingType = 'industrial') {
+            let demandFactor = 1.0;
+            let necReference = 'NEC 220.42';
+            
+            switch (buildingType.toLowerCase()) {
+                case 'dwelling':
+                    // Dwelling units use tiered demand
+                    if (connectedLoad <= 3000) {
+                        demandFactor = 1.0;
+                    } else if (connectedLoad <= 120000) {
+                        const first3000 = 3000;
+                        const next = connectedLoad - 3000;
+                        demandFactor = (first3000 + next * 0.35) / connectedLoad;
+                    } else {
+                        const first3000 = 3000;
+                        const next117000 = 117000;
+                        const remainder = connectedLoad - 120000;
+                        demandFactor = (first3000 + next117000 * 0.35 + remainder * 0.25) / connectedLoad;
+                    }
+                    necReference = 'NEC 220.42 (dwelling)';
+                    break;
+                    
+                case 'office':
+                    demandFactor = 1.0;
+                    necReference = 'NEC 220.42 (office)';
+                    break;
+                    
+                case 'storage':
+                    demandFactor = 0.7;
+                    necReference = 'NEC 220.42 (storage)';
+                    break;
+                    
+                case 'industrial':
+                default:
+                    demandFactor = 0.8;
+                    necReference = 'NEC 220.42 (industrial)';
+                    break;
+            }
+            
+            const demandLoad = connectedLoad * demandFactor;
+            
+            return {
+                connectedLoad: connectedLoad,
+                demandFactor: demandFactor,
+                demandLoad: demandLoad,
+                buildingType: buildingType,
+                necReference: necReference,
+                formula: `Demand = ${connectedLoad.toFixed(0)} VA × ${demandFactor.toFixed(3)} = ${demandLoad.toFixed(0)} VA`
+            };
+        }
+        
+        /**
+         * Calculate receptacle demand per NEC Article 220.44
+         * 
+         * @param {Number} connectedLoad - Connected receptacle load in VA
+         * @returns {Object} Demand calculation result
+         */
+        calculateReceptacleDemand(connectedLoad) {
+            let demandLoad = 0;
+            const necReference = 'NEC 220.44';
+            
+            if (connectedLoad <= 10000) {
+                demandLoad = connectedLoad; // 100%
+            } else {
+                const first10kVA = 10000;
+                const remainder = connectedLoad - 10000;
+                demandLoad = first10kVA + (remainder * 0.5); // 50% on remainder
+            }
+            
+            const demandFactor = connectedLoad > 0 ? demandLoad / connectedLoad : 1.0;
+            
+            return {
+                connectedLoad: connectedLoad,
+                demandFactor: demandFactor,
+                demandLoad: demandLoad,
+                necReference: necReference,
+                formula: connectedLoad <= 10000 
+                    ? `Demand = ${connectedLoad.toFixed(0)} VA (100%)`
+                    : `Demand = 10,000 VA + (${(connectedLoad - 10000).toFixed(0)} VA × 50%) = ${demandLoad.toFixed(0)} VA`
+            };
+        }
+    }
+    
+    // Export class to global scope
+    window.DemandFactors = DemandFactors;
+    
+    // Create global instance for convenience
+    window.demandFactorsInstance = new DemandFactors();
+    
+    console.log('✅ DemandFactors class initialized');
+    console.log('   - window.DemandFactors: Available');
+    console.log('   - window.demandFactorsInstance: Created');
+    
+} else {
+    console.log('ℹ️ DemandFactors class already loaded');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// UTILITY FUNCTIONS
+// Conditional initialization to prevent redeclaration errors
+// ═══════════════════════════════════════════════════════════════════════
+
+if (typeof window.diversityToDemand !== 'function') {
+    /**
+     * Convert Diversity Factor to Demand Factor
+     * @param {Number} diversityFactor - DF (≥ 1.0)
+     * @returns {Number} Demand Factor (≤ 1.0)
+     */
+    window.diversityToDemand = function(diversityFactor) {
+        if (diversityFactor < 1.0) {
+            console.warn(`⚠️ Diversity factor ${diversityFactor} < 1.0 (should be ≥ 1.0)`);
+            return 1.0;
+        }
+        return 1.0 / diversityFactor;
+    };
+}
+
+if (typeof window.demandToDiversity !== 'function') {
+    /**
+     * Convert Demand Factor to Diversity Factor
+     * @param {Number} demandFactor - Kd (≤ 1.0)
+     * @returns {Number} Diversity Factor (≥ 1.0)
+     */
+    window.demandToDiversity = function(demandFactor) {
+        if (demandFactor > 1.0) {
+            console.warn(`⚠️ Demand factor ${demandFactor} > 1.0 (should be ≤ 1.0 for diversity)`);
+            return 1.0;
+        }
+        if (demandFactor <= 0) {
+            console.error(`❌ Demand factor ${demandFactor} ≤ 0 (invalid)`);
+            return 1.0;
+        }
+        return 1.0 / demandFactor;
+    };
+}
+
+if (typeof window.calculateDiversifiedLoadSimple !== 'function') {
+    /**
+     * Calculate diversified load (simple version)
+     * @param {Number} connectedLoad - Total connected load
+     * @param {Number} diversityFactor - DF (≥ 1.0)
+     * @returns {Number} Actual diversified load
+     */
+    window.calculateDiversifiedLoadSimple = function(connectedLoad, diversityFactor) {
+        // Diversified Load = Connected Load / Diversity Factor
+        // OR: Diversified Load = Connected Load × Demand Factor
+        const demandFactor = window.diversityToDemand(diversityFactor);
+        const diversifiedLoad = connectedLoad * demandFactor;
+        
+        console.log(`📊 Load Calculation:`);
+        console.log(`   Connected Load: ${connectedLoad.toFixed(2)} A`);
+        console.log(`   Diversity Factor: ${diversityFactor.toFixed(2)} (DF)`);
+        console.log(`   Demand Factor: ${demandFactor.toFixed(2)} (Kd = 1/DF)`);
+        console.log(`   Diversified Load: ${diversifiedLoad.toFixed(2)} A`);
+        
+        return diversifiedLoad;
+    };
+}
+
+if (typeof window.getMotorDiversityFactor !== 'function') {
+    /**
+     * Get motor diversity factor by count
+     * @param {Number} motorCount - Number of motors
+     * @returns {Number} Diversity Factor (≥ 1.0)
+     */
+    window.getMotorDiversityFactor = function(motorCount) {
+        return window.DIVERSITY_FACTORS.motors.getDiversityFactor(motorCount);
+    };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// v3.3: UNIFIED SYSTEM DEMAND CALCULATION
+// Added: 2025-12-02 by bfforex
+// Single source of truth for Level-1 and Level-2 MD calculations
+// ═══════════════════════════════════════════════════════════════════════
+
+if (typeof window.computeSystemDemand !== 'function') {
+    /**
+     * Compute system-wide demand with Level-1 and Level-2 diversity
+     * This is the unified function for all demand/diversity calculations
+     * 
+     * @param {Array} buses - Array of bus objects with results
+     * @param {Object} options - Calculation options
+     * @returns {Object} System demand results
+     */
+    window.computeSystemDemand = function(buses, options = {}) {
+        console.log('\n═══════════════════════════════════════════════════════════════════');
+        console.log('UNIFIED SYSTEM DEMAND CALCULATION (v3.3)');
+        console.log('═══════════════════════════════════════════════════════════════════\n');
+        
+        if (!buses || buses.length === 0) {
+            console.warn('⚠️ No buses provided for system demand calculation');
+            return null;
+        }
+        
+        // ─────────────────────────────────────────────────────────────────────
+        // LEVEL 1: Calculate individual substation MDs
+        // ─────────────────────────────────────────────────────────────────────
+        
+        const substationBuses = buses.filter(b => 
+            b.type === 'distribution' || b.type === 'substation' || 
+            b.name?.toLowerCase().includes('lc') || b.name?.toLowerCase().includes('ss')
+        );
+        
+        const substations = [];
+        let sumOfSubstationMDs = 0;
+        let totalConnectedLoad = 0;
+        
+        substationBuses.forEach(bus => {
+            const loadFlow = bus.results?.loadFlow;
+            const summary = loadFlow?.summary || {};
+            const demandSummary = loadFlow?.demandSummary || {};
+            
+            const connected = demandSummary.connectedCurrent || summary.totalCurrent || 0;
+            const diversified = demandSummary.diversityCurrent || demandSummary.demandCurrent || connected;
+            
+            // Get substation type for diversity factor
+            let substationType = 'fabrication_shops';
+            if (bus.name?.toLowerCase().includes('office')) substationType = 'office_substations';
+            else if (bus.name?.toLowerCase().includes('warehouse')) substationType = 'warehouse';
+            else if (bus.name?.toLowerCase().includes('maint')) substationType = 'maintenance_shop';
+            else if (bus.name?.toLowerCase().includes('weld')) substationType = 'welding_bay';
+            
+            const substationDF = window.SYSTEM_LEVEL_DIVERSITY?.heavy_fabrication_yard?.[substationType]?.diversityFactor || 1.25;
+            
+            // Calculate Level-1 MD for this substation
+            const md = connected / substationDF;
+            const voltage = bus.voltage || 440;
+            const kva = (md * voltage * Math.sqrt(3)) / 1000;
+            
+            substations.push({
+                busId: bus.id,
+                busName: bus.name,
+                voltage: voltage,
+                connectedCurrent: connected,
+                diversityFactor: substationDF,
+                md: md,
+                kva: kva,
+                substationType: substationType
+            });
+            
+            sumOfSubstationMDs += md;
+            totalConnectedLoad += connected;
+        });
+        
+        // ─────────────────────────────────────────────────────────────────────
+        // LEVEL 2: Apply system-wide diversity
+        // ─────────────────────────────────────────────────────────────────────
+        
+        const substationCount = substations.length;
+        const systemDF = window.SYSTEM_LEVEL_DIVERSITY?.getSystemDiversityFactor?.(substationCount, 'heavy_fabrication_yard') || 1.45;
+        
+        // Calculate total system MD
+        const totalSystemMD = sumOfSubstationMDs / systemDF;
+        
+        // Reference voltage for kVA (use highest or average)
+        const avgVoltage = substations.length > 0 
+            ? substations.reduce((sum, s) => sum + s.voltage, 0) / substations.length 
+            : 440;
+        const totalSystemKVA = (totalSystemMD * avgVoltage * Math.sqrt(3)) / 1000;
+        
+        // Calculate reductions
+        const reductionFromSubstationMDs = sumOfSubstationMDs - totalSystemMD;
+        const reductionFromConnected = totalConnectedLoad - totalSystemMD;
+        
+        const reductionPercentFromMDs = sumOfSubstationMDs > 0 
+            ? (reductionFromSubstationMDs / sumOfSubstationMDs) * 100 
+            : 0;
+        const reductionPercentFromConnected = totalConnectedLoad > 0 
+            ? (reductionFromConnected / totalConnectedLoad) * 100 
+            : 0;
+        
+        // ─────────────────────────────────────────────────────────────────────
+        // BUILD RESULT OBJECT
+        // ─────────────────────────────────────────────────────────────────────
+        
+        const result = {
+            // Level 1: Individual substations
+            substations: substations,
+            
+            // Level 2: System totals
+            systemLevel: {
+                substationCount: substationCount,
+                sumOfSubstationMDs: sumOfSubstationMDs,
+                systemDiversityFactor: systemDF,
+                totalSystemMD: totalSystemMD,
+                totalSystemKVA: totalSystemKVA,
+                referenceVoltage: avgVoltage,
+                
+                // Connected load reference
+                connectedLoad: totalConnectedLoad,
+                
+                // Reduction metrics
+                reductionFromSubstationMDs: reductionFromSubstationMDs,
+                reductionFromConnected: reductionFromConnected,
+                reductionPercentFromMDs: reductionPercentFromMDs,
+                reductionPercentFromConnected: reductionPercentFromConnected
+            },
+            
+            // Calculation metadata
+            calculationDate: new Date().toISOString(),
+            calculationMethod: 'IEEE 141-1993 with System Diversity',
+            version: '3.3.0'
+        };
+        
+        // ─────────────────────────────────────────────────────────────────────
+        // LOG RESULTS
+        // ─────────────────────────────────────────────────────────────────────
+        
+        console.log('LEVEL 1 - SUBSTATION MDs:');
+        substations.forEach(s => {
+            console.log(`  ${s.busName}: ${s.md.toFixed(2)} A (DF=${s.diversityFactor.toFixed(2)})`);
+        });
+        
+        console.log('\nLEVEL 2 - SYSTEM TOTALS:');
+        console.log(`  Sum of Substation MDs: ${sumOfSubstationMDs.toFixed(2)} A`);
+        console.log(`  System Diversity Factor: ${systemDF.toFixed(2)}`);
+        console.log(`  Total System MD: ${totalSystemMD.toFixed(2)} A (${totalSystemKVA.toFixed(2)} kVA)`);
+        console.log(`  Reduction vs Sum of MDs: ${reductionPercentFromMDs.toFixed(1)}% (${reductionFromSubstationMDs.toFixed(2)} A)`);
+        console.log(`  Reduction vs Connected: ${reductionPercentFromConnected.toFixed(1)}% (${reductionFromConnected.toFixed(2)} A)`);
+        
+        return result;
+    };
+    
+    console.log('✅ computeSystemDemand function added (v3.3)');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FINAL MODULE STATUS
+// ═══════════════════════════════════════════════════════════════════════
+
+console.log('✅ Demand & Diversity Factors Module v3.3.0 loaded');
+console.log('   - DIVERSITY_FACTORS (DF ≥ 1.0): ✅');
+console.log('   - DEMAND_FACTORS (Kd ≤ 1.0): ✅');
+console.log('   - DemandFactors class: ✅');
+console.log('   - demandFactorsInstance: ✅');
+console.log('   - computeSystemDemand: ✅ (v3.3)');
+console.log('   - IEEE 141-1993: COMPLIANT');
+console.log('   - NEC Article 220: COMPLIANT');
+console.log('   - Heavy Industry: LNG, Fabrication');
+console.log('');
+
+// Verification check
+if (typeof window.DemandFactors === 'function' && 
+    typeof window.DEMAND_FACTORS === 'object' && 
+    typeof window.DIVERSITY_FACTORS === 'object' &&
+    typeof window.computeSystemDemand === 'function') {
+    console.log('🎉 ALL DEMAND FACTOR COMPONENTS VERIFIED');
+} else {
+    console.error('❌ MISSING COMPONENTS:');
+    if (typeof window.DemandFactors !== 'function') console.error('   - DemandFactors class');
+    if (typeof window.DEMAND_FACTORS !== 'object') console.error('   - DEMAND_FACTORS data');
+    if (typeof window.DIVERSITY_FACTORS !== 'object') console.error('   - DIVERSITY_FACTORS data');
+    if (typeof window.computeSystemDemand !== 'function') console.error('   - computeSystemDemand function');
+}

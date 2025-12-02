@@ -1,0 +1,51 @@
+====================================================================================================
+VOLTAGE DROP ANALYSIS REPORT - BUS: Utility
+====================================================================================================
+
+Project: Test Yard Project
+Project Number: Test Project 3
+Engineer: B. P. Faraon
+Date: 2025-10-28 20:00:58 UTC
+Software: PwrSys Pro - Voltage Drop Analyzer v1.0
+Author: Engr. B. P. Faraon
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: Utility
+Voltage: 13200 V
+System Type: source
+Calculation Method: per-unit
+
+VOLTAGE DROP SUMMARY:
+----------------------------------------------------------------------------------------------------
+Total Voltage Drop: 0.000% (0.000 V)
+Maximum Single Component: 0.000%
+Power Factor: 0.9
+Temperature: 75°C
+
+IEEE 141 COMPLIANCE CHECK:
+----------------------------------------------------------------------------------------------------
+Feeder Circuits: 3% maximum (recommended)
+Branch Circuits: 5% maximum (recommended)
+Combined System: 7% maximum (absolute limit)
+
+✅ EXCELLENT - Well within recommended limits
+
+Actual Voltage Drop: 0.000%
+
+COMPONENT-BY-COMPONENT ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Step  Type          Component Name          Current(A)  Drop(V)  Drop(%)  Cumulative(%)  Status
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+
+GENERAL RECOMMENDATIONS:
+----------------------------------------------------------------------------------------------------
+✅ SYSTEM ACCEPTABLE:
+   Voltage drop is within recommended limits.
+   No immediate action required.
+   Continue normal operation and monitoring.
+
+====================================================================================================
+END OF VOLTAGE DROP REPORT
+====================================================================================================
