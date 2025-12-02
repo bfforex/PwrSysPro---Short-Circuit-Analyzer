@@ -1,6 +1,7 @@
 // Bus Manager Module - Handles all bus-related operations
-// Modified: 2025-10-29 12:15:10 UTC by bfforex
-// Enhanced: Feature #5 - Demand & Diversity Factors
+// Modified: 2025-12-02 by Copilot
+// Enhanced: Option 1 - Separate display-only property for auto-calculated loads
+// Previous: Feature #5 - Demand & Diversity Factors
 
 /**
  * Open add bus modal
@@ -121,8 +122,9 @@ function toggleEditUtilityInputMode() {
 
 /**
  * Save new bus
- * Modified: 2025-10-29 12:15:10 UTC by bfforex
- * Added: Feature #5 - Demand & Diversity Factors
+ * Modified: 2025-12-02 by Copilot
+ * Enhancement: Option 1 - Separate display-only property for auto-calculated loads
+ * Previous: Feature #5 - Demand & Diversity Factors
  */
 function saveBus() {
     const name = document.getElementById('newBusName').value.trim();
@@ -135,7 +137,7 @@ function saveBus() {
         return;
     }
     
-    if (!voltage || voltage <= 0) {
+    if (! voltage || voltage <= 0) {
         alert('Please enter a valid voltage.');
         return;
     }
@@ -153,17 +155,20 @@ function saveBus() {
         created: new Date().toISOString()
     };
     
-    // Store load current if specified
-    // ✅ CRITICAL FIX: Mark load as manual when user specifies it
-    // Added: 2025-12-01 by bfforex
+    // ═══════════════════════════════════════════════════════════════════════
+    // OPTION 1: SEPARATE DISPLAY-ONLY PROPERTY FOR AUTO-CALCULATED LOADS
+    // Modified: 2025-12-02 by Copilot
+    // - bus.loadCurrent: User-specified manual load (used in calculations)
+    // - bus.loadCurrentCalculated: Auto-calculated display value (NOT used in calculations)
+    // ═══════════════════════════════════════════════════════════════════════
     const loadField = document.getElementById('newBusLoad');
     if (loadField) {
         const loadCurrent = parseFloat(loadField.value);
         if (loadCurrent && loadCurrent > 0) {
-            bus.loadCurrent = loadCurrent;
-            bus.loadCurrentAutoCalculated = false;  // ✅ Mark as MANUAL - user specified this value
-            console.log(`✅ Bus ${name}: Load current set to ${loadCurrent} A (MANUAL)`);
+            bus.loadCurrent = loadCurrent;  // Manual load - WILL be used in calculations
+            console.log(`✅ Bus ${name}: Manual load set to ${loadCurrent.toFixed(2)} A`);
         }
+        // Note: loadCurrentCalculated will be set later by calculations.js
     }
     
     // ═══════════════════════════════════════════════════════════════════════
@@ -175,7 +180,7 @@ function saveBus() {
     const demandFactorField = document.getElementById('newBusDemandFactor');
     if (demandFactorField) {
         const demandFactor = parseFloat(demandFactorField.value);
-        if (!isNaN(demandFactor) && demandFactor >= 0 && demandFactor <= 1) {
+        if (! isNaN(demandFactor) && demandFactor >= 0 && demandFactor <= 1) {
             bus.demandFactor = demandFactor;
             console.log(`✅ Bus ${name}: Demand factor set to ${(demandFactor * 100).toFixed(1)}%`);
         }
@@ -185,7 +190,7 @@ function saveBus() {
     const diversityFactorField = document.getElementById('newBusDiversityFactor');
     if (diversityFactorField) {
         const diversityFactor = parseFloat(diversityFactorField.value);
-        if (!isNaN(diversityFactor) && diversityFactor >= 0 && diversityFactor <= 1) {
+        if (! isNaN(diversityFactor) && diversityFactor >= 0 && diversityFactor <= 1) {
             bus.diversityFactor = diversityFactor;
             console.log(`✅ Bus ${name}: Diversity factor set to ${(diversityFactor * 100).toFixed(1)}%`);
         }
@@ -243,7 +248,7 @@ function saveBus() {
     closeAddBusModal();
     scheduleAutoSave();
     
-    alert(`Bus "${name}" added successfully!`);
+    alert(`Bus "${name}" added successfully! `);
 }
 
 
@@ -256,7 +261,7 @@ function updateBusTree() {
     tree.innerHTML = '<div class="alert alert-info">No buses created yet. Click "Add New Bus" to start.</div>';
     return;
   }
-  const rootBuses = buses.filter(b => !b.parentBus);
+  const rootBuses = buses.filter(b => ! b.parentBus);
   let html = '';
   rootBuses.forEach(bus => {
     html += renderBusTree(bus, 0);
@@ -268,7 +273,9 @@ function updateBusTree() {
 
 
 /**
- * Render bus tree recursively (hardened)
+ * Render bus tree recursively
+ * Modified: 2025-12-02 by Copilot
+ * Enhancement: Display both manual and auto-calculated loads with visual distinction
  */
 function renderBusTree(bus, level) {
   const children = buses.filter(b => b.parentBus === bus.id);
@@ -283,10 +290,37 @@ function renderBusTree(bus, level) {
   const isSelected = selectedBusId === bus.id;
   const voltageDisplay = formatNum(bus.voltage, 0, '—');
 
-  // Optional badges (only if values are finite)
-  const loadBadge = Number.isFinite(bus.loadCurrent)
-    ? `<span class="badge badge-success">${formatNum(bus.loadCurrent, 1)}A</span>`
-    : '';
+  // ═══════════════════════════════════════════════════════════════════════
+  // OPTION 1: DISPLAY BOTH MANUAL AND AUTO-CALCULATED LOADS
+  // Modified: 2025-12-02 by Copilot
+  // - Manual loads: Blue badge with 📌 (user-specified, used in calculations)
+  // - Auto-calculated loads: Green badge with ⚡ (computed from downstream, display only)
+  // ═══════════════════════════════════════════════════════════════════════
+  
+  let loadBadge = '';
+  
+  // Show manual load (user-specified) with blue badge
+  if (Number.isFinite(bus.loadCurrent) && bus.loadCurrent > 0) {
+    loadBadge = `<span class="badge badge-primary" title="User-specified load (used in calculations)" style="background-color: #4a90e2;">
+      📌 ${formatNum(bus.loadCurrent, 1)}A Manual
+    </span>`;
+  }
+  
+  // Show auto-calculated load (from downstream) with green badge
+  if (Number.isFinite(bus.loadCurrentCalculated) && bus.loadCurrentCalculated > 0) {
+    // If there's also a manual load, show both; otherwise just show calculated
+    if (bus.loadCurrent && bus.loadCurrent > 0) {
+      // Show both: manual AND calculated
+      loadBadge += ` <span class="badge badge-success" title="Auto-calculated from downstream (display only)" style="background-color: #28a745;">
+        ⚡ ${formatNum(bus.loadCurrentCalculated, 1)}A Calc
+      </span>`;
+    } else {
+      // Show only calculated (no manual load specified)
+      loadBadge = `<span class="badge badge-success" title="Auto-calculated from downstream (display only)">
+        ⚡ ${formatNum(bus.loadCurrentCalculated, 1)}A
+      </span>`;
+    }
+  }
 
   const demandBadge = Number.isFinite(bus.demandFactor) && bus.demandFactor < 1.0
     ? `<span class="badge badge-warning">DF:${formatNum(bus.demandFactor * 100, 0)}%</span>`
@@ -302,7 +336,7 @@ function renderBusTree(bus, level) {
         <div>
           <span class="bus-name">${getBusIcon(bus.type)} ${bus.name}</span>
           <span class="bus-voltage">${voltageDisplay}V</span>
-          ${bus.type === 'source' ? '<span class="badge badge-info">SOURCE</span>' : ''}
+          ${bus.type === 'source' ?  '<span class="badge badge-info">SOURCE</span>' : ''}
           ${loadBadge}
           ${demandBadge}
         </div>
@@ -341,24 +375,33 @@ function selectBus(busId) {
 
 /**
  * Edit bus
- * Enhanced: 2025-10-29 12:15:10 UTC by bfforex
- * Feature #5: Demand & Diversity Factors
+ * Modified: 2025-12-02 by Copilot
+ * Enhancement: Show calculated load as info only, don't populate input field
  */
 function editBus(busId) {
     editingBusId = busId;
     const bus = buses.find(b => b.id === busId);
-    if (!bus) return;
+    if (! bus) return;
     
     const modalBody = document.getElementById('editBusModalBody');
     
-    // ✅ Issue #1 FIX: Prepare load current display values
-    // Only show user-entered load in input field, not auto-calculated values
-    const isAutoCalculated = bus.loadCurrentAutoCalculated === true;
-    const loadInputValue = isAutoCalculated ? '' : (bus.loadCurrent || '');
-    const showAutoCalcInfo = isAutoCalculated && bus.loadCurrent > 0;
-    const autoCalcInfoHTML = showAutoCalcInfo 
-        ? `<div class="small-muted" style="color: #667eea; margin-top: 5px;">📊 Last calculated load: ${formatNum(bus.loadCurrent, 2)} A (auto-calculated from downstream)</div>` 
-        : '';
+    // ═══════════════════════════════════════════════════════════════════════
+    // OPTION 1: SHOW ONLY MANUAL LOAD IN INPUT FIELD
+    // Modified: 2025-12-02 by Copilot
+    // - Input field shows only manual load (bus.loadCurrent)
+    // - Auto-calculated load shown as info text below (bus.loadCurrentCalculated)
+    // ═══════════════════════════════════════════════════════════════════════
+    const loadInputValue = (bus.loadCurrent && bus.loadCurrent > 0) ? bus.loadCurrent : '';
+    
+    let autoCalcInfoHTML = '';
+    if (Number.isFinite(bus.loadCurrentCalculated) && bus.loadCurrentCalculated > 0) {
+        autoCalcInfoHTML = `
+            <div class="small-muted" style="color: #28a745; margin-top: 8px; padding: 10px; background: #f0f9f4; border-left: 3px solid #28a745; border-radius: 4px;">
+                ⚡ <strong>Auto-calculated load:</strong> ${formatNum(bus.loadCurrentCalculated, 2)} A
+                <br><small style="color: #666;">Computed from downstream components (motors, transformers, cables)</small>
+            </div>
+        `;
+    }
     
     let utilityFieldsHTML = '';
     if (bus.type === 'source') {
@@ -371,7 +414,7 @@ function editBus(busId) {
                     <option value="MVA" ${mode === 'MVA' ? 'selected' : ''}>Fault MVA</option>
                 </select>
             </div>
-            <div id="editFaultCurrentMode" style="display: ${mode === 'kA' ? 'block' : 'none'};">
+            <div id="editFaultCurrentMode" style="display: ${mode === 'kA' ?  'block' : 'none'};">
                 <div class="form-group">
                     <label>Available Fault Current (kA):</label>
                     <input type="number" id="editBusUtilityFault" value="${bus.utilityFaultCurrent || ''}" step="0.1" min="0">
@@ -411,11 +454,11 @@ function editBus(busId) {
         <div class="form-group">
             <label>Bus Load Current (A) - Optional:
                 <span class="tooltip">ℹ️
-                    <span class="tooltiptext">Specify direct load on this bus. Leave blank to calculate from downstream loads automatically.</span>
+                    <span class="tooltiptext">Specify direct load on this bus that should be included in calculations. Leave blank to use only downstream loads.</span>
                 </span>
             </label>
-            <input type="number" id="editBusLoad" value="${loadInputValue}" step="0.1" min="0" placeholder="Auto-calculated if blank">
-            <div class="small-muted">If blank, load will be calculated from motors, transformers, and cables downstream</div>
+            <input type="number" id="editBusLoad" value="${loadInputValue}" step="0.1" min="0" placeholder="Manual load (optional)">
+            <div class="small-muted">If specified, this manual load will be ADDED to downstream loads in calculations</div>
             ${autoCalcInfoHTML}
         </div>
         
@@ -439,7 +482,7 @@ function editBus(busId) {
                     <label for="editBusDiversityFactor">
                         Diversity Factor (1.0 - 4.0):
                         <span class="tooltip">ℹ️
-                            <span class="tooltiptext">Ratio of the sum of the individual maximum demands of the various subdivisions of a system to the maximum demand of the whole system. . IEEE 141. Leave blank for automatic based on bus type.</span>
+                            <span class="tooltiptext">Ratio of the sum of the individual maximum demands of the various subdivisions of a system to the maximum demand of the whole system.IEEE 141.Leave blank for automatic based on bus type.</span>
                         </span>
                     </label>
                     <input type="number" id="editBusDiversityFactor" value="${bus.diversityFactor || ''}" step="0.01" min="1" max="4" placeholder="Auto">
@@ -480,8 +523,8 @@ function closeEditBusModal() {
 
 /**
  * Save bus edits
- * Modified: 2025-10-29 12:15:10 UTC by bfforex
- * Added: Feature #5 - Demand & Diversity Factors
+ * Modified: 2025-12-02 by Copilot
+ * Enhancement: Preserve separation between manual and auto-calculated loads
  */
 function saveBusEdits() {
     if (!editingBusId) return;
@@ -492,21 +535,24 @@ function saveBusEdits() {
     bus.name = document.getElementById('editBusName').value.trim();
     bus.voltage = parseFloat(document.getElementById('editBusVoltage').value);
     
-    // Save load current
-    // ✅ CRITICAL FIX: Mark load as manual when user edits it
-    // Added: 2025-12-01 by bfforex
+    // ═══════════════════════════════════════════════════════════════════════
+    // OPTION 1: UPDATE ONLY MANUAL LOAD (PRESERVE AUTO-CALCULATED)
+    // Modified: 2025-12-02 by Copilot
+    // - Only update bus.loadCurrent (manual load used in calculations)
+    // - Preserve bus.loadCurrentCalculated (will be updated on next calculation)
+    // ═══════════════════════════════════════════════════════════════════════
     const editLoadField = document.getElementById('editBusLoad');
     if (editLoadField) {
         const loadCurrent = parseFloat(editLoadField.value);
         if (loadCurrent && loadCurrent > 0) {
-            bus.loadCurrent = loadCurrent;
-            bus.loadCurrentAutoCalculated = false;  // ✅ Mark as MANUAL - user specified this value
-            console.log(`✅ Bus ${bus.name}: Load current updated to ${loadCurrent} A (MANUAL)`);
+            bus.loadCurrent = loadCurrent;  // Manual load
+            console.log(`✅ Bus ${bus.name}: Manual load updated to ${loadCurrent.toFixed(2)} A`);
         } else {
+            // Clear manual load (but keep calculated load for display)
             delete bus.loadCurrent;
-            delete bus.loadCurrentAutoCalculated;  // ✅ Clear both - will auto-calculate on next run
-            console.log(`🔄 Bus ${bus.name}: Load current cleared (will auto-calculate)`);
+            console.log(`🔄 Bus ${bus.name}: Manual load cleared`);
         }
+        // Note: loadCurrentCalculated is NOT touched here - it will be updated on next calculation
     }
     
     // ═══════════════════════════════════════════════════════════════════════
@@ -518,7 +564,7 @@ function saveBusEdits() {
     const editDemandFactorField = document.getElementById('editBusDemandFactor');
     if (editDemandFactorField) {
         const demandFactor = parseFloat(editDemandFactorField.value);
-        if (!isNaN(demandFactor) && demandFactor >= 0 && demandFactor <= 1) {
+        if (! isNaN(demandFactor) && demandFactor >= 0 && demandFactor <= 1) {
             bus.demandFactor = demandFactor;
             console.log(`✅ Bus ${bus.name}: Demand factor updated to ${(demandFactor * 100).toFixed(1)}%`);
         } else {
@@ -579,7 +625,7 @@ function saveBusEdits() {
  */
 function deleteBus(busId) {
     const bus = buses.find(b => b.id === busId);
-    if (!bus) return;
+    if (! bus) return;
     
     const children = buses.filter(b => b.parentBus === busId);
     if (children.length > 0) {
@@ -590,7 +636,7 @@ function deleteBus(busId) {
     
     const connectedComponents = components.filter(c => c.fromBus === busId || c.toBus === busId);
     if (connectedComponents.length > 0) {
-        if (!confirm(`Bus "${bus.name}" has ${connectedComponents.length} component(s) connected. Delete anyway?`)) {
+        if (! confirm(`Bus "${bus.name}" has ${connectedComponents.length} component(s) connected.Delete anyway?`)) {
             return;
         }
         components = components.filter(c => c.fromBus !== busId && c.toBus !== busId);
@@ -613,7 +659,7 @@ function updateBusDropdowns() {
     const fromBus = document.getElementById('fromBus');
     const toBus = document.getElementById('toBus');
     
-    if (!fromBus || !toBus) return;
+    if (! fromBus || !toBus) return;
     
     fromBus.innerHTML = '<option value="">Select source bus</option>';
     toBus.innerHTML = '<option value="">Select destination bus</option>';
@@ -634,7 +680,9 @@ window.formatNum = (value, decimals = 2, fallback = '—') => {
 
 
 /**
- * Update buses content display (hardened)
+ * Update buses content display
+ * Modified: 2025-12-02 by Copilot
+ * Enhancement: Display both manual and auto-calculated loads
  */
 function updateBusesContent() {
   const content = document.getElementById('busesContent');
@@ -652,9 +700,18 @@ function updateBusesContent() {
     const componentsTo = components.filter(c => c.toBus === bus.id);
 
     const voltageDisplay = formatNum(bus.voltage, 0, '—');
-    const loadBadge = Number.isFinite(bus.loadCurrent)
-      ? `<span class="badge badge-success">${formatNum(bus.loadCurrent, 1)}A Load</span>`
-      : '';
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // OPTION 1: SHOW BOTH MANUAL AND AUTO-CALCULATED LOADS
+    // Modified: 2025-12-02 by Copilot
+    // ═══════════════════════════════════════════════════════════════════════
+    let loadBadge = '';
+    if (Number.isFinite(bus.loadCurrent) && bus.loadCurrent > 0) {
+      loadBadge = `<span class="badge badge-primary" style="background-color: #4a90e2;">📌 ${formatNum(bus.loadCurrent, 1)}A Manual</span>`;
+    }
+    if (Number.isFinite(bus.loadCurrentCalculated) && bus.loadCurrentCalculated > 0) {
+      loadBadge += ` <span class="badge badge-success">⚡ ${formatNum(bus.loadCurrentCalculated, 1)}A Calc</span>`;
+    }
 
     const demandBadge = Number.isFinite(bus.demandFactor) && bus.demandFactor < 1.0
       ? `<span class="badge badge-warning">DF:${formatNum(bus.demandFactor * 100, 0)}%</span>`
@@ -678,7 +735,7 @@ function updateBusesContent() {
         <br><small style="color: var(--text-muted);">
           Utility Available: ${formatNum(bus.utilityFaultCurrent, 2)} kA
           ${Number.isFinite(bus.utilityFaultMVA) ? ` (${formatNum(bus.utilityFaultMVA, 1)} MVA)` : ''}
-          &nbsp;&nbsp;X/R: ${bus.utilityXR ?? '—'}
+          &nbsp;&nbsp;X/R: ${bus.utilityXR ??  '—'}
         </small>
       `
       : '';
@@ -686,7 +743,7 @@ function updateBusesContent() {
     html += `
       <div class="result-item">
         <strong>${getBusIcon(bus.type)} ${bus.name}</strong>
-        ${bus.type === 'source' ? '<span class="badge badge-info">SOURCE</span>' : ''}
+        ${bus.type === 'source' ?  '<span class="badge badge-info">SOURCE</span>' : ''}
         ${loadBadge}
         ${demandBadge}
         ${diversityBadge}
@@ -696,7 +753,6 @@ function updateBusesContent() {
           &nbsp;&nbsp;Type: ${bus.type}
           &nbsp;&nbsp;Children: ${children.length}
           &nbsp;&nbsp;Components: ${componentsFrom.length + componentsTo.length}
-          ${Number.isFinite(bus.loadCurrent) ? `&nbsp;&nbsp;Load: ${formatNum(bus.loadCurrent, 1)}A` : ''}
         </span>
         ${faultLine}
         ${utilityLine}
@@ -708,4 +764,8 @@ function updateBusesContent() {
   if (typeof refreshDiagramIfNeeded === 'function') refreshDiagramIfNeeded();
 }
 
-console.log('✅ Bus Manager loaded with Demand & Diversity Factors (Feature #5)');
+console.log('✅ Bus Manager loaded with Option 1: Separate Display Property for Auto-Calculated Loads');
+console.log('   - bus.loadCurrent: Manual user-specified load (used in calculations)');
+console.log('   - bus.loadCurrentCalculated: Auto-calculated load (display only)');
+console.log('   - Visual distinction: 📌 Blue (Manual) | ⚡ Green (Calculated)');
+console.log('   - Feature #5: Demand & Diversity Factors integrated');

@@ -233,10 +233,12 @@ function calculateBus(busId) {
         console.log('');
 
         // ════════════════════════════════════════════════════════════════
-        // ✅ CRITICAL FIX: UPDATE BUS LOAD CURRENT FOR DISPLAY
-        // Added: 2025-12-01
-        // Issue: Bus tree shows 0. 0A for auto-calculated loads
-        // Solution: Write calculated load back to bus.loadCurrent
+        // OPTION 1: STORE CALCULATED LOAD IN SEPARATE DISPLAY-ONLY PROPERTY
+        // Modified: 2025-12-02 by Copilot
+        // Issue: Auto-calculated loads were being fed back to bus.loadCurrent,
+        //        causing double-counting in subsequent calculations
+        // Solution: Store in bus.loadCurrentCalculated (display only)
+        //           bus.loadCurrent remains user-specified manual load only
         // ════════════════════════════════════════════════════════════════
         if (loadFlowResult && loadFlowResult.summary) {
             let displayLoad = 0;
@@ -244,27 +246,31 @@ function calculateBus(busId) {
             // Use demand/diversity load if applied, otherwise use total load
             if (demandFactorsApplied && loadFlowResult.demandSummary) {
                 // Use the diversity-adjusted load (most realistic)
-                displayLoad = loadFlowResult.demandSummary.diversityCurrent || 
+                displayLoad = loadFlowResult.demandSummary. diversityCurrent || 
                              loadFlowResult.demandSummary.demandCurrent || 
                              loadFlowResult.summary.totalCurrent || 0;
-                console.log(`   ✅ Bus ${bus.name}: Using diversity load for display: ${displayLoad.toFixed(2)} A`);
+                console.log(`   📊 Bus ${bus.name}: Diversity load calculated: ${displayLoad.toFixed(2)} A`);
             } else {
                 // Use connected load (conservative)
                 displayLoad = loadFlowResult.summary.totalCurrent || 0;
-                console.log(`   ✅ Bus ${bus.name}: Using connected load for display: ${displayLoad.toFixed(2)} A`);
+                console.log(`   📊 Bus ${bus.name}: Connected load: ${displayLoad.toFixed(2)} A`);
             }
     
-            // ✅ CRITICAL FIX: Check if this is a manual load or auto-calculated
-            // Only update if NO manual load was specified OR if load was previously auto-calculated
-            const hadManualLoad = bus.loadCurrent && bus.loadCurrent > 0 && !bus.loadCurrentAutoCalculated;
-    
-            if (!hadManualLoad) {
-                bus.loadCurrent = displayLoad;
-                bus.loadCurrentAutoCalculated = true;  // ✅ CRITICAL: Mark as auto-calculated to prevent double-counting!
-                console.log(`   ✅ Bus ${bus.name}: loadCurrent set to ${bus.loadCurrent.toFixed(2)} A (AUTO-CALCULATED - for display only)`);
-            } else {
-                console.log(`   ℹ️ Bus ${bus.name}: Keeping manual load ${bus.loadCurrent.toFixed(2)} A (USER-SPECIFIED)`);
-                bus.loadCurrentAutoCalculated = false;  // Explicitly mark as manual
+            // ═══════════════════════════════════════════════════════════════════════
+            // CRITICAL: Store in SEPARATE property (NOT bus.loadCurrent)
+            // ═══════════════════════════════════════════════════════════════════════
+            if (displayLoad > 0) {
+                // Store calculated load for DISPLAY ONLY
+                bus.loadCurrentCalculated = displayLoad;
+                console.log(`   ✅ Bus ${bus.name}: Display load stored in loadCurrentCalculated: ${displayLoad. toFixed(2)} A`);
+                console.log(`   ℹ️  This value is for DISPLAY ONLY and will NOT be used in calculations`);
+                
+                // Log current state
+                if (bus.loadCurrent && bus.loadCurrent > 0) {
+                    console.log(`   📌 Bus ${bus.name}: Manual load preserved: ${bus.loadCurrent.toFixed(2)} A (WILL be used in calculations)`);
+                } else {
+                    console.log(`   ℹ️  Bus ${bus. name}: No manual load specified`);
+                }
             }
         }
         console.log('');
