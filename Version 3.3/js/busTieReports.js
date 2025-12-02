@@ -254,6 +254,10 @@ function generateArcFlashComparisonSection(busTie, fromBus, toBus, analysisData)
     const afFrom = analysisData.arcFlash.fromBus;
     const afTo = analysisData.arcFlash.toBus;
     
+    // v3.3: Also get fault current data for comparison
+    const scFrom = analysisData.shortCircuit?.fromBus || {};
+    const scTo = analysisData.shortCircuit?.toBus || {};
+    
     // Table header
     section += '                    Tie OPEN              Tie CLOSED            Impact\n';
     section += '─'.repeat(80) + '\n';
@@ -261,9 +265,9 @@ function generateArcFlashComparisonSection(busTie, fromBus, toBus, analysisData)
     // From bus incident energy
     const fromOpenIE = afFrom.tieOpen.incidentEnergy || 0;
     const fromClosedIE = afFrom.tieClosed ? (afFrom.tieClosed.incidentEnergy || 0) : fromOpenIE;
-    const fromIEIncrease = ((fromClosedIE - fromOpenIE) / fromOpenIE * 100);
+    const fromIEIncrease = fromOpenIE > 0 ? ((fromClosedIE - fromOpenIE) / fromOpenIE * 100) : 0;
     
-    section += `${fromBus.name} Incident E   ${fromOpenIE.toFixed(1).padEnd(21)} ${fromClosedIE.toFixed(1).padEnd(21)} +${fromIEIncrease.toFixed(1)}%\n`;
+    section += `${fromBus.name} Incident E   ${fromOpenIE.toFixed(1).padEnd(21)} ${fromClosedIE.toFixed(1).padEnd(21)} ${fromIEIncrease >= 0 ? '+' : ''}${fromIEIncrease.toFixed(1)}%\n`;
     section += `                    cal/cm²               cal/cm²\n`;
     
     // PPE Category
@@ -278,9 +282,9 @@ function generateArcFlashComparisonSection(busTie, fromBus, toBus, analysisData)
     // To bus incident energy
     const toOpenIE = afTo.tieOpen.incidentEnergy || 0;
     const toClosedIE = afTo.tieClosed ? (afTo.tieClosed.incidentEnergy || 0) : toOpenIE;
-    const toIEIncrease = ((toClosedIE - toOpenIE) / toOpenIE * 100);
+    const toIEIncrease = toOpenIE > 0 ? ((toClosedIE - toOpenIE) / toOpenIE * 100) : 0;
     
-    section += `${toBus.name} Incident E   ${toOpenIE.toFixed(1).padEnd(21)} ${toClosedIE.toFixed(1).padEnd(21)} +${toIEIncrease.toFixed(1)}%\n`;
+    section += `${toBus.name} Incident E   ${toOpenIE.toFixed(1).padEnd(21)} ${toClosedIE.toFixed(1).padEnd(21)} ${toIEIncrease >= 0 ? '+' : ''}${toIEIncrease.toFixed(1)}%\n`;
     section += `                    cal/cm²               cal/cm²\n`;
     
     // PPE Category
@@ -293,17 +297,37 @@ function generateArcFlashComparisonSection(busTie, fromBus, toBus, analysisData)
     section += '\n';
     section += 'KEY FINDINGS:\n';
     
-    const avgIncrease = (fromIEIncrease + toIEIncrease) / 2;
-    section += `  • Average incident energy increase: ${avgIncrease.toFixed(1)}%\n`;
+    const avgIEIncrease = (fromIEIncrease + toIEIncrease) / 2;
+    section += `  • Average incident energy change: ${avgIEIncrease >= 0 ? '+' : ''}${avgIEIncrease.toFixed(1)}%\n`;
     
-    if (avgIncrease > 50) {
+    // v3.3: Check if fault current is unchanged but IE increased
+    const fromFCIncrease = scFrom.tieImpact?.percentIncrease || 0;
+    const toFCIncrease = scTo.tieImpact?.percentIncrease || 0;
+    const avgFCIncrease = (fromFCIncrease + toFCIncrease) / 2;
+    
+    if (Math.abs(avgIEIncrease) > 20 && Math.abs(avgFCIncrease) < 5) {
+        section += '\n  ⚠️ IMPORTANT OBSERVATION:\n';
+        section += '  Incident energy has changed significantly while bolted fault\n';
+        section += '  current remains effectively unchanged. This can occur when:\n';
+        section += '    • Clearing time changes between scenarios\n';
+        section += '    • Different protective device operates\n';
+        section += '    • Protection coordination affects arc duration\n';
+        section += '  The fault current increase alone does not explain the IE change.\n\n';
+    }
+    
+    if (avgIEIncrease > 50) {
         section += '  • ⚠️ CRITICAL: Arc flash hazard increased significantly\n';
         section += '  • Action Required: Update arc flash labels for both scenarios\n';
         section += '  • Action Required: Review PPE requirements\n';
         section += '  • Action Required: Consider arc flash reducing maintenance switch\n';
-    } else if (avgIncrease > 25) {
+    } else if (avgIEIncrease > 25) {
         section += '  • ⚠️ MODERATE: Arc flash hazard moderately increased\n';
         section += '  • Action Required: Update arc flash labels\n';
+    } else if (avgIEIncrease > 0) {
+        section += '  • ℹ️ Arc flash hazard slightly increased\n';
+        section += '  • Recommendation: Review arc flash labels\n';
+    } else {
+        section += '  • ✓ Arc flash hazard unchanged or decreased\n';
     }
     
     section += '\n';

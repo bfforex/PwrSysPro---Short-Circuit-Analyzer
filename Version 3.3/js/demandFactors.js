@@ -615,14 +615,172 @@ if (typeof window.getMotorDiversityFactor !== 'function') {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// v3.3: UNIFIED SYSTEM DEMAND CALCULATION
+// Added: 2025-12-02 by bfforex
+// Single source of truth for Level-1 and Level-2 MD calculations
+// ═══════════════════════════════════════════════════════════════════════
+
+if (typeof window.computeSystemDemand !== 'function') {
+    /**
+     * Compute system-wide demand with Level-1 and Level-2 diversity
+     * This is the unified function for all demand/diversity calculations
+     * 
+     * @param {Array} buses - Array of bus objects with results
+     * @param {Object} options - Calculation options
+     * @returns {Object} System demand results
+     */
+    window.computeSystemDemand = function(buses, options = {}) {
+        console.log('\n═══════════════════════════════════════════════════════════════════');
+        console.log('UNIFIED SYSTEM DEMAND CALCULATION (v3.3)');
+        console.log('═══════════════════════════════════════════════════════════════════\n');
+        
+        if (!buses || buses.length === 0) {
+            console.warn('⚠️ No buses provided for system demand calculation');
+            return null;
+        }
+        
+        // ─────────────────────────────────────────────────────────────────────
+        // LEVEL 1: Calculate individual substation MDs
+        // ─────────────────────────────────────────────────────────────────────
+        
+        const substationBuses = buses.filter(b => 
+            b.type === 'distribution' || b.type === 'substation' || 
+            b.name?.toLowerCase().includes('lc') || b.name?.toLowerCase().includes('ss')
+        );
+        
+        const substations = [];
+        let sumOfSubstationMDs = 0;
+        let totalConnectedLoad = 0;
+        
+        substationBuses.forEach(bus => {
+            const loadFlow = bus.results?.loadFlow;
+            const summary = loadFlow?.summary || {};
+            const demandSummary = loadFlow?.demandSummary || {};
+            
+            const connected = demandSummary.connectedCurrent || summary.totalCurrent || 0;
+            const diversified = demandSummary.diversityCurrent || demandSummary.demandCurrent || connected;
+            
+            // Get substation type for diversity factor
+            let substationType = 'fabrication_shops';
+            if (bus.name?.toLowerCase().includes('office')) substationType = 'office_substations';
+            else if (bus.name?.toLowerCase().includes('warehouse')) substationType = 'warehouse';
+            else if (bus.name?.toLowerCase().includes('maint')) substationType = 'maintenance_shop';
+            else if (bus.name?.toLowerCase().includes('weld')) substationType = 'welding_bay';
+            
+            const substationDF = window.SYSTEM_LEVEL_DIVERSITY?.heavy_fabrication_yard?.[substationType]?.diversityFactor || 1.25;
+            
+            // Calculate Level-1 MD for this substation
+            const md = connected / substationDF;
+            const voltage = bus.voltage || 440;
+            const kva = (md * voltage * Math.sqrt(3)) / 1000;
+            
+            substations.push({
+                busId: bus.id,
+                busName: bus.name,
+                voltage: voltage,
+                connectedCurrent: connected,
+                diversityFactor: substationDF,
+                md: md,
+                kva: kva,
+                substationType: substationType
+            });
+            
+            sumOfSubstationMDs += md;
+            totalConnectedLoad += connected;
+        });
+        
+        // ─────────────────────────────────────────────────────────────────────
+        // LEVEL 2: Apply system-wide diversity
+        // ─────────────────────────────────────────────────────────────────────
+        
+        const substationCount = substations.length;
+        const systemDF = window.SYSTEM_LEVEL_DIVERSITY?.getSystemDiversityFactor?.(substationCount, 'heavy_fabrication_yard') || 1.45;
+        
+        // Calculate total system MD
+        const totalSystemMD = sumOfSubstationMDs / systemDF;
+        
+        // Reference voltage for kVA (use highest or average)
+        const avgVoltage = substations.length > 0 
+            ? substations.reduce((sum, s) => sum + s.voltage, 0) / substations.length 
+            : 440;
+        const totalSystemKVA = (totalSystemMD * avgVoltage * Math.sqrt(3)) / 1000;
+        
+        // Calculate reductions
+        const reductionFromSubstationMDs = sumOfSubstationMDs - totalSystemMD;
+        const reductionFromConnected = totalConnectedLoad - totalSystemMD;
+        
+        const reductionPercentFromMDs = sumOfSubstationMDs > 0 
+            ? (reductionFromSubstationMDs / sumOfSubstationMDs) * 100 
+            : 0;
+        const reductionPercentFromConnected = totalConnectedLoad > 0 
+            ? (reductionFromConnected / totalConnectedLoad) * 100 
+            : 0;
+        
+        // ─────────────────────────────────────────────────────────────────────
+        // BUILD RESULT OBJECT
+        // ─────────────────────────────────────────────────────────────────────
+        
+        const result = {
+            // Level 1: Individual substations
+            substations: substations,
+            
+            // Level 2: System totals
+            systemLevel: {
+                substationCount: substationCount,
+                sumOfSubstationMDs: sumOfSubstationMDs,
+                systemDiversityFactor: systemDF,
+                totalSystemMD: totalSystemMD,
+                totalSystemKVA: totalSystemKVA,
+                referenceVoltage: avgVoltage,
+                
+                // Connected load reference
+                connectedLoad: totalConnectedLoad,
+                
+                // Reduction metrics
+                reductionFromSubstationMDs: reductionFromSubstationMDs,
+                reductionFromConnected: reductionFromConnected,
+                reductionPercentFromMDs: reductionPercentFromMDs,
+                reductionPercentFromConnected: reductionPercentFromConnected
+            },
+            
+            // Calculation metadata
+            calculationDate: new Date().toISOString(),
+            calculationMethod: 'IEEE 141-1993 with System Diversity',
+            version: '3.3.0'
+        };
+        
+        // ─────────────────────────────────────────────────────────────────────
+        // LOG RESULTS
+        // ─────────────────────────────────────────────────────────────────────
+        
+        console.log('LEVEL 1 - SUBSTATION MDs:');
+        substations.forEach(s => {
+            console.log(`  ${s.busName}: ${s.md.toFixed(2)} A (DF=${s.diversityFactor.toFixed(2)})`);
+        });
+        
+        console.log('\nLEVEL 2 - SYSTEM TOTALS:');
+        console.log(`  Sum of Substation MDs: ${sumOfSubstationMDs.toFixed(2)} A`);
+        console.log(`  System Diversity Factor: ${systemDF.toFixed(2)}`);
+        console.log(`  Total System MD: ${totalSystemMD.toFixed(2)} A (${totalSystemKVA.toFixed(2)} kVA)`);
+        console.log(`  Reduction vs Sum of MDs: ${reductionPercentFromMDs.toFixed(1)}% (${reductionFromSubstationMDs.toFixed(2)} A)`);
+        console.log(`  Reduction vs Connected: ${reductionPercentFromConnected.toFixed(1)}% (${reductionFromConnected.toFixed(2)} A)`);
+        
+        return result;
+    };
+    
+    console.log('✅ computeSystemDemand function added (v3.3)');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // FINAL MODULE STATUS
 // ═══════════════════════════════════════════════════════════════════════
 
-console.log('✅ Demand & Diversity Factors Module v2.0.3 loaded');
+console.log('✅ Demand & Diversity Factors Module v3.3.0 loaded');
 console.log('   - DIVERSITY_FACTORS (DF ≥ 1.0): ✅');
 console.log('   - DEMAND_FACTORS (Kd ≤ 1.0): ✅');
 console.log('   - DemandFactors class: ✅');
 console.log('   - demandFactorsInstance: ✅');
+console.log('   - computeSystemDemand: ✅ (v3.3)');
 console.log('   - IEEE 141-1993: COMPLIANT');
 console.log('   - NEC Article 220: COMPLIANT');
 console.log('   - Heavy Industry: LNG, Fabrication');
@@ -631,11 +789,13 @@ console.log('');
 // Verification check
 if (typeof window.DemandFactors === 'function' && 
     typeof window.DEMAND_FACTORS === 'object' && 
-    typeof window.DIVERSITY_FACTORS === 'object') {
+    typeof window.DIVERSITY_FACTORS === 'object' &&
+    typeof window.computeSystemDemand === 'function') {
     console.log('🎉 ALL DEMAND FACTOR COMPONENTS VERIFIED');
 } else {
     console.error('❌ MISSING COMPONENTS:');
     if (typeof window.DemandFactors !== 'function') console.error('   - DemandFactors class');
     if (typeof window.DEMAND_FACTORS !== 'object') console.error('   - DEMAND_FACTORS data');
     if (typeof window.DIVERSITY_FACTORS !== 'object') console.error('   - DIVERSITY_FACTORS data');
+    if (typeof window.computeSystemDemand !== 'function') console.error('   - computeSystemDemand function');
 }
