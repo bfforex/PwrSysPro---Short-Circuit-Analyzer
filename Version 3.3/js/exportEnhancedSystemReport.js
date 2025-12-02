@@ -1719,9 +1719,34 @@ Subtotal Long-Term Improvements: $${longTermMin.toLocaleString()}-$${longTermMax
     } else {
         report += `  • Worst-case voltage drop exceeds IEEE 141 limit - mitigated by conservative design\n`;
     }
-    report += `  • Equipment operates at design ratings (no overload)\n`;
+    
+    // v3.3 FIX: Check for transformer overload before stating "no overload"
+    const transformers = (typeof components !== 'undefined') ? components.filter(c => c.type === 'transformer') : [];
+    let anyTransformerOverloaded = false;
+    
+    transformers.forEach(xfmr => {
+        const toBus = buses.find(b => b.id === xfmr.toBus);
+        if (toBus && toBus.results?.loadFlow?.summary?.totalCurrent && xfmr.rating > 0) {
+            const current = toBus.results.loadFlow.summary.totalCurrent;
+            const voltage = toBus.voltage;
+            const power = (current * voltage * Math.sqrt(3)) / 1000;
+            const loading = (power / xfmr.rating) * 100;
+            if (loading > 100) anyTransformerOverloaded = true;
+        }
+    });
+    
+    if (anyTransformerOverloaded) {
+        report += `  • ⚠️ NOTE: Some transformers exceed rated capacity - verify thermal limits\n`;
+    } else {
+        report += `  • Equipment operates at design ratings (no overload)\n`;
+    }
+    
     report += `  • Conservative FLC design sizing provides built-in ${((designCapacity - totalConnected)/designCapacity*100).toFixed(1)}% margin\n`;
-    report += `  • No equipment damage or safety hazard (designed for 100% FLC)\n\n`;
+    if (anyTransformerOverloaded) {
+        report += `  • Review overloaded transformers per IEEE C57.91 thermal limits\n\n`;
+    } else {
+        report += `  • No equipment damage or safety hazard (designed for 100% FLC)\n\n`;
+    }
 
     report += `Mitigation:\n`;
     report += `  ✓ Design at 100% FLC (conservative sizing maintained)\n`;
