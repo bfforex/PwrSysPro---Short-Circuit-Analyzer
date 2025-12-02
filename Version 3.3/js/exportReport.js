@@ -310,28 +310,49 @@ function exportBusReport(busId) {
             // Voltage drop comparison
             if (bus.results.voltageDrop) {
                 const vd = bus.results.voltageDrop;
-                report += `⚡ VOLTAGE DROP ANALYSIS:\n`;
+                // ✅ Compatible with both v1.2.2 (cumulativeDropPercent) and v2.0.0+ (totalDropPercent)
+                const vdPercent = vd.totalDropPercent || vd.cumulativeDropPercent || 0;
+                const vdVolts = vd.totalDropVolts || vd.cumulativeDropVolts || 0;
+                
+                report += `⚡ DESIGN VOLTAGE DROP ANALYSIS (FLC – Sizing Basis)\n`;
                 report += `${'-'.repeat(100)}\n`;
                 report += `Method Used:             Full Load Current (FLC) - CONSERVATIVE\n`;
                 report += `Current Used:            ${ds.connectedCurrent.toFixed(2)} A (100% connected load)\n`;
-                report += `Calculated Drop:         ${vd.cumulativeDropPercent.toFixed(3)}% (${vd.cumulativeDropVolts.toFixed(2)}V)\n`;
-                report += `IEEE 141 Compliance:     ${vd.cumulativeDropPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'} (<7% required)\n`;
+                report += `Calculated Drop:         ${vdPercent.toFixed(3)}% (${vdVolts.toFixed(2)}V)\n`;
+                report += `\n`;
+                
+                // NEC/IEEE Compliance with explicit reference
+                report += `📋 NEC/IEEE 141 COMPLIANCE (Based on Design VD per FLC):\n`;
+                report += `${'-'.repeat(100)}\n`;
+                report += `• NEC 210.19(A) Informational Note: Branch circuit conductors sized for\n`;
+                report += `  a maximum voltage drop of 3% at the farthest outlet of power, heating,\n`;
+                report += `  and lighting loads.\n`;
+                report += `• NEC 215.2(A)(1) Informational Note: Feeders sized for maximum 3% drop.\n`;
+                report += `• IEEE 141-1993: Combined feeder + branch ≤ 5% for sensitive equipment.\n`;
+                report += `\n`;
+                report += `  Design VD:     ${vdPercent.toFixed(3)}%\n`;
+                report += `  Feeder Limit:  3% ${vdPercent <= 3 ? '✅' : '❌'}\n`;
+                report += `  Branch Limit:  5% ${vdPercent <= 5 ? '✅' : '❌'}\n`;
+                report += `  Combined:      7% ${vdPercent <= 7 ? '✅' : '❌'}\n`;
+                report += `  Status:        ${vdPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
                 report += `\n`;
                 
                 // Calculate estimated voltage drop with demand/diversity
-                const demandVD = vd.cumulativeDropPercent * (ds.demandCurrent / ds.connectedCurrent);
-                const diversityVD = vd.cumulativeDropPercent * (ds.diversityCurrent / ds.connectedCurrent);
+                const demandVD = vdPercent * (ds.demandCurrent / ds.connectedCurrent);
+                const diversityVD = vdPercent * (ds.diversityCurrent / ds.connectedCurrent);
                 
-                report += `📊 ESTIMATED OPERATING CONDITIONS:\n`;
+                report += `📊 ESTIMATED OPERATING VOLTAGE DROP (with demand & diversity):\n`;
                 report += `${'-'.repeat(100)}\n`;
+                report += `⚠️  NOTE: These values are for INFORMATION ONLY and NOT used for compliance.\n`;
+                report += `\n`;
                 report += `With Demand Factor:      ${demandVD.toFixed(3)}% (${(demandVD * bus.voltage / 100).toFixed(2)}V)\n`;
                 report += `With Diversity Factor:   ${diversityVD.toFixed(3)}% (${(diversityVD * bus.voltage / 100).toFixed(2)}V)\n`;
-                report += `Voltage Drop Reduction:  ${(vd.cumulativeDropPercent - diversityVD).toFixed(3)}% (${((1 - diversityVD / vd.cumulativeDropPercent) * 100).toFixed(1)}% improvement)\n`;
+                report += `Voltage Drop Reduction:  ${(vdPercent - diversityVD).toFixed(3)}% (${((1 - diversityVD / vdPercent) * 100).toFixed(1)}% improvement)\n`;
                 report += `\n`;
                 
-                report += `ℹ️  NOTE: Voltage drop is calculated using Full Load Current (FLC) to ensure\n`;
-                report += `    conservative cable sizing and worst-case compliance. Actual operating\n`;
-                report += `    voltage drop will be ${((1 - diversityVD / vd.cumulativeDropPercent) * 100).toFixed(0)}% lower due to demand/diversity factors.\n`;
+                report += `ℹ️  Voltage drop compliance per NEC 210.19, 215.2, and IEEE 141 is based on\n`;
+                report += `    Design VD using Full Load Current (FLC), NOT on Operating VD.\n`;
+                report += `    This ensures adequate conductor sizing for worst-case conditions.\n`;
                 report += `\n`;
             }
             
@@ -361,11 +382,15 @@ function exportBusReport(busId) {
             // Still show voltage drop info
             if (bus.results.voltageDrop) {
                 const vd = bus.results.voltageDrop;
-                report += `⚡ VOLTAGE DROP ANALYSIS:\n`;
+                // ✅ Compatible with both v1.2.2 (cumulativeDropPercent) and v2.0.0+ (totalDropPercent)
+                const vdPercent = vd.totalDropPercent || vd.cumulativeDropPercent || 0;
+                const vdVolts = vd.totalDropVolts || vd.cumulativeDropVolts || 0;
+                
+                report += `⚡ DESIGN VOLTAGE DROP ANALYSIS (FLC – Sizing Basis):\n`;
                 report += `${'-'.repeat(100)}\n`;
                 report += `Method:                  Full Load Current (FLC)\n`;
-                report += `Voltage Drop:            ${vd.cumulativeDropPercent.toFixed(3)}% (${vd.cumulativeDropVolts.toFixed(2)}V)\n`;
-                report += `IEEE 141 Compliance:     ${vd.cumulativeDropPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
+                report += `Voltage Drop:            ${vdPercent.toFixed(3)}% (${vdVolts.toFixed(2)}V)\n`;
+                report += `IEEE 141 Compliance:     ${vdPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
                 report += `\n`;
             }
         }
