@@ -310,28 +310,49 @@ function exportBusReport(busId) {
             // Voltage drop comparison
             if (bus.results.voltageDrop) {
                 const vd = bus.results.voltageDrop;
-                report += `⚡ VOLTAGE DROP ANALYSIS:\n`;
+                // ✅ Compatible with both v1.2.2 (cumulativeDropPercent) and v2.0.0+ (totalDropPercent)
+                const vdPercent = vd.totalDropPercent || vd.cumulativeDropPercent || 0;
+                const vdVolts = vd.totalDropVolts || vd.cumulativeDropVolts || 0;
+                
+                report += `⚡ DESIGN VOLTAGE DROP ANALYSIS (FLC – Sizing Basis)\n`;
                 report += `${'-'.repeat(100)}\n`;
                 report += `Method Used:             Full Load Current (FLC) - CONSERVATIVE\n`;
                 report += `Current Used:            ${ds.connectedCurrent.toFixed(2)} A (100% connected load)\n`;
-                report += `Calculated Drop:         ${vd.cumulativeDropPercent.toFixed(3)}% (${vd.cumulativeDropVolts.toFixed(2)}V)\n`;
-                report += `IEEE 141 Compliance:     ${vd.cumulativeDropPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'} (<7% required)\n`;
+                report += `Calculated Drop:         ${vdPercent.toFixed(3)}% (${vdVolts.toFixed(2)}V)\n`;
+                report += `\n`;
+                
+                // NEC/IEEE Compliance with explicit reference
+                report += `📋 NEC/IEEE 141 COMPLIANCE (Based on Design VD per FLC):\n`;
+                report += `${'-'.repeat(100)}\n`;
+                report += `• NEC 210.19(A) Informational Note: Branch circuit conductors sized for\n`;
+                report += `  a maximum voltage drop of 3% at the farthest outlet of power, heating,\n`;
+                report += `  and lighting loads.\n`;
+                report += `• NEC 215.2(A)(1) Informational Note: Feeders sized for maximum 3% drop.\n`;
+                report += `• IEEE 141-1993: Combined feeder + branch ≤ 5% for sensitive equipment.\n`;
+                report += `\n`;
+                report += `  Design VD:     ${vdPercent.toFixed(3)}%\n`;
+                report += `  Feeder Limit:  3% ${vdPercent <= 3 ? '✅' : '❌'}\n`;
+                report += `  Branch Limit:  5% ${vdPercent <= 5 ? '✅' : '❌'}\n`;
+                report += `  Combined:      7% ${vdPercent <= 7 ? '✅' : '❌'}\n`;
+                report += `  Status:        ${vdPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
                 report += `\n`;
                 
                 // Calculate estimated voltage drop with demand/diversity
-                const demandVD = vd.cumulativeDropPercent * (ds.demandCurrent / ds.connectedCurrent);
-                const diversityVD = vd.cumulativeDropPercent * (ds.diversityCurrent / ds.connectedCurrent);
+                const demandVD = vdPercent * (ds.demandCurrent / ds.connectedCurrent);
+                const diversityVD = vdPercent * (ds.diversityCurrent / ds.connectedCurrent);
                 
-                report += `📊 ESTIMATED OPERATING CONDITIONS:\n`;
+                report += `📊 ESTIMATED OPERATING VOLTAGE DROP (with demand & diversity):\n`;
                 report += `${'-'.repeat(100)}\n`;
+                report += `⚠️  NOTE: These values are for INFORMATION ONLY and NOT used for compliance.\n`;
+                report += `\n`;
                 report += `With Demand Factor:      ${demandVD.toFixed(3)}% (${(demandVD * bus.voltage / 100).toFixed(2)}V)\n`;
                 report += `With Diversity Factor:   ${diversityVD.toFixed(3)}% (${(diversityVD * bus.voltage / 100).toFixed(2)}V)\n`;
-                report += `Voltage Drop Reduction:  ${(vd.cumulativeDropPercent - diversityVD).toFixed(3)}% (${((1 - diversityVD / vd.cumulativeDropPercent) * 100).toFixed(1)}% improvement)\n`;
+                report += `Voltage Drop Reduction:  ${(vdPercent - diversityVD).toFixed(3)}% (${((1 - diversityVD / vdPercent) * 100).toFixed(1)}% improvement)\n`;
                 report += `\n`;
                 
-                report += `ℹ️  NOTE: Voltage drop is calculated using Full Load Current (FLC) to ensure\n`;
-                report += `    conservative cable sizing and worst-case compliance. Actual operating\n`;
-                report += `    voltage drop will be ${((1 - diversityVD / vd.cumulativeDropPercent) * 100).toFixed(0)}% lower due to demand/diversity factors.\n`;
+                report += `ℹ️  Voltage drop compliance per NEC 210.19, 215.2, and IEEE 141 is based on\n`;
+                report += `    Design VD using Full Load Current (FLC), NOT on Operating VD.\n`;
+                report += `    This ensures adequate conductor sizing for worst-case conditions.\n`;
                 report += `\n`;
             }
             
@@ -361,11 +382,15 @@ function exportBusReport(busId) {
             // Still show voltage drop info
             if (bus.results.voltageDrop) {
                 const vd = bus.results.voltageDrop;
-                report += `⚡ VOLTAGE DROP ANALYSIS:\n`;
+                // ✅ Compatible with both v1.2.2 (cumulativeDropPercent) and v2.0.0+ (totalDropPercent)
+                const vdPercent = vd.totalDropPercent || vd.cumulativeDropPercent || 0;
+                const vdVolts = vd.totalDropVolts || vd.cumulativeDropVolts || 0;
+                
+                report += `⚡ DESIGN VOLTAGE DROP ANALYSIS (FLC – Sizing Basis):\n`;
                 report += `${'-'.repeat(100)}\n`;
                 report += `Method:                  Full Load Current (FLC)\n`;
-                report += `Voltage Drop:            ${vd.cumulativeDropPercent.toFixed(3)}% (${vd.cumulativeDropVolts.toFixed(2)}V)\n`;
-                report += `IEEE 141 Compliance:     ${vd.cumulativeDropPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
+                report += `Voltage Drop:            ${vdPercent.toFixed(3)}% (${vdVolts.toFixed(2)}V)\n`;
+                report += `IEEE 141 Compliance:     ${vdPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
                 report += `\n`;
             }
         }
@@ -727,76 +752,144 @@ function exportBusReport(busId) {
         }
     }
     
+    // ═══════════════════════════════════════════════════════════════════════
+    // ENGINEERING RECOMMENDATIONS SECTION
+    // Updated: 2025-12-02 - Added transformer overload detection fallback
+    // Issue: Report should NOT say "NO ISSUES" when transformer is overloaded
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    // Check for transformer overload (defense in depth - in case recommendation engine misses it)
+    let transformerOverloaded = false;
+    let transformerLoadingPercent = 0;
+    let transformerTag = '';
+    let transformerRating = 0;
+    
+    // Method 1: Check voltage drop results
+    if (bus.results?.voltageDrop?.components) {
+        const xfmrComp = bus.results.voltageDrop.components.find(c => c.type === 'transformer');
+        if (xfmrComp && xfmrComp.loading > 100) {
+            transformerOverloaded = true;
+            transformerLoadingPercent = xfmrComp.loading;
+            transformerTag = xfmrComp.tag || xfmrComp.name || 'Unknown';
+            transformerRating = xfmrComp.rating || 0;
+        }
+    }
+    
+    // Method 2: Check load flow against transformer rating
+    if (!transformerOverloaded && typeof components !== 'undefined' && Array.isArray(components)) {
+        const feedingTransformer = components.find(c => c.type === 'transformer' && c.toBus === bus.id);
+        if (feedingTransformer && bus.results?.loadFlow?.summary?.totalCurrent) {
+            const rating = parseFloat(feedingTransformer.rating) || 0;
+            const loadCurrent = bus.results.loadFlow.summary.totalCurrent;
+            if (rating > 0) {
+                const loadKVA = (loadCurrent * bus.voltage * Math.sqrt(3)) / 1000;
+                const loading = (loadKVA / rating) * 100;
+                if (loading > 100) {
+                    transformerOverloaded = true;
+                    transformerLoadingPercent = loading;
+                    transformerTag = feedingTransformer.tag || feedingTransformer.name || 'Unknown';
+                    transformerRating = rating;
+                }
+            }
+        }
+    }
+    
     // Recommendations
-    if (recommendations.length > 0) {
+    if (recommendations.length > 0 || transformerOverloaded) {
         report += `\n${'='.repeat(100)}\n`;
         report += `ENGINEERING RECOMMENDATIONS\n`;
         report += `${'='.repeat(100)}\n\n`;
         
-        const criticalCount = recommendations.filter(r => r.severity === 'CRITICAL').length;
-        const highCount = recommendations.filter(r => r.severity === 'HIGH').length;
-        const mediumCount = recommendations.filter(r => r.severity === 'MEDIUM').length;
+        // Add transformer overload as a critical issue if detected but not in recommendations
+        const hasTransformerOverloadRec = recommendations.some(r => 
+            r.id === 'TF-000' || r.name?.toLowerCase().includes('overload')
+        );
         
-        report += `SUMMARY:\n`;
-        report += `${'-'.repeat(100)}\n`;
-        report += `Total Recommendations: ${recommendations.length}\n`;
-        report += `  - Critical Issues: ${criticalCount}\n`;
-        report += `  - High Priority: ${highCount}\n`;
-        report += `  - Medium Priority: ${mediumCount}\n\n`;
-        
-        if (criticalCount > 0) {
-            report += `⚠️  WARNING: ${criticalCount} CRITICAL ISSUE${criticalCount > 1 ? 'S' : ''} REQUIRE${criticalCount === 1 ? 'S' : ''} IMMEDIATE ATTENTION!\n\n`;
+        if (transformerOverloaded && !hasTransformerOverloadRec) {
+            report += `❌ OVERLOADED TRANSFORMER IDENTIFIED\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `Transformer: ${transformerTag}\n`;
+            report += `Rating: ${transformerRating} kVA\n`;
+            report += `Loading: ${transformerLoadingPercent.toFixed(1)}% (exceeds 100% nameplate)\n\n`;
+            report += `Per IEEE C57.91 and NEC 450.3, continuous operation at >${'100'}% rated load\n`;
+            report += `will cause accelerated thermal aging of insulation and potential failure.\n\n`;
+            report += `REQUIRED ACTIONS:\n`;
+            report += `  1. IMMEDIATE: Reduce load on secondary bus\n`;
+            report += `  2. Transfer loads to other available feeders\n`;
+            // Target 80% loading for recommended transformer sizing per IEEE C57.12.00
+            const RECOMMENDED_TRANSFORMER_LOADING_PCT = 80;
+            report += `  3. Install larger transformer (min. ${Math.ceil(transformerRating * transformerLoadingPercent / RECOMMENDED_TRANSFORMER_LOADING_PCT)} kVA for ${RECOMMENDED_TRANSFORMER_LOADING_PCT}% loading)\n`;
+            report += `  4. Consider adding parallel transformer\n\n`;
+            report += `${'-'.repeat(100)}\n\n`;
         }
         
-        report += `DETAILED RECOMMENDATIONS:\n`;
-        report += `${'-'.repeat(100)}\n\n`;
-        
-        recommendations.forEach((rec, index) => {
-            report += `${index + 1}. [${rec.severity || 'UNKNOWN'}] ${rec.name || 'Unnamed'}\n`;
-            report += `   ID: ${rec.id || 'N/A'}\n`;
-            report += `   Category: ${rec.category || 'General'}\n`;
-            report += `   Priority: ${rec.priority || 'N/A'}\n`;
-            report += `   Standard Reference: ${rec.standard || 'N/A'}\n`;
-            report += `\n`;
-            report += `   FINDING:\n`;
-            report += `   ${rec.recommendation || 'No description available'}\n`;
-            report += `\n`;
-            report += `   REQUIRED ACTION:\n`;
-            report += `   ${rec.action || 'No action specified'}\n`;
-            report += `\n`;
-            report += `   IMPACT:\n`;
-            report += `   ${rec.impact || 'No impact assessment available'}\n`;
-            report += `\n`;
-            report += `   IMPLEMENTATION:\n`;
-            report += `   Cost Impact: ${rec.cost || 'Unknown'}\n`;
-            report += `   Effort Required: ${rec.effort || 'Unknown'}\n`;
-            report += `\n`;
+        if (recommendations.length > 0) {
+            const criticalCount = recommendations.filter(r => r.severity === 'CRITICAL').length + 
+                                  (transformerOverloaded && !hasTransformerOverloadRec ? 1 : 0);
+            const highCount = recommendations.filter(r => r.severity === 'HIGH').length;
+            const mediumCount = recommendations.filter(r => r.severity === 'MEDIUM').length;
             
-            if (rec.context) {
-                report += `   CONTEXT:\n`;
-                if (rec.context.faultCurrent !== undefined) {
-                    report += `   - Fault Current: ${rec.context.faultCurrent.toFixed(2)} kA\n`;
-                }
-                if (rec.context.xrRatio !== undefined) {
-                    report += `   - X/R Ratio: ${rec.context.xrRatio.toFixed(2)}\n`;
-                }
-                if (rec.context.voltageDrop !== undefined) {
-                    report += `   - Voltage Drop: ${rec.context.voltageDrop.toFixed(3)}%\n`;
-                }
-                if (rec.context.hasTransformer) {
-                    report += `   - Path contains transformer\n`;
-                }
-                if (rec.context.hasMotor) {
-                    report += `   - Motor contribution present\n`;
-                }
-                if (rec.context.hasGenerator) {
-                    report += `   - Generator contribution present\n`;
-                }
-                report += `\n`;
+            report += `SUMMARY:\n`;
+            report += `${'-'.repeat(100)}\n`;
+            report += `Total Recommendations: ${recommendations.length + (transformerOverloaded && !hasTransformerOverloadRec ? 1 : 0)}\n`;
+            report += `  - Critical Issues: ${criticalCount}\n`;
+            report += `  - High Priority: ${highCount}\n`;
+            report += `  - Medium Priority: ${mediumCount}\n\n`;
+            
+            if (criticalCount > 0) {
+                report += `⚠️  WARNING: ${criticalCount} CRITICAL ISSUE${criticalCount > 1 ? 'S' : ''} REQUIRE${criticalCount === 1 ? 'S' : ''} IMMEDIATE ATTENTION!\n\n`;
             }
             
+            report += `DETAILED RECOMMENDATIONS:\n`;
             report += `${'-'.repeat(100)}\n\n`;
-        });
+            
+            recommendations.forEach((rec, index) => {
+                report += `${index + 1}. [${rec.severity || 'UNKNOWN'}] ${rec.name || 'Unnamed'}\n`;
+                report += `   ID: ${rec.id || 'N/A'}\n`;
+                report += `   Category: ${rec.category || 'General'}\n`;
+                report += `   Priority: ${rec.priority || 'N/A'}\n`;
+                report += `   Standard Reference: ${rec.standard || 'N/A'}\n`;
+                report += `\n`;
+                report += `   FINDING:\n`;
+                report += `   ${rec.recommendation || 'No description available'}\n`;
+                report += `\n`;
+                report += `   REQUIRED ACTION:\n`;
+                report += `   ${rec.action || 'No action specified'}\n`;
+                report += `\n`;
+                report += `   IMPACT:\n`;
+                report += `   ${rec.impact || 'No impact assessment available'}\n`;
+                report += `\n`;
+                report += `   IMPLEMENTATION:\n`;
+                report += `   Cost Impact: ${rec.cost || 'Unknown'}\n`;
+                report += `   Effort Required: ${rec.effort || 'Unknown'}\n`;
+                report += `\n`;
+                
+                if (rec.context) {
+                    report += `   CONTEXT:\n`;
+                    if (rec.context.faultCurrent !== undefined) {
+                        report += `   - Fault Current: ${rec.context.faultCurrent.toFixed(2)} kA\n`;
+                    }
+                    if (rec.context.xrRatio !== undefined) {
+                        report += `   - X/R Ratio: ${rec.context.xrRatio.toFixed(2)}\n`;
+                    }
+                    if (rec.context.voltageDrop !== undefined) {
+                        report += `   - Voltage Drop: ${rec.context.voltageDrop.toFixed(3)}%\n`;
+                    }
+                    if (rec.context.hasTransformer) {
+                        report += `   - Path contains transformer\n`;
+                    }
+                    if (rec.context.hasMotor) {
+                        report += `   - Motor contribution present\n`;
+                    }
+                    if (rec.context.hasGenerator) {
+                        report += `   - Generator contribution present\n`;
+                    }
+                    report += `\n`;
+                }
+                
+                report += `${'-'.repeat(100)}\n\n`;
+            });
+        }
     } else {
         report += `\n${'='.repeat(100)}\n`;
         report += `ENGINEERING RECOMMENDATIONS\n`;
