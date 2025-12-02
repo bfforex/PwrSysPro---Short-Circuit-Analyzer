@@ -816,7 +816,9 @@ function exportBusReport(busId) {
             report += `REQUIRED ACTIONS:\n`;
             report += `  1. IMMEDIATE: Reduce load on secondary bus\n`;
             report += `  2. Transfer loads to other available feeders\n`;
-            report += `  3. Install larger transformer (min. ${Math.ceil(transformerRating * transformerLoadingPercent / 80)} kVA for 80% loading)\n`;
+            // Target 80% loading for recommended transformer sizing per IEEE C57.12.00
+            const RECOMMENDED_TRANSFORMER_LOADING_PCT = 80;
+            report += `  3. Install larger transformer (min. ${Math.ceil(transformerRating * transformerLoadingPercent / RECOMMENDED_TRANSFORMER_LOADING_PCT)} kVA for ${RECOMMENDED_TRANSFORMER_LOADING_PCT}% loading)\n`;
             report += `  4. Consider adding parallel transformer\n\n`;
             report += `${'-'.repeat(100)}\n\n`;
         }
