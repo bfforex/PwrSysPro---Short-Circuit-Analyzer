@@ -1,0 +1,335 @@
+════════════════════════════════════════════════════════════════════════════════
+ARC FLASH HAZARD ANALYSIS REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+Project:             AG&P Industrial Yard
+Engineer:            B. P. Faraon
+Date:                2025-12-03 14:53:37 UTC
+Bus:                 SH5-D1
+Voltage:             440 V
+
+════════════════════════════════════════════════════════════════════════════════
+CALCULATION STANDARDS
+════════════════════════════════════════════════════════════════════════════════
+
+Calculation Method:  IEEE 1584-2018
+Safety Standard:     NFPA 70E-2021
+Compliance:          NEC Article 110.16
+
+════════════════════════════════════════════════════════════════════════════════
+SYSTEM PARAMETERS
+════════════════════════════════════════════════════════════════════════════════
+
+Bolted Fault Current:    10.962 kA
+Arcing Fault Current:    9.318 kA
+Equipment Type:          VCB
+Working Distance:        18 inches
+Electrode Gap:           32 mm
+Clearing Time:           2.0 cycles (0.033 sec)
+
+════════════════════════════════════════════════════════════════════════════════
+HAZARD ANALYSIS RESULTS
+════════════════════════════════════════════════════════════════════════════════
+
+Incident Energy:         0.05 cal/cm²
+Arc Flash Boundary:      0.30 feet (3.56 inches)
+Hazard Level:            Limited
+PPE Category:            0
+Minimum Arc Rating:      1.2 cal/cm²
+
+════════════════════════════════════════════════════════════════════════════════
+PPE REQUIREMENTS - CATEGORY 0
+════════════════════════════════════════════════════════════════════════════════
+
+Required Clothing:       Non-melting
+Arc Rating Required:     1.2 cal/cm² minimum
+
+PERSONAL PROTECTIVE EQUIPMENT:
+--------------------------------------------------------------------------------
+
+HEAD PROTECTION:
+  • Safety glasses or face shield
+  • Hard hat (Class E)
+
+BODY PROTECTION:
+  • Non-melting clothing (cotton, wool, FR treated)
+  • No synthetic materials
+
+HAND PROTECTION:
+  • Leather work gloves or arc-rated gloves
+
+FOOT PROTECTION:
+  • Leather work boots (no synthetic materials)
+  • Steel toe (ASTM F2413)
+
+════════════════════════════════════════════════════════════════════════════════
+EQUIPMENT WARNING LABEL (NEC 110.16)
+════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                        ⚠️ DANGER                                     │
+│              ARC FLASH AND SHOCK HAZARD                             │
+│                                                                     │
+│  Equipment:           SH5-D1                                       │
+│  Voltage:             440                                          V │
+│  Incident Energy:     0.05                                         cal/cm² │
+│  Arc Flash Boundary:  0.3                                          feet │
+│  Working Distance:    18                                           inches │
+│  PPE Category:        0                                            │
+│  Arc Rating Required: 1.2                                          cal/cm² │
+│                                                                     │
+│  Appropriate PPE SHALL be worn when working on or near             │
+│  this equipment. See NFPA 70E for work practices.                  │
+│                                                                     │
+│  Last Calculated:     2025-12-03 14:53:37 UTC                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
+IMPORTANT SAFETY NOTES
+════════════════════════════════════════════════════════════════════════════════
+
+1. This analysis assumes equipment is de-energized and properly locked
+   out before any work is performed.
+
+2. If energized work is required, a detailed Energized Electrical Work
+   Permit (EEWP) must be completed per NFPA 70E Article 130.2.
+
+3. Arc flash boundaries must be barricaded and marked.
+
+4. All personnel within the arc flash boundary must wear appropriate
+   PPE with arc rating ≥ 1.2 cal/cm².
+
+5. This calculation is valid only for the system configuration and
+   protective device settings at the time of analysis.
+
+6. Re-analysis required if:
+   • System configuration changes
+   • Protective device settings change
+   • Available fault current changes
+   • Maximum of every 5 years (NFPA 70E recommendation)
+
+════════════════════════════════════════════════════════════════════════════════
+DETAILED CALCULATION STEPS
+════════════════════════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════════════════════════
+ARC FLASH HAZARD ANALYSIS
+════════════════════════════════════════════════════════════════════════════════
+
+ℹ️ CALCULATION INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Date/Time:           2025-12-03 14:53:37 UTC
+Engineer:            B. P. Faraon
+Target Bus:          SH5-D1 (SH5-D1)
+Voltage:             440 V
+Calculation Method:  IEEE 1584-2018
+Standard:            NFPA 70E-2021
+
+🛡️ SAFETY STANDARDS
+────────────────────────────────────────────────────────────────────────────────
+• IEEE 1584-2018 - Arc-Flash Hazard Calculation (Latest Edition)
+• NFPA 70E-2021 - Electrical Safety in the Workplace
+• NEC Article 110.16 - Arc-Flash Hazard Warning Labels
+• OSHA 1910.335 - Safeguards for Personnel Protection
+
+════════════════════════════════════════════════════════════════════════════════
+⚡ STEP 1: SYSTEM PARAMETERS
+════════════════════════════════════════════════════════════════════════════════
+
+📊 ELECTRICAL SYSTEM DATA
+────────────────────────────────────────────────────────────────────────────────
+System Voltage:              440 V
+Bolted Fault Current:        10.962 kA (10962 A)
+Arcing Current Factor:       0.85 (IEEE 1584-2018 typical)
+Arcing Fault Current:        9.318 kA (9318 A)
+
+📏 EQUIPMENT CONFIGURATION
+────────────────────────────────────────────────────────────────────────────────
+Equipment Type:              Vacuum Circuit Breaker
+Electrode Configuration:     VCB
+Electrode Gap:               32 mm
+Working Distance:            18 inches (457 mm)
+Enclosure Type:              typical
+
+ℹ️ PROTECTIVE DEVICE
+────────────────────────────────────────────────────────────────────────────────
+Clearing Time:               2.0 cycles (0.033 sec)
+Frequency:                   60 Hz
+
+════════════════════════════════════════════════════════════════════════════════
+🔥 STEP 2: INCIDENT ENERGY CALCULATION
+════════════════════════════════════════════════════════════════════════════════
+
+📊 IEEE 1584-2018 LOW VOLTAGE METHOD
+────────────────────────────────────────────────────────────────────────────────
+Voltage Range: 208V - 600V
+
+Arc Power Calculation:
+  log₁₀(Iarc) = log₁₀(9318) = 3.9693
+  log₁₀(E) = k + 0.662×log(Iarc) + 0.0966×V + ...
+  log₁₀(E) = 3.2768
+  Arc Power = 10^3.2768 = 1891.64 W
+
+Incident Energy Formula:
+  E = 4.184 × Carc × t × (610²) / (D² × 10000)
+  Where:
+    Carc = Arc power = 1891.64 W
+    t = Exposure time = 0.033 sec
+    D = Working distance = 457 mm
+    610 = Normalization constant (mm)
+
+  E = 4.184 × 1891.64 × 0.033 × 372100 / (457² × 10000)
+  E = 0.05 cal/cm²
+
+🔥 INCIDENT ENERGY RESULT
+────────────────────────────────────────────────────────────────────────────────
+Incident Energy at 18":  0.05 cal/cm²
+Hazard Level:                ✅ LIMITED (< 1.2 cal/cm²)
+
+════════════════════════════════════════════════════════════════════════════════
+📏 STEP 3: ARC FLASH BOUNDARY
+════════════════════════════════════════════════════════════════════════════════
+
+The arc flash boundary is the distance at which the incident energy
+equals 1.2 cal/cm² (onset of second-degree burn).
+
+Boundary Calculation:
+  Target Energy (Eb):      1.2 cal/cm² (second-degree burn threshold)
+  Incident Energy (E):     0.05 cal/cm² at 18"
+  Working Distance (Dw):   18 inches
+
+  Formula: Db = Dw × √(E / Eb)
+  Db = 18 × √(0.05 / 1.2)
+  Db = 18 × 0.1978
+  Db = 3.56 inches
+
+📏 ARC FLASH BOUNDARY
+────────────────────────────────────────────────────────────────────────────────
+Boundary Distance:       3.56 inches (0.30 feet)
+                         90 mm (0.09 meters)
+
+⚠️ SAFETY REQUIREMENT:
+All personnel must:
+  • Maintain distance > 0.3 feet from equipment
+  • Wear appropriate PPE when within boundary
+  • Follow NFPA 70E work practices
+
+════════════════════════════════════════════════════════════════════════════════
+🦺 STEP 4: PPE REQUIREMENTS (NFPA 70E)
+════════════════════════════════════════════════════════════════════════════════
+
+🛡️ PPE CATEGORY DETERMINATION
+────────────────────────────────────────────────────────────────────────────────
+Incident Energy:         0.05 cal/cm²
+Required PPE Category:   0
+Arc Rating Required:     1.2 cal/cm² minimum
+Hazard Level:            Limited
+
+🦺 REQUIRED PERSONAL PROTECTIVE EQUIPMENT
+────────────────────────────────────────────────────────────────────────────────
+PPE Category 0 Requirements:
+
+CLOTHING:
+  • Non-melting
+  • Arc-rated minimum: 1.2 cal/cm²
+
+HEAD PROTECTION:
+  • Safety glasses or face shield
+  • Hard hat (Class E)
+
+HAND PROTECTION:
+  • Leather work gloves
+
+FOOT PROTECTION:
+  • Leather work boots (no synthetic materials)
+  • Steel toe (ASTM F2413)
+
+BODY PROTECTION:
+  • Non-melting clothing (cotton, wool, FR treated)
+  • No synthetic materials
+
+════════════════════════════════════════════════════════════════════════════════
+🏷️ STEP 5: EQUIPMENT LABELING (NEC 110.16)
+════════════════════════════════════════════════════════════════════════════════
+
+⚠️ WARNING LABEL REQUIREMENTS
+────────────────────────────────────────────────────────────────────────────────
+Per NEC Article 110.16, equipment must be field marked with an
+arc flash hazard warning label containing the following:
+
+REQUIRED LABEL INFORMATION:
+┌─────────────────────────────────────────────────────────────────────┐
+│                        ⚠️ DANGER                                     │
+│              ARC FLASH AND SHOCK HAZARD                             │
+│                                                                     │
+│  Equipment:           SH5-D1                                       │
+│  Voltage:             440                                          V │
+│  Incident Energy:     0.05                                         cal/cm² │
+│  Arc Flash Boundary:  0.3                                          feet │
+│  Working Distance:    18                                           inches │
+│  PPE Category:        0                                            │
+│  Arc Rating Required: 1.2                                          cal/cm² │
+│                                                                     │
+│  Appropriate PPE SHALL be worn when working on or near             │
+│  this equipment. See NFPA 70E for work practices.                  │
+│                                                                     │
+│  Last Calculated:     2025-12-03 14:53:37 UTC                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
+ARC FLASH ANALYSIS SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+📊 CALCULATION RESULTS
+────────────────────────────────────────────────────────────────────────────────
+Bus:                         SH5-D1 (SH5-D1)
+Voltage:                     440 V
+Bolted Fault Current:        10.962 kA
+Arcing Fault Current:        9.318 kA
+Clearing Time:               2.0 cycles (0.033 sec)
+Working Distance:            18 inches
+
+🔥 HAZARD ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+Incident Energy:             0.05 cal/cm²
+Arc Flash Boundary:          0.30 feet (3.56 inches)
+Hazard Level:                Limited
+PPE Category:                0
+Minimum Arc Rating:          1.2 cal/cm²
+
+🛡️ SAFETY COMPLIANCE
+────────────────────────────────────────────────────────────────────────────────
+✓ IEEE 1584-2018 - Arc-Flash Hazard Calculations
+✓ NFPA 70E-2021 - Electrical Safety Standards
+✓ NEC Article 110.16 - Warning Label Requirements
+✓ OSHA 1910.335 - Personnel Protection
+
+⚠️ IMPORTANT SAFETY NOTES
+────────────────────────────────────────────────────────────────────────────────
+1. This analysis assumes the equipment is de-energized and properly
+   locked out before any work is performed.
+
+2. If energized work is required, a detailed Energized Electrical
+   Work Permit (EEWP) must be completed per NFPA 70E Article 130.2.
+
+3. Arc flash boundaries must be barricaded and marked.
+
+4. All personnel within the arc flash boundary must wear appropriate
+   PPE with arc rating ≥ 1.2 cal/cm².
+
+5. This calculation is valid only for the system configuration and
+   protective device settings at the time of analysis.
+
+6. Re-analysis required if:
+   • System configuration changes
+   • Protective device settings change
+   • Available fault current changes
+   • Maximum of every 5 years (NFPA 70E recommendation)
+
+════════════════════════════════════════════════════════════════════════════════
+END OF ARC FLASH ANALYSIS
+════════════════════════════════════════════════════════════════════════════════
+
+════════════════════════════════════════════════════════════════════════════════
+END OF ARC FLASH ANALYSIS REPORT
+════════════════════════════════════════════════════════════════════════════════

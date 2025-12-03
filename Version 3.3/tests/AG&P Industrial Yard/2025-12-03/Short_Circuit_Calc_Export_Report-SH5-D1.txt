@@ -1,0 +1,342 @@
+====================================================================================================
+SHORT CIRCUIT ANALYSIS REPORT - BUS: SH5-D1
+====================================================================================================
+
+Project: AG&P Industrial Yard
+Project Number: AGP-25101-CAL-ELE-1001.00
+Engineer: B. P. Faraon
+Date: 2025-12-03 14:53:37 UTC
+Software: PwrSys Pro - Short Circuit Analyzer v1.0
+Author: Engr. B. P. Faraon
+Calculation Method: per-unit
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: SH5-D1
+Voltage: 440 V
+Type: branch
+Demand Factor: 100.0% (NEC Article 220)
+Diversity Factor: 1.0 (IEEE 141)
+
+FAULT CURRENT RESULTS:
+----------------------------------------------------------------------------------------------------
+Symmetrical Fault Current: 10.962 kA (10962.41 A)
+Asymmetrical (Peak) Current: 10.962 kA (10962.47 A)
+Line-to-Ground Fault: 7.634 kA
+Line-to-Line Fault: 9.493 kA
+X/R Ratio: 1.548
+Total Impedance: 0.023173 Ω
+
+
+====================================================================================================
+LOAD ANALYSIS WITH DEMAND & DIVERSITY FACTORS (Feature #5)
+====================================================================================================
+
+LOAD SUMMARY:
+----------------------------------------------------------------------------------------------------
+Connected Load:     802.51 A  |  611.59 kVA  (100.0%)
+Demand Load:        682.13 A  |  519.86 kVA  (85.0%)
+Diversity Load:     682.13 A  |  519.86 kVA  (85.0%)
+
+Power Savings:      91.74 kVA
+Load Reduction:     15.0%
+
+FACTORS APPLIED:
+----------------------------------------------------------------------------------------------------
+Overall Demand Factor:      0.850 (85.0%)
+Overall Diversity Factor:   1.000 (1.0)
+Combined Factor:            0.850 (85.0%)
+
+BREAKDOWN BY COMPONENT TYPE:
+----------------------------------------------------------------------------------------------------
+Type              Connected(A)    Demand(A)    Factor    Power(kVA)
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+TOTAL                   802.51        682.13      85.0%        519.86
+----------------------------------------------------------------------------------------------------
+
+NEC/IEEE COMPLIANCE:
+----------------------------------------------------------------------------------------------------
+✓ NEC Article 220 - Demand factors applied per load type
+✓ NEC Article 430.24 - Motor demand factors (0 motors)
+✓ IEEE 141-1993 Red Book - Diversity factors for system design
+✓ Design Load = Connected Load × Demand Factor × Diversity Factor
+
+
+====================================================================================================
+DETAILED DEMAND & DIVERSITY CALCULATIONS
+====================================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+DEMAND & DIVERSITY FACTOR ANALYSIS
+════════════════════════════════════════════════════════════════════════════════
+
+📊 BUS INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Bus:                       SH5-D1
+Bus Voltage:               440V
+Bus Classification:        Mixed Load Bus
+
+📊 LOAD SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+Connected Load:            802.51 A (100.0%)
+Motor Count:               0
+Transformer Count:         0
+Total Components:          0
+
+📐 DEMAND FACTOR APPLICATION
+────────────────────────────────────────────────────────────────────────────────
+Demand Factor:             0.850 (85.0%)
+Note:                      Mixed loads - 85% demand factor (IEEE 141-1993)
+Demand Load:               682.13 A (85.0%)
+Formula:                   Demand = Connected × Demand Factor
+                           682.13 A = 802.51 A × 0.850
+
+📐 DIVERSITY FACTOR APPLICATION
+────────────────────────────────────────────────────────────────────────────────
+Diversity Factor:          1.000 (IEEE 141-1993)
+Application Level:         Bus-Level
+Diversity Load:            682.13 A (85.0%)
+Formula:                   Diversity = Demand / Diversity Factor
+                           682.13 A = 682.13 A / 1.000
+
+💰 POWER SAVINGS
+────────────────────────────────────────────────────────────────────────────────
+Connected Power:           611.59 kVA
+Demand Power:              519.86 kVA
+Diversity Power:           519.86 kVA
+
+Power Reduction:           91.74 kVA
+Percentage Reduction:      15.0%
+
+📋 STANDARDS COMPLIANCE
+────────────────────────────────────────────────────────────────────────────────
+✓ NEC Article 220 - Demand Factors
+✓ IEEE 141-1993 - Diversity Factors
+
+════════════════════════════════════════════════════════════════════════════════
+END OF DEMAND & DIVERSITY ANALYSIS
+════════════════════════════════════════════════════════════════════════════════
+
+====================================================================================================
+DEMAND & DIVERSITY FACTOR ANALYSIS
+====================================================================================================
+
+📊 LOAD SUMMARY:
+----------------------------------------------------------------------------------------------------
+Connected Load:          802.51 A  (100.0%)  611.59 kVA
+Demand Load:             682.13 A  (85.0%)   519.86 kVA
+Diversified Load:        682.13 A  (85.0%)   519.86 kVA
+
+Power Savings:           91.74 kVA
+Current Reduction:       120.38 A (15.0%)
+
+📐 FACTORS APPLIED:
+----------------------------------------------------------------------------------------------------
+Demand Factor (Kd):      0.850 (85.0%)
+Diversity Factor (DF):   1.000
+Combined Effect:         0.850
+
+Formula: Diversified Load = Connected Load × Demand Factor ÷ Diversity Factor
+         682.13 A = 802.51 A × 0.850 ÷ 1.000
+
+📋 STANDARDS COMPLIANCE:
+----------------------------------------------------------------------------------------------------
+✓ NEC Article 220 - Demand Factors Applied
+✓ NEC Article 430.24 - Motor Demand Factors
+✓ IEEE 141-1993 - Diversity Factors Applied
+✓ Conservative Design Maintained
+
+⚡ DESIGN VOLTAGE DROP ANALYSIS (FLC – Sizing Basis)
+----------------------------------------------------------------------------------------------------
+Method Used:             Full Load Current (FLC) - CONSERVATIVE
+Current Used:            802.51 A (100% connected load)
+Calculated Drop:         11.196% (50.49V)
+
+📋 NEC/IEEE 141 COMPLIANCE (Based on Design VD per FLC):
+----------------------------------------------------------------------------------------------------
+• NEC 210.19(A) Informational Note: Branch circuit conductors sized for
+  a maximum voltage drop of 3% at the farthest outlet of power, heating,
+  and lighting loads.
+• NEC 215.2(A)(1) Informational Note: Feeders sized for maximum 3% drop.
+• IEEE 141-1993: Combined feeder + branch ≤ 5% for sensitive equipment.
+
+  Design VD:     11.196%
+  Feeder Limit:  3% ❌
+  Branch Limit:  5% ❌
+  Combined:      7% ❌
+  Status:        ✗ NON-COMPLIANT
+
+📊 ESTIMATED OPERATING VOLTAGE DROP (with demand & diversity):
+----------------------------------------------------------------------------------------------------
+⚠️  NOTE: These values are for INFORMATION ONLY and NOT used for compliance.
+
+With Demand Factor:      9.517% (41.87V)
+With Diversity Factor:   9.517% (41.87V)
+Voltage Drop Reduction:  1.679% (15.0% improvement)
+
+ℹ️  Voltage drop compliance per NEC 210.19, 215.2, and IEEE 141 is based on
+    Design VD using Full Load Current (FLC), NOT on Operating VD.
+    This ensures adequate conductor sizing for worst-case conditions.
+
+PER-UNIT BASE VALUES AT TARGET BUS:
+----------------------------------------------------------------------------------------------------
+Base kVA: 10000 kVA (CONSTANT for entire system)
+Base Voltage: 440 V
+Base Impedance: 0.019360 Ω (Z_base = V²/S_base)
+Base Current: 13121.60 A (I_base = S_base/(√3×V))
+
+Per-Unit Values:
+  System Impedance (pu): 1.196962
+  Load Current (pu): 0.061159
+
+PER-UNIT IMPEDANCES (DETAILED):
+----------------------------------------------------------------------------------------------------
+R(pu): 0.649414 pu (Resistance)
+X(pu): 1.005475 pu (Reactance)
+Z(pu): 1.196962 pu (Total Impedance)
+X/R Ratio: 1.548
+
+PATH FROM SOURCE (WITH CABLE TAGS):
+----------------------------------------------------------------------------------------------------
+1. MERALCO-CCP (13200V) - SOURCE
+2. EHV1 (13200V) - CABLE [Tag: C-13k2-CCP-EHV1-01, 500 copper, 100ft]
+3. DS05 (13200V) - CABLE [Tag: C-13k2-EHV-DS05-01, 250 copper, 1253ft]
+4. DS06 (13200V) - CABLE [Tag: C-13k2-DS05-DS06-01, 250 copper, 617ft]
+5. LCB1-1 (13200V) - CABLE [Tag: C-13k2-DS06-LCB1-01, 3/0 copper, 35ft]
+6. LCB1-4 (440V) - TRANSFORMER [Tag: XFMR07, 1000 kVA, 4%]
+7. SH5-D1 (440V) - CABLE [Tag: C-440-LCB14-SH5D1-01, 500 copper, 935.04ft, 3× parallel]
+
+VOLTAGE DROP ANALYSIS (WITH CABLE TAGS):
+----------------------------------------------------------------------------------------------------
+Total Voltage Drop: 11.196% (50.494 V)
+Maximum Single Component Drop: 6.511%
+IEEE 141 Compliance: ✗ NON-COMPLIANT
+Power Factor: 0.87
+
+COMPONENT BREAKDOWN (WITH FROM/TO AND TAGS):
+----------------------------------------------------------------------------------------------------
+Step  Type          Tag/Name                From                    To                      Current(A)  Drop(V)   Drop(%)   Status
+----------------------------------------------------------------------------------------------------
+  1  cable         C-13k2-CCP-EHV1-01   MERALCO-CCP              EHV1                          354.5     2.766     0.021  LOW
+  2  cable         C-13k2-EHV-DS05-01   EHV1                     DS05                          225.8    36.118     0.274  LOW
+  3  cable         C-13k2-DS05-DS06-01  DS05                     DS06                           97.4     7.676     0.058  LOW
+  4  cable         C-13k2-DS06-LCB1-01  DS06                     LCB1-1                         97.4     0.598     0.005  LOW
+  5  transformer   XFMR07 - 1000kVA (13 N/A                      N/A                          2923.0    29.367     6.511  HIGH
+  6  cable         C-440-LCB14-SH5D1-01 LCB1-4                   SH5-D1                        802.5    19.516     4.435  HIGH
+----------------------------------------------------------------------------------------------------
+
+ARC FLASH HAZARD ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Calculation Method: IEEE 1584-2018
+Standard: NFPA 70E-2021
+Equipment Type: VCB
+Working Distance: 18 inches (1.50 feet)
+
+SYSTEM PARAMETERS:
+----------------------------------------------------------------------------------------------------
+Bolted Fault Current:    10.962 kA
+Arcing Fault Current:    9.318 kA
+Arcing Factor:           0.85 (IEEE 1584-2018)
+Clearing Time:           2.0 cycles (0.033 sec)
+Electrode Gap:           32 mm
+
+HAZARD ANALYSIS RESULTS:
+----------------------------------------------------------------------------------------------------
+Incident Energy:         0.05 cal/cm²
+Arc Flash Boundary:      0.30 feet (3.56 inches)
+Hazard Level:            Limited
+PPE Category:            0
+Minimum Arc Rating:      1.2 cal/cm²
+
+HAZARD CLASSIFICATION:
+----------------------------------------------------------------------------------------------------
+✓  LIMITED HAZARD - Minimal PPE required
+
+PPE REQUIREMENTS - CATEGORY 0:
+----------------------------------------------------------------------------------------------------
+Required Clothing:       Non-melting
+Arc Rating Required:     1.2 cal/cm² minimum
+
+PERSONAL PROTECTIVE EQUIPMENT:
+  HEAD:    Safety glasses, Hard hat (Class E)
+  BODY:    Non-melting clothing
+  HANDS:   Leather work gloves
+  FEET:    Leather work boots, Steel toe (ASTM F2413)
+
+EQUIPMENT WARNING LABEL (NEC 110.16):
+----------------------------------------------------------------------------------------------------
+┌───────────────────────────────────────────────────────────────────────┐
+│                        ⚠️ DANGER                                   │
+│              ARC FLASH AND SHOCK HAZARD                           │
+│                                                                       │
+│  Equipment:           SH5-D1                                       │
+│  Voltage:             440                                          V │
+│  Incident Energy:     0.05                                         cal/cm² │
+│  Arc Flash Boundary:  0.3                                          feet │
+│  PPE Category:        0                                            │
+│  Arc Rating Required: 1.2                                          cal/cm² │
+│                                                                       │
+│  Appropriate PPE SHALL be worn when working on or near this equipment.│
+│  See NFPA 70E for proper work practices.                              │
+└───────────────────────────────────────────────────────────────────────┘
+
+SAFETY COMPLIANCE:
+----------------------------------------------------------------------------------------------------
+✓ IEEE 1584-2018 - Arc-Flash Hazard Calculations
+✓ NFPA 70E-2021 - Electrical Safety in the Workplace
+✓ NEC Article 110.16 - Arc-Flash Hazard Warning Labels
+✓ OSHA 1910.335 - Safeguards for Personnel Protection
+
+IMPORTANT NOTES:
+----------------------------------------------------------------------------------------------------
+1. De-energize and lockout equipment before work (NFPA 70E Article 120)
+2. If energized work required: Complete Energized Work Permit (Article 130.2)
+3. All personnel within 0.3 ft must wear PPE ≥ 1.2 cal/cm²
+4. Re-calculate if system changes or every 5 years (NFPA 70E)
+
+
+LOAD FLOW ANALYSIS (WITH CABLE TAGS AND FROM/TO):
+----------------------------------------------------------------------------------------------------
+Total Load Current: 802.51 A
+Total Apparent Power: 611.59 kVA
+Total Active Power: 532.09 kW
+Power Factor: 0.87
+
+
+════════════════════════════════════════════════════════════════════════════════
+DETAILED COMPONENT BREAKDOWN WITH FROM/TO INFORMATION
+════════════════════════════════════════════════════════════════════════════════
+
+Type          Tag/Name             From Bus                 To Bus                   Current(A)  Power(kVA)
+────────────────────────────────────────────────────────────────────────────────
+Direct Load   Direct Load          (Direct)                 SH5-D1                        802.51      611.59
+────────────────────────────────────────────────────────────────────────────────
+TOTAL                                                                                                802.51      611.59
+════════════════════════════════════════════════════════════════════════════════
+
+====================================================================================================
+ENGINEERING RECOMMENDATIONS
+====================================================================================================
+
+❌ OVERLOADED TRANSFORMER IDENTIFIED
+----------------------------------------------------------------------------------------------------
+Transformer: XFMR07
+Rating: 1000 kVA
+Loading: 222.8% (exceeds 100% nameplate)
+
+Per IEEE C57.91 and NEC 450.3, continuous operation at >100% rated load
+will cause accelerated thermal aging of insulation and potential failure.
+
+REQUIRED ACTIONS:
+  1. IMMEDIATE: Reduce load on secondary bus
+  2. Transfer loads to other available feeders
+  3. Install larger transformer (min. 2785 kVA for 80% loading)
+  4. Consider adding parallel transformer
+
+----------------------------------------------------------------------------------------------------
+
+
+====================================================================================================
+END OF REPORT
+====================================================================================================

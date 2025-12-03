@@ -1,0 +1,94 @@
+====================================================================================================
+VOLTAGE DROP ANALYSIS REPORT - BUS: SH5-D1
+====================================================================================================
+
+Project: AG&P Industrial Yard
+Project Number: AGP-25101-CAL-ELE-1001.00
+Engineer: B. P. Faraon
+Date: 2025-12-03 14:53:37 UTC
+Software: PwrSys Pro - Voltage Drop Analyzer v1.0
+Author: Engr. B. P. Faraon
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: SH5-D1
+Voltage: 440 V
+System Type: branch
+Calculation Method: per-unit
+
+TRANSFORMER TAP ADJUSTMENT:
+----------------------------------------------------------------------------------------------------
+Nominal Voltage:        440.00 V
+Tap Setting:            2.50%
+Tap-Adjusted Nominal:   451.00 V
+Baseline for VD%:       Tap-Adjusted Nominal (per IEEE 141-1993)
+
+VOLTAGE DROP SUMMARY:
+----------------------------------------------------------------------------------------------------
+Total Voltage Drop: 11.196% (50.494 V)
+Maximum Single Component: 6.511%
+Power Factor: 0.87
+Temperature: 75°C
+
+IEEE 141 COMPLIANCE CHECK:
+----------------------------------------------------------------------------------------------------
+Feeder Circuits: 3% maximum (recommended)
+Branch Circuits: 5% maximum (recommended)
+Combined System: 7% maximum (absolute limit)
+
+❌ NON-COMPLIANT - Exceeds IEEE 141 maximum (7%)
+
+Actual Voltage Drop: 11.196%
+
+COMPONENT-BY-COMPONENT ANALYSIS:
+----------------------------------------------------------------------------------------------------
+Step  Type          Component Name          Current(A)  Drop(V)  Drop(%)  Cumulative(%)  Status
+----------------------------------------------------------------------------------------------------
+1     cable         C-13k2-CCP-EHV1-01 COP       354.5    2.766    0.021          0.021  LOW
+2     cable         C-13k2-EHV-DS05-01 COP       225.8   36.118    0.274          0.295  LOW
+3     cable         C-13k2-DS05-DS06-01 CO        97.4    7.676    0.058          0.353  LOW
+4     cable         C-13k2-DS06-LCB1-01 CO        97.4    0.598    0.005          0.357  LOW
+5     transformer   XFMR07 - 1000kVA (1320      2923.0   29.367    6.511          6.869  HIGH
+6     cable         C-440-LCB14-SH5D1-01 C       802.5   19.516    4.435         11.304  HIGH
+----------------------------------------------------------------------------------------------------
+
+⚠️  CRITICAL COMPONENTS REQUIRING ATTENTION:
+----------------------------------------------------------------------------------------------------
+
+1. TRANSFORMER: 1000 kVA Transformer (13200V / 440V)
+   Voltage Drop: 6.511% (29.37V)
+   Severity: HIGH
+   Current: N/AA
+   
+   RECOMMENDATIONS:
+   - Review transformer tap settings
+   - Consider lower impedance transformer
+   - Consider higher kVA rating
+   - Check loading conditions
+
+2. CABLE: C-440-LCB14-SH5D1-01 - 500 COPPER (3×) - 935.04ft
+   Voltage Drop: 4.435% (19.52V)
+   Severity: HIGH
+   Current: N/AA
+   
+   RECOMMENDATIONS:
+   - Consider larger conductor size
+   - Consider parallel conductors
+   - Reduce circuit length if possible
+   - Check for excessive load
+
+GENERAL RECOMMENDATIONS:
+----------------------------------------------------------------------------------------------------
+❌ IMMEDIATE ACTION REQUIRED:
+   System voltage drop exceeds maximum allowable limit.
+   Equipment may malfunction or fail prematurely.
+   
+   Priority Actions:
+   1. Identify and upsize critical conductors
+   2. Consider adding voltage regulation equipment
+   3. Review load distribution
+   4. Consider parallel circuits where applicable
+
+====================================================================================================
+END OF VOLTAGE DROP REPORT
+====================================================================================================

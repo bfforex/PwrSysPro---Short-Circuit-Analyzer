@@ -1,0 +1,133 @@
+
+════════════════════════════════════════════════════════════════════════════════
+BUS TIE ANALYSIS REPORT
+════════════════════════════════════════════════════════════════════════════════
+Generated: 12/3/2025, 3:07:29 PM
+Analysis Method: Scenario Comparison (Open vs Closed)
+════════════════════════════════════════════════════════════════════════════════
+
+A. BUS TIE SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+
+Tie Tag:           BT-LCA1-4-LCB1-4-1
+  • Between:       LCA1-4 (440V) and LCB1-4 (440V)
+  • Rating:        1600 A
+  • Type:          ACB (Air Circuit Breaker)
+  • Bus Length:    10 ft
+  • Conductor:     1500 kcmil
+  • Impedance:     0.000100 Ω
+  • Normal State:  CLOSED
+  • Current State: CLOSED
+  • Interlock:     YES
+  • Description:   Main Tie - LCA1 to LCB1
+
+B. SHORT CIRCUIT COMPARISON (3-Phase Symmetrical)
+────────────────────────────────────────────────────────────────────────────────
+
+                    Tie OPEN      Tie CLOSED    Increase    Impact
+────────────────────────────────────────────────────────────────────────────────
+LCA1-4               29.31         29.31         +0.0%      ✓ Minor
+LCB1-4               29.18         29.18         +0.0%      ✓ Minor
+
+KEY FINDINGS:
+  • Average fault current increase: 0.0%
+
+C. VOLTAGE DROP COMPARISON
+────────────────────────────────────────────────────────────────────────────────
+
+                    Tie OPEN      Tie CLOSED    Improvement
+────────────────────────────────────────────────────────────────────────────────
+LCA1-4               2.50%       2.00%       -0.50%      ✓ Better
+LCB1-4               2.50%       2.00%       -0.50%      ✓ Better
+
+KEY FINDINGS:
+  • Average voltage drop improvement: 0.50%
+
+D. LOAD SHARING ANALYSIS (Tie CLOSED)
+────────────────────────────────────────────────────────────────────────────────
+
+LCA1-4 Load:        900 A
+LCB1-4 Load:        850 A
+Load Imbalance:         50 A
+
+Tie Current:            25.0 A (LCA1-4 → LCB1-4)
+Tie Utilization:        1.6% of 1600A rating
+Load Sharing:           Well balanced - minimal tie current
+
+✓ Tie is lightly loaded - good load balance between buses
+
+BENEFITS (Tie Closed):
+  • Equalizes load between buses
+  • Improves transformer loading balance
+  • Provides redundancy for maintenance
+  • Allows load transfer during emergencies
+
+E. ARC FLASH COMPARISON (IEEE 1584-2018)
+────────────────────────────────────────────────────────────────────────────────
+
+                    Tie OPEN              Tie CLOSED            Impact
+────────────────────────────────────────────────────────────────────────────────
+LCA1-4 Incident E   4.2                   6.8                   +61.9%
+                    cal/cm²               cal/cm²
+PPE Category            2                     3                     Higher PPE
+
+LCB1-4 Incident E   5.1                   7.9                   +54.9%
+                    cal/cm²               cal/cm²
+PPE Category            2                     3                     Higher PPE
+
+KEY FINDINGS:
+  • Average incident energy change: +58.4%
+
+  ⚠️ IMPORTANT OBSERVATION:
+  Incident energy has changed significantly while bolted fault
+  current remains effectively unchanged. This can occur when:
+    • Clearing time changes between scenarios
+    • Different protective device operates
+    • Protection coordination affects arc duration
+  The fault current increase alone does not explain the IE change.
+
+  • ⚠️ CRITICAL: Arc flash hazard increased significantly
+  • Action Required: Update arc flash labels for both scenarios
+  • Action Required: Review PPE requirements
+  • Action Required: Consider arc flash reducing maintenance switch
+
+F. OPERATING RECOMMENDATIONS
+────────────────────────────────────────────────────────────────────────────────
+
+NORMAL OPERATION (Tie OPEN):
+  ✓ Higher reliability (fault isolation)
+  ✓ Lower fault currents (easier to interrupt)
+  ✓ Lower arc flash hazard
+  ✓ Independent protection coordination
+  ⚠️ Higher voltage drop on heavily loaded bus
+  ⚠️ No load sharing capability
+  ⚠️ Limited redundancy
+
+EMERGENCY/MAINTENANCE (Tie CLOSED):
+  ✓ Load transfer capability
+  ✓ Improved voltage regulation
+  ✓ Load sharing between buses
+  ✓ Increased system redundancy
+  ⚠️ Significantly higher fault currents (+0%)
+  ⚠️ Higher arc flash hazard (PPE category may increase)
+  ⚠️ Must verify breaker interrupting ratings
+  ⚠️ Protection coordination more complex
+
+IEEE 141-1993 RECOMMENDATION:
+  "Bus ties should normally be operated open unless load sharing or
+   voltage support is required. When operated closed, verify all
+   protective devices are rated for increased fault current."
+
+ACTION ITEMS:
+  1. Verify breaker ratings adequate for tie-closed fault current
+  2. Update arc flash labels for both operating modes
+  3. Review protection coordination with tie closed
+  4. Update operating procedures with tie operating limits
+  5. Consider interlock to prevent paralleling utility sources
+
+  ✓ Interlock is installed - prevents source paralleling
+
+
+════════════════════════════════════════════════════════════════════════════════
+END OF BUS TIE ANALYSIS REPORT
+════════════════════════════════════════════════════════════════════════════════

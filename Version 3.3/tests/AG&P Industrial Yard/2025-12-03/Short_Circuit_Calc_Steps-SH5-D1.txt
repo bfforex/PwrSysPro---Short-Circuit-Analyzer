@@ -1,0 +1,1069 @@
+════════════════════════════════════════════════════════════════════════════════
+SHORT CIRCUIT CALCULATION - PER-UNIT METHOD
+════════════════════════════════════════════════════════════════════════════════
+
+📋 CALCULATION INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Date/Time:           2025-12-03 14:53:37 UTC
+Engineer:            B. P. Faraon
+Temperature:         75°C
+Method:              Per-Unit System
+System Frequency:    60 Hz
+Breaker Contact:     50.00 ms
+Motor Time Point:    3 cycles
+
+📊 PER-UNIT BASE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base kVA:            10000 kVA
+Base Voltage:        440 V
+Base Impedance:      0.019360 Ω
+Base Current:        13121.60 A
+
+📖 METHODOLOGY NOTES
+────────────────────────────────────────────────────────────────────────────────
+• Per-unit method automatically handles voltage level changes
+• Transformer ratios built into per-unit conversion
+• Zero sequence (Z0) tracked for line-to-ground faults
+• Component tags shown for full traceability
+• From/To bus connections displayed
+• All impedances normalized to common 10000 kVA base
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 1: SOURCE BUS IMPEDANCE
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 SOURCE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Bus Tag:             MERALCO-CCP
+Bus Name:            MERALCO-CCP
+Bus Type:            SOURCE
+Voltage Level:       13200 V
+Available Fault:     10.00 kA
+X/R Ratio:           6
+
+📐 IMPEDANCE CALCULATION (OHMIC)
+────────────────────────────────────────────────────────────────────────────────
+Formula:             Z_source = V_LL / (√3 × I_sc)
+
+Step-by-Step:
+   Z = 13200 / (1.7321 × 10000)
+   Z = 13200 / 17320.51
+   Z = 0.762102 Ω
+
+Component Separation (X/R = 6):
+   R = Z / √(1 + (X/R)²) = 0.125289 Ω
+   X = R × (X/R) = 0.751733 Ω
+
+Positive Sequence (Z1):
+   R1 = 0.125289 Ω
+   X1 = 0.751733 Ω
+
+Zero Sequence (Z0 = 1.5× Z1):
+   R0 = 0.187933 Ω
+   X0 = 1.127600 Ω
+
+📊 CONVERSION TO PER-UNIT
+────────────────────────────────────────────────────────────────────────────────
+Base Impedance at 13200V:
+   Formula:          Z_base = V² / S_base
+   Z_base = (13200)² / (10000 × 1000)
+   Z_base = 174240000 / 10000000
+   Z_base = 17.424000 Ω
+
+Per-Unit Conversion:
+   Formula:          Z_pu = Z_ohms / Z_base
+   R_pu = 0.125289 / 17.424000 = 0.007191 pu
+   X_pu = 0.751733 / 17.424000 = 0.043144 pu
+   R0_pu = 0.187933 / 17.424000 = 0.010786 pu
+   X0_pu = 1.127600 / 17.424000 = 0.064715 pu
+
+✅ RUNNING TOTALS (Per-Unit)
+────────────────────────────────────────────────────────────────────────────────
+   Z1: R_pu = 0.007191, X_pu = 0.043144
+   Z0: R0_pu = 0.010786, X0_pu = 0.064715
+
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 2: CABLE - C-13k2-CCP-EHV1-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-13k2-CCP-EHV1-01
+Component Type:      CABLE
+Size:                500
+Material:            COPPER
+Length:              100 ft
+From Bus:            MERALCO-CCP
+To Bus:              EHV1
+Temperature:         75°C
+Voltage Level:       13200V
+
+📐 IMPEDANCE CALCULATION (OHMIC)
+────────────────────────────────────────────────────────────────────────────────
+Base Values (per 1000 ft at 20°C):
+   R_base = 0.000026 Ω/1000ft    (NEC Ch 9 Table 9)
+   X_base = 0.000036 Ω/1000ft    (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000026 × 1.2162
+   R_corrected = 0.000031 Ω/1000ft
+
+Cable Impedance:
+   Formula:          Z = (Z_per_1000ft × Length) / Parallel
+   R = (0.000031 × 100) / 1
+   R = 0.003138 / 1
+   R = 0.003138 Ω
+
+   X = (0.000036 × 100) / 1
+   X = 0.003600 / 1
+   X = 0.003600 Ω
+
+Sequence Impedances:
+   Z1: R = 0.003138 Ω, X = 0.003600 Ω
+   Z0: R0 = 0.009413 Ω, X0 = 0.010800 Ω (3× Z1)
+
+📊 CONVERSION TO PER-UNIT
+────────────────────────────────────────────────────────────────────────────────
+Base Impedance at 13200V:
+   Z_base = (13200)² / (10000 × 1000)
+   Z_base = 174240000 / 10000000
+   Z_base = 17.424000 Ω
+
+Per-Unit Values:
+   R_pu = 0.003138 / 17.424000 = 0.000180 pu
+   X_pu = 0.003600 / 17.424000 = 0.000207 pu
+   R0_pu = 0.009413 / 17.424000 = 0.000540 pu
+   X0_pu = 0.010800 / 17.424000 = 0.000620 pu
+
+✅ RUNNING TOTALS (Per-Unit)
+────────────────────────────────────────────────────────────────────────────────
+   Z1: R_pu = 0.007371, X_pu = 0.043350
+   Z0: R0_pu = 0.011326, X0_pu = 0.065335
+
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 3: CABLE - C-13k2-EHV-DS05-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-13k2-EHV-DS05-01
+Component Type:      CABLE
+Size:                250
+Material:            COPPER
+Length:              1253 ft
+From Bus:            EHV1
+To Bus:              DS05
+Temperature:         75°C
+Voltage Level:       13200V
+
+📐 IMPEDANCE CALCULATION (OHMIC)
+────────────────────────────────────────────────────────────────────────────────
+Base Values (per 1000 ft at 20°C):
+   R_base = 0.000051 Ω/1000ft    (NEC Ch 9 Table 9)
+   X_base = 0.000039 Ω/1000ft    (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000051 × 1.2162
+   R_corrected = 0.000063 Ω/1000ft
+
+Cable Impedance:
+   Formula:          Z = (Z_per_1000ft × Length) / Parallel
+   R = (0.000063 × 1253) / 1
+   R = 0.078478 / 1
+   R = 0.078478 Ω
+
+   X = (0.000039 × 1253) / 1
+   X = 0.048867 / 1
+   X = 0.048867 Ω
+
+Sequence Impedances:
+   Z1: R = 0.078478 Ω, X = 0.048867 Ω
+   Z0: R0 = 0.235433 Ω, X0 = 0.146601 Ω (3× Z1)
+
+📊 CONVERSION TO PER-UNIT
+────────────────────────────────────────────────────────────────────────────────
+Base Impedance at 13200V:
+   Z_base = (13200)² / (10000 × 1000)
+   Z_base = 174240000 / 10000000
+   Z_base = 17.424000 Ω
+
+Per-Unit Values:
+   R_pu = 0.078478 / 17.424000 = 0.004504 pu
+   X_pu = 0.048867 / 17.424000 = 0.002805 pu
+   R0_pu = 0.235433 / 17.424000 = 0.013512 pu
+   X0_pu = 0.146601 / 17.424000 = 0.008414 pu
+
+✅ RUNNING TOTALS (Per-Unit)
+────────────────────────────────────────────────────────────────────────────────
+   Z1: R_pu = 0.011875, X_pu = 0.046155
+   Z0: R0_pu = 0.024838, X0_pu = 0.073749
+
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 4: CABLE - C-13k2-DS05-DS06-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-13k2-DS05-DS06-01
+Component Type:      CABLE
+Size:                250
+Material:            COPPER
+Length:              617 ft
+From Bus:            DS05
+To Bus:              DS06
+Temperature:         75°C
+Voltage Level:       13200V
+
+📐 IMPEDANCE CALCULATION (OHMIC)
+────────────────────────────────────────────────────────────────────────────────
+Base Values (per 1000 ft at 20°C):
+   R_base = 0.000051 Ω/1000ft    (NEC Ch 9 Table 9)
+   X_base = 0.000039 Ω/1000ft    (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000051 × 1.2162
+   R_corrected = 0.000063 Ω/1000ft
+
+Cable Impedance:
+   Formula:          Z = (Z_per_1000ft × Length) / Parallel
+   R = (0.000063 × 617) / 1
+   R = 0.038644 / 1
+   R = 0.038644 Ω
+
+   X = (0.000039 × 617) / 1
+   X = 0.024063 / 1
+   X = 0.024063 Ω
+
+Sequence Impedances:
+   Z1: R = 0.038644 Ω, X = 0.024063 Ω
+   Z0: R0 = 0.115931 Ω, X0 = 0.072189 Ω (3× Z1)
+
+📊 CONVERSION TO PER-UNIT
+────────────────────────────────────────────────────────────────────────────────
+Base Impedance at 13200V:
+   Z_base = (13200)² / (10000 × 1000)
+   Z_base = 174240000 / 10000000
+   Z_base = 17.424000 Ω
+
+Per-Unit Values:
+   R_pu = 0.038644 / 17.424000 = 0.002218 pu
+   X_pu = 0.024063 / 17.424000 = 0.001381 pu
+   R0_pu = 0.115931 / 17.424000 = 0.006654 pu
+   X0_pu = 0.072189 / 17.424000 = 0.004143 pu
+
+✅ RUNNING TOTALS (Per-Unit)
+────────────────────────────────────────────────────────────────────────────────
+   Z1: R_pu = 0.014093, X_pu = 0.047536
+   Z0: R0_pu = 0.031492, X0_pu = 0.077892
+
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 5: CABLE - C-13k2-DS06-LCB1-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-13k2-DS06-LCB1-01
+Component Type:      CABLE
+Size:                3/0
+Material:            COPPER
+Length:              35 ft
+From Bus:            DS06
+To Bus:              LCB1-1
+Temperature:         75°C
+Voltage Level:       13200V
+
+📐 IMPEDANCE CALCULATION (OHMIC)
+────────────────────────────────────────────────────────────────────────────────
+Base Values (per 1000 ft at 20°C):
+   R_base = 0.000077 Ω/1000ft    (NEC Ch 9 Table 9)
+   X_base = 0.000041 Ω/1000ft    (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000077 × 1.2162
+   R_corrected = 0.000093 Ω/1000ft
+
+Cable Impedance:
+   Formula:          Z = (Z_per_1000ft × Length) / Parallel
+   R = (0.000093 × 35) / 1
+   R = 0.003260 / 1
+   R = 0.003260 Ω
+
+   X = (0.000041 × 35) / 1
+   X = 0.001435 / 1
+   X = 0.001435 Ω
+
+Sequence Impedances:
+   Z1: R = 0.003260 Ω, X = 0.001435 Ω
+   Z0: R0 = 0.009781 Ω, X0 = 0.004305 Ω (3× Z1)
+
+📊 CONVERSION TO PER-UNIT
+────────────────────────────────────────────────────────────────────────────────
+Base Impedance at 13200V:
+   Z_base = (13200)² / (10000 × 1000)
+   Z_base = 174240000 / 10000000
+   Z_base = 17.424000 Ω
+
+Per-Unit Values:
+   R_pu = 0.003260 / 17.424000 = 0.000187 pu
+   X_pu = 0.001435 / 17.424000 = 0.000082 pu
+   R0_pu = 0.009781 / 17.424000 = 0.000561 pu
+   X0_pu = 0.004305 / 17.424000 = 0.000247 pu
+
+✅ RUNNING TOTALS (Per-Unit)
+────────────────────────────────────────────────────────────────────────────────
+   Z1: R_pu = 0.014280, X_pu = 0.047618
+   Z0: R0_pu = 0.032053, X0_pu = 0.078139
+
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 6: TRANSFORMER - XFMR07
+════════════════════════════════════════════════════════════════════════════════
+
+🔧 TRANSFORMER INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       XFMR07
+Component Type:      TRANSFORMER
+Rating:              1000 kVA
+Primary Voltage:     13200 V
+Secondary Voltage:   440 V
+Impedance:           4% on 1000 kVA base
+X/R Ratio:           2.91
+From Bus:            LCB1-1
+To Bus:              LCB1-4
+
+📐 PER-UNIT CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Transformer Impedance on Own Base:
+   Z%_own = 4% = 0.040000 pu
+
+Component Separation (X/R = 2.91):
+   R_pu = Z_pu / √(1 + (X/R)²) = 0.013000 pu
+   X_pu = R_pu × (X/R) = 0.037829 pu
+
+Base Conversion (1000 kVA → 10000 kVA):
+   Formula:          Z_pu_system = Z_pu_own × (S_base / S_own)
+   Conversion:       10.0000 = 10000 / 1000
+   R_pu = 0.013000 × 10.0000 = 0.129996 pu
+   X_pu = 0.037829 × 10.0000 = 0.378287 pu
+
+📊 FINAL PER-UNIT IMPEDANCES
+────────────────────────────────────────────────────────────────────────────────
+Positive Sequence (Z1):
+   R_pu = 0.129996 pu
+   X_pu = 0.378287 pu
+
+Zero Sequence (Z0 = 1× Z1):
+   R0_pu = 0.129996 pu
+   X0_pu = 0.378287 pu
+
+✅ RUNNING TOTALS (Per-Unit)
+────────────────────────────────────────────────────────────────────────────────
+   Z1: R_pu = 0.144275, X_pu = 0.425905
+   Z0: R0_pu = 0.162049, X0_pu = 0.456426
+
+
+════════════════════════════════════════════════════════════════════════════════
+STEP 7: CABLE - C-440-LCB14-SH5D1-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-440-LCB14-SH5D1-01
+Component Type:      CABLE
+Size:                500
+Material:            COPPER
+Length:              935.04 ft
+From Bus:            LCB1-4
+To Bus:              SH5-D1
+Temperature:         75°C
+Voltage Level:       440V
+Parallel Config:     3 cables (Z ÷ 3)
+
+📐 IMPEDANCE CALCULATION (OHMIC)
+────────────────────────────────────────────────────────────────────────────────
+Base Values (per 1000 ft at 20°C):
+   R_base = 0.000026 Ω/1000ft    (NEC Ch 9 Table 9)
+   X_base = 0.000036 Ω/1000ft    (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000026 × 1.2162
+   R_corrected = 0.000031 Ω/1000ft
+
+Cable Impedance:
+   Formula:          Z = (Z_per_1000ft × Length) / Parallel
+   R = (0.000031 × 935.04) / 3
+   R = 0.029338 / 3
+   R = 0.009779 Ω
+
+   X = (0.000036 × 935.04) / 3
+   X = 0.033661 / 3
+   X = 0.011220 Ω
+
+Sequence Impedances:
+   Z1: R = 0.009779 Ω, X = 0.011220 Ω
+   Z0: R0 = 0.029338 Ω, X0 = 0.033661 Ω (3× Z1)
+
+📊 CONVERSION TO PER-UNIT
+────────────────────────────────────────────────────────────────────────────────
+Base Impedance at 440V:
+   Z_base = (440)² / (10000 × 1000)
+   Z_base = 193600 / 10000000
+   Z_base = 0.019360 Ω
+
+Per-Unit Values:
+   R_pu = 0.009779 / 0.019360 = 0.505138 pu
+   X_pu = 0.011220 / 0.019360 = 0.579570 pu
+   R0_pu = 0.029338 / 0.019360 = 1.515415 pu
+   X0_pu = 0.033661 / 0.019360 = 1.738711 pu
+
+✅ RUNNING TOTALS (Per-Unit)
+────────────────────────────────────────────────────────────────────────────────
+   Z1: R_pu = 0.649414, X_pu = 1.005475
+   Z0: R0_pu = 1.677464, X0_pu = 2.195137
+
+
+
+ℹ️  No motor contribution (no motors connected to this bus)
+
+
+================================================================================
+FINAL SHORT CIRCUIT CALCULATION (PER-UNIT METHOD)
+================================================================================
+
+Target Bus: SH5-D1 (440V)
+
+Total System Impedance (Per-Unit):
+--------------------------------------------------------------------------------
+Z1 (Positive Sequence):
+  R_pu = 0.649414 pu
+  X_pu = 1.005475 pu
+  Z_pu = 1.196962 pu
+  X/R Ratio = 1.548
+
+Z0 (Zero Sequence):
+  R0_pu = 1.677464 pu
+  X0_pu = 2.195137 pu
+  Z0_pu = 2.762700 pu
+  Z0/Z1 Ratio = 2.308
+
+Z2 (Negative Sequence):
+  Z2_pu ≈ Z1_pu = 1.196962 pu
+
+Total System Impedance (Ohmic Equivalent):
+  Z1: R = 0.012573 Ω, X = 0.019466 Ω, Z = 0.023173 Ω
+  Z0: R0 = 0.032476 Ω, X0 = 0.042498 Ω, Z0 = 0.053486 Ω
+
+════════════════════════════════════════════════════════════════════════════════
+THREE-PHASE SYMMETRICAL FAULT CURRENT
+════════════════════════════════════════════════════════════════════════════════
+Per IEEE 141 Section 5.2 (Per-Unit Method):
+
+Per-Unit Calculation:
+I_pu = V_pu / Z_pu = 1.0 / 1.196962 = 0.835448 pu
+
+Conversion to Actual Current:
+I_actual = I_pu × I_base
+I_actual = 0.835448 × 13121.60
+I_sc = 10962.41 A
+I_sc = 10.962 kA
+
+════════════════════════════════════════════════════════════════════════════════
+ASYMMETRICAL (PEAK) FAULT CURRENT
+════════════════════════════════════════════════════════════════════════════════
+Per IEEE 141 Section 5.2.3 and ANSI C37.010:
+
+DC Time Constant:
+τ = X/(ωR) = 0.019466 / (2π × 60 × 0.012573)
+τ = 4.107 ms
+
+DC Offset Multiplier:
+K = √(1 + 2e^(-t/τ))
+where t = 50.00 ms
+K = 1.0000
+
+Asymmetrical Current:
+I_asym = 10.962 kA × 1.0000
+I_asym = 10.962 kA
+
+════════════════════════════════════════════════════════════════════════════════
+LINE-TO-GROUND FAULT CURRENT
+════════════════════════════════════════════════════════════════════════════════
+Per IEEE 141 Section 5.4 (Per-Unit Method):
+
+Formula:
+I_LG_pu = 3 × V_pu / (Z1_pu + Z2_pu + Z0_pu)
+
+Per-Unit Calculation:
+V_pu = 1.0 pu (at fault point)
+Z_total_pu = Z1_pu + Z2_pu + Z0_pu
+Z_total_pu = 1.196962 + 1.196962 + 2.762700
+Z_total_pu = 5.156625 pu
+
+I_LG_pu = 3.0 / 5.156625 = 0.581776 pu
+
+Conversion to Actual Current:
+I_LG = I_LG_pu × I_base
+I_LG = 0.581776 × 13121.60
+I_LG = 7633.83 A
+I_LG = 7.634 kA
+
+✓ 3-phase fault (10.962 kA) is limiting case.
+
+════════════════════════════════════════════════════════════════════════════════
+FAULT CURRENT SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+Fault Type                    | Symmetrical (kA) | Asymmetrical (kA)
+--------------------------------------------------------------------------------
+Three-Phase (L-L-L)           |           10.962 |            10.962
+Line-to-Ground (L-G)          |            7.634 |             7.634
+Line-to-Line (L-L)            |            9.493 |             9.493
+================================================================================
+
+PER-UNIT SYSTEM ADVANTAGES:
+  ✓ Voltage level changes handled automatically
+  ✓ Transformer ratios built into per-unit conversion
+  ✓ Easy parallel/series impedance combinations
+  ✓ Standard for multi-voltage level systems
+  ✓ Sequence impedances (Z0, Z1, Z2) easily tracked
+
+Standards Compliance:
+✓ IEEE 141-1993 (Red Book) - Short-Circuit Studies
+✓ IEC 60909 - Short-Circuit Currents in Three-Phase Systems
+✓ ANSI C37.010 - AC High-Voltage Circuit Breakers
+✓ NEC Article 110.24 - Available Fault Current
+✓ IEEE 142 (Green Book) - Grounding of Industrial Power Systems
+
+
+════════════════════════════════════════════════════════════════════════════════
+PROTECTION DEVICE REQUIREMENTS & RECOMMENDATIONS
+════════════════════════════════════════════════════════════════════════════════
+
+📋 CALCULATED FAULT CURRENTS
+────────────────────────────────────────────────────────────────────────────────
+Target Bus:              SH5-D1
+System Voltage:          440V
+Symmetrical Fault:       10.962 kA
+Asymmetrical Peak:       10.962 kA
+Line-to-Ground Fault:    7.634 kA
+X/R Ratio:               1.55
+
+🔧 CIRCUIT BREAKER RECOMMENDATIONS (Per ANSI C37.010 & IEEE 141)
+════════════════════════════════════════════════════════════════════════════════
+
+📊 MINIMUM REQUIREMENTS
+────────────────────────────────────────────────────────────────────────────────
+Calculated Fault:        10.962 kA (symmetrical)
+Minimum Rating Required: 14 kA (125% of fault per NEC 110.9)
+Recommended Standard:    14 kA @ 440V
+Safety Margin:           27.7% ✅ Good
+Momentary Rating:        36.4 kA peak (2.6× for 440V)
+
+🏭 MANUFACTURER RECOMMENDATIONS
+────────────────────────────────────────────────────────────────────────────────
+
+ABB - Tmax XT 
+   Type:                MCCB
+   Interrupting Rating: 25 kA @ 690V
+   Available Frames:    160A, 250A, 320A, 400A, 630A, 800A, 1000A, 1250A, 1600A
+   Cost Tier:           Premium (High-end features and performance)
+   Lead Time:           8-12 weeks
+   Warranty:            Premium (3-5 years)
+   Key Features:
+      • Electronic trip
+      • Communication ready
+      • High breaking capacity
+   Country of Origin:   Switzerland/Sweden
+   Standards:           UL, IEC 60947
+
+ABB - Emax 2 
+   Type:                LVPCB
+   Interrupting Rating: 42 kA @ 690V
+   Available Frames:    800A, 1000A, 1600A, 2000A, 3200A, 4000A, 6300A
+   Cost Tier:           Premium (High-end features and performance)
+   Lead Time:           8-12 weeks
+   Warranty:            Premium (3-5 years)
+   Key Features:
+      • Air circuit breaker
+      • Ekip electronic trip units
+      • Drawout/Fixed
+   Country of Origin:   Switzerland/Sweden
+   Standards:           UL, IEC 60947
+
+Schneider Electric - ComPacT NSX 💰 BEST VALUE
+   Type:                MCCB
+   Interrupting Rating: 25 kA @ 690V
+   Available Frames:    100A, 160A, 250A, 400A, 630A
+   Cost Tier:           Mid-Range (Balanced performance and cost)
+   Lead Time:           6-8 weeks
+   Warranty:            Extended (2-3 years)
+   Key Features:
+      • Micrologic trip units
+      • Modular
+      • IoT ready
+   Country of Origin:   France
+   Standards:           UL, IEC 60947
+
+Schneider Electric - Masterpact MTZ 💰 BEST VALUE
+   Type:                LVPCB
+   Interrupting Rating: 42 kA @ 690V
+   Available Frames:    800A, 1000A, 1600A, 2000A, 2500A, 3200A, 4000A, 5000A, 6300A
+   Cost Tier:           Mid-Range (Balanced performance and cost)
+   Lead Time:           6-8 weeks
+   Warranty:            Extended (2-3 years)
+   Key Features:
+      • Air circuit breaker
+      • Micrologic X
+      • EcoStruxure ready
+   Country of Origin:   France
+   Standards:           UL, IEC 60947
+
+Eaton - Series G 
+   Type:                MCCB
+   Interrupting Rating: 18 kA @ 600V
+   Available Frames:    125A, 250A, 400A, 600A, 800A, 1200A, 1600A, 2000A
+   Cost Tier:           Budget-Friendly (Cost-effective solutions for standard applications)
+   Lead Time:           4-6 weeks
+   Warranty:            Standard (1-2 years)
+   Key Features:
+      • Thermal-magnetic
+      • Electronic
+      • UL listed
+   Country of Origin:   USA/Ireland
+   Standards:           UL, IEC 60947
+
+Eaton - Magnum DS 
+   Type:                LVPCB
+   Interrupting Rating: 65 kA @ 635V
+   Available Frames:    800A, 1600A, 2000A, 3000A, 4000A, 5000A, 6000A
+   Cost Tier:           Budget-Friendly (Cost-effective solutions for standard applications)
+   Lead Time:           4-6 weeks
+   Warranty:            Standard (1-2 years)
+   Key Features:
+      • Digitrip RMS
+      • Low profile
+      • High efficiency
+   Country of Origin:   USA/Ireland
+   Standards:           UL, IEC 60947
+
+Siemens - 3VA Molded Case 
+   Type:                MCCB
+   Interrupting Rating: 25 kA @ 690V
+   Available Frames:    160A, 250A, 400A, 630A, 800A, 1000A, 1600A
+   Cost Tier:           Premium (High-end features and performance)
+   Lead Time:           8-12 weeks
+   Warranty:            Premium (3-5 years)
+   Key Features:
+      • ETU electronic
+      • Communication capable
+      • High performance
+   Country of Origin:   Germany
+   Standards:           UL, IEC 60947
+
+Siemens - 3WL Air Circuit Breaker 
+   Type:                LVPCB
+   Interrupting Rating: 50 kA @ 690V
+   Available Frames:    800A, 1000A, 1600A, 2000A, 3200A, 4000A, 6300A
+   Cost Tier:           Premium (High-end features and performance)
+   Lead Time:           8-12 weeks
+   Warranty:            Premium (3-5 years)
+   Key Features:
+      • ETU electronic trip
+      • Energy meters
+      • SENTRON
+   Country of Origin:   Germany
+   Standards:           UL, IEC 60947
+
+LS Electric Co. - Susol MCCB 
+   Type:                MCCB
+   Interrupting Rating: 25 kA @ 690V
+   Available Frames:    100A, 125A, 160A, 250A, 400A, 630A, 800A, 1000A, 1600A
+   Cost Tier:           Budget-Friendly (Cost-effective solutions for standard applications)
+   Lead Time:           4-6 weeks
+   Warranty:            Standard (1-2 years)
+   Key Features:
+      • Economic
+      • Reliable
+      • IEC certified
+   Country of Origin:   South Korea
+   Standards:           UL, IEC 60947
+
+LS Electric Co. - AMAX ACB 
+   Type:                LVPCB
+   Interrupting Rating: 42 kA @ 690V
+   Available Frames:    800A, 1000A, 1600A, 2000A, 3200A, 4000A, 6300A
+   Cost Tier:           Budget-Friendly (Cost-effective solutions for standard applications)
+   Lead Time:           4-6 weeks
+   Warranty:            Standard (1-2 years)
+   Key Features:
+      • Air circuit breaker
+      • Digital trip
+      • Cost effective
+   Country of Origin:   South Korea
+   Standards:           UL, IEC 60947
+
+📏 FRAME SIZE SELECTION GUIDANCE
+────────────────────────────────────────────────────────────────────────────────
+Based on 440V system characteristics:
+
+Recommended Frame Sizes:
+   • 800A frame:   For loads 500-640A (consider load + 25% future)
+   • 1000A frame:  For loads 640-800A
+   • 1200A frame:  For loads 800-960A
+   • 1600A frame:  For loads 960-1280A
+
+Breaker Type Selection:
+   • MCCB (Molded Case):  Up to 1200A, compact, economical
+   • ICCB (Insulated Case): 800-2500A, enhanced features
+   • LVPCB (Power Breaker): 800-6300A, highest performance
+
+⚙️  TRIP UNIT RECOMMENDATIONS
+────────────────────────────────────────────────────────────────────────────────
+For 11.0 kA fault current:
+   • Electronic trip units recommended for:
+      - Precise coordination
+      - Communication/monitoring capability
+      - Ground fault protection
+      - Energy metering
+   • Thermal-magnetic acceptable for:
+      - Simple applications
+      - Budget constraints
+      - No monitoring requirements
+
+⚡ FUSE RECOMMENDATIONS (Per NEC Article 240)
+════════════════════════════════════════════════════════════════════════════════
+
+📊 MINIMUM REQUIREMENTS
+────────────────────────────────────────────────────────────────────────────────
+Minimum Interrupting:    15 kAIC @ 440V
+Voltage Class:           600V
+
+🔌 FUSE CLASS SELECTION
+────────────────────────────────────────────────────────────────────────────────
+
+Class J:
+   Interrupting Capacity: 200 kAIC
+   Voltage Rating:        600V
+   Current Range:         0.5-600A
+   Features:              Current limiting, Fast acting, UL listed
+   Applications:          Motor circuits, Feeder protection
+   Cost:                  Mid-range
+
+Class L:
+   Interrupting Capacity: 200 kAIC
+   Voltage Rating:        600V
+   Current Range:         601-6000A
+   Features:              Current limiting, Time delay, Bolt-on
+   Applications:          Large feeders, Service entrance
+   Cost:                  Higher
+
+Class RK1:
+   Interrupting Capacity: 200 kAIC
+   Voltage Rating:        600V
+   Current Range:         0.5-600A
+   Features:              Current limiting, Dual element, Time delay
+   Applications:          Motor circuits, Transformer protection
+   Cost:                  Mid-range
+
+Class RK5:
+   Interrupting Capacity: 200 kAIC
+   Voltage Rating:        600V
+   Current Range:         0.5-600A
+   Features:              Standard, Time delay, Economic
+   Applications:          General purpose, Lighting circuits
+   Cost:                  Budget
+
+Class T:
+   Interrupting Capacity: 200 kAIC
+   Voltage Rating:        600V
+   Current Range:         0.5-1200A
+   Features:              Very fast, Current limiting, Compact
+   Applications:          Semiconductor protection, Motor control
+   Cost:                  Budget
+
+💡 FUSE SELECTION TIPS
+────────────────────────────────────────────────────────────────────────────────
+• Class RK1 or J: Best for motor circuits (time-delay + current limiting)
+• Class L: Required for currents above 600A
+• Class T: Very fast, use for sensitive electronics
+• Current limiting fuses reduce let-through I²t (less damage)
+• Consider Class J for best cost/performance balance
+
+🛡️  PROTECTIVE RELAY SETTINGS (Per IEEE C37.2)
+════════════════════════════════════════════════════════════════════════════════
+
+Device 50 - Instantaneous Overcurrent:
+   Purpose:              Fast fault clearing
+   Setting Guideline:    1.25 to 1.5× maximum fault current
+   Recommended Pickup:   16.4 kA
+   Coordination:         Set above downstream device maximum clearing
+
+Device 51 - Time Overcurrent:
+   Purpose:              Overload and backup protection
+   Setting Guideline:    1.05 to 1.25× maximum load current
+   Coordination:         Coordinate time-current curves with adjacent devices
+
+Device 50G - Instantaneous Ground Fault:
+   Purpose:              Fast ground fault clearing
+   Setting Guideline:    1.1 to 1.3× maximum ground fault
+   Recommended Pickup:   9.2 kA
+   Coordination:         Per NEC 230.95 for services
+
+Device 51G - Time Ground Fault:
+   Purpose:              Ground fault backup
+   Setting Guideline:    0.1 to 0.5× phase pickup
+   Coordination:         Sensitive ground fault detection
+
+⚙️  RELAY COORDINATION NOTES
+────────────────────────────────────────────────────────────────────────────────
+• Perform detailed coordination study per IEEE 242 (Buff Book)
+• Use time-current curve software for verification
+• Maintain minimum 0.3s separation between devices
+• Consider future expansion in settings
+• Document all settings and coordination rationale
+
+📊 EQUIPMENT WITHSTAND REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+🔩 BUS BRACING & SUPPORT STRUCTURES
+────────────────────────────────────────────────────────────────────────────────
+Momentary Peak Current:  11.0 kA
+Required Bus Bracing:    14 kA peak (125% safety factor)
+Recommended Standards:   30 kA, 42 kA, 50 kA, 65 kA, 85 kA, 100 kA, 125 kA, 150 kA, 200 kA
+Mechanical Force:        F = 2.04 × I² × 10⁻⁷ × L/S lbs (per IEEE 605)
+   Where: I = peak current (A)
+          L = bus length (inches)
+          S = spacing between phases (inches)
+
+🔌 CONDUCTOR SHORT-CIRCUIT WITHSTAND
+────────────────────────────────────────────────────────────────────────────────
+Fault Duration:          50 ms (breaker opening time)
+I²t Value:               6.01e+6 A²·s
+Per NEC 110.10:          Verify conductor withstand capability
+Per IEEE 242:            I²t = K² × A² (K = material constant, A = area)
+   Copper K = 0.0297 for 75°C to 250°C rise
+   Aluminum K = 0.0125 for 75°C to 250°C rise
+
+⚠️  VERIFICATION REQUIRED
+────────────────────────────────────────────────────────────────────────────────
+☐ Bus bar material and cross-section adequate
+☐ Support insulator ratings verified
+☐ Bolted connections torqued to specification
+☐ Phase spacing per NEMA/ANSI standards
+☐ Conductor ampacity with fault current consideration
+
+💰 COST COMPARISON & VALUE ANALYSIS
+════════════════════════════════════════════════════════════════════════════════
+
+📈 RELATIVE COST BREAKDOWN (Indexed to Budget Tier = 1.0)
+────────────────────────────────────────────────────────────────────────────────
+
+1. Eaton Series G
+   Cost Index:    ██████████ 1.00×
+   Cost Tier:     Budget-Friendly
+   Lead Time:     4-6 weeks
+   Warranty:      Standard (1-2 years)
+   Features:      3 advanced features
+
+2. Eaton Magnum DS
+   Cost Index:    ██████████ 1.00×
+   Cost Tier:     Budget-Friendly
+   Lead Time:     4-6 weeks
+   Warranty:      Standard (1-2 years)
+   Features:      3 advanced features
+
+3. LS Electric Co. Susol MCCB
+   Cost Index:    ██████████ 1.00×
+   Cost Tier:     Budget-Friendly
+   Lead Time:     4-6 weeks
+   Warranty:      Standard (1-2 years)
+   Features:      3 advanced features
+
+4. LS Electric Co. AMAX ACB
+   Cost Index:    ██████████ 1.00×
+   Cost Tier:     Budget-Friendly
+   Lead Time:     4-6 weeks
+   Warranty:      Standard (1-2 years)
+   Features:      3 advanced features
+
+5. Schneider Electric ComPacT NSX
+   Cost Index:    █████████████ 1.30×
+   Cost Tier:     Mid-Range
+   Lead Time:     6-8 weeks
+   Warranty:      Extended (2-3 years)
+   Features:      3 advanced features
+
+6. Schneider Electric Masterpact MTZ
+   Cost Index:    █████████████ 1.30×
+   Cost Tier:     Mid-Range
+   Lead Time:     6-8 weeks
+   Warranty:      Extended (2-3 years)
+   Features:      3 advanced features
+
+7. ABB Tmax XT
+   Cost Index:    ████████████████ 1.60×
+   Cost Tier:     Premium
+   Lead Time:     8-12 weeks
+   Warranty:      Premium (3-5 years)
+   Features:      3 advanced features
+
+8. ABB Emax 2
+   Cost Index:    ████████████████ 1.60×
+   Cost Tier:     Premium
+   Lead Time:     8-12 weeks
+   Warranty:      Premium (3-5 years)
+   Features:      3 advanced features
+
+9. Siemens 3VA Molded Case
+   Cost Index:    ████████████████ 1.60×
+   Cost Tier:     Premium
+   Lead Time:     8-12 weeks
+   Warranty:      Premium (3-5 years)
+   Features:      3 advanced features
+
+10. Siemens 3WL Air Circuit Breaker
+   Cost Index:    ████████████████ 1.60×
+   Cost Tier:     Premium
+   Lead Time:     8-12 weeks
+   Warranty:      Premium (3-5 years)
+   Features:      3 advanced features
+
+💡 VALUE RECOMMENDATIONS
+────────────────────────────────────────────────────────────────────────────────
+Best Budget Choice:      Eaton Series G
+   • Lowest initial cost
+   • Good for simple applications
+   • Standard features adequate
+
+Best Value Choice:       Schneider Electric ComPacT NSX
+   • Balanced cost/performance
+   • Enhanced features
+   • Better support/warranty
+
+Premium Choice:          ABB Tmax XT
+   • Maximum features
+   • Best monitoring/communication
+   • Longest warranty
+   • Recommended for critical applications
+
+📊 TOTAL COST OF OWNERSHIP FACTORS
+────────────────────────────────────────────────────────────────────────────────
+Consider beyond initial purchase price:
+   • Installation labor (premium devices may reduce labor)
+   • Maintenance costs (frequency and complexity)
+   • Downtime costs (reliability impacts)
+   • Energy efficiency (electronic trips can monitor/optimize)
+   • Spare parts availability
+   • Technical support quality
+   • Warranty coverage and response time
+
+✅ STANDARDS COMPLIANCE CHECKLIST
+════════════════════════════════════════════════════════════════════════════════
+
+📋 NEC (NFPA 70) REQUIREMENTS
+────────────────────────────────────────────────────────────────────────────────
+☐ 110.9:  Interrupting rating ≥ 13.7 kA
+☐ 110.10: Equipment withstand rating adequate for fault current
+☐ 110.24: Available fault current marking required
+           "10.962 kA available @ 440V"
+☐ 230.95: Ground-fault protection required for solidly grounded
+           wye services >150V to ground, >1000A rating
+☐ 240.4:  Overcurrent protection per conductor ampacity
+☐ 240.13: Ground-fault protection of equipment coordination
+
+📋 IEEE STANDARDS
+────────────────────────────────────────────────────────────────────────────────
+☐ IEEE 141 (Red Book): Short-circuit study performed
+☐ IEEE 242 (Buff Book): Coordination study completed
+☐ IEEE 399 (Brown Book): Power system analysis documented
+☐ IEEE 1584: Arc flash hazard analysis (if required)
+
+📋 ANSI/UL STANDARDS
+────────────────────────────────────────────────────────────────────────────────
+☐ ANSI C37.010: Circuit breaker ratings verified
+☐ UL 489: Molded case circuit breakers listed
+☐ UL 1066: Low voltage AC/DC power circuit breakers
+☐ UL 248: Low voltage fuses (if applicable)
+
+📋 DOCUMENTATION REQUIREMENTS
+────────────────────────────────────────────────────────────────────────────────
+☐ Short-circuit calculation report (this document)
+☐ Time-current coordination curves
+☐ Single-line diagram with device ratings
+☐ Protection device settings record
+☐ Equipment nameplate data sheets
+☐ Field testing and commissioning reports
+☐ As-built drawings and specifications
+
+⚠️  IMPORTANT NOTES & DISCLAIMERS
+════════════════════════════════════════════════════════════════════════════════
+
+📌 GENERAL NOTES
+────────────────────────────────────────────────────────────────────────────────
+1. Device ratings shown are MINIMUM requirements per calculations
+2. Final selection must consider:
+   • Load current and continuous rating requirements
+   • Coordination with upstream and downstream devices
+   • Available physical space and mounting arrangements
+   • Environmental conditions (temperature, humidity, altitude)
+   • Future expansion plans (NEC requires 125% for continuous loads)
+   • Budget constraints and total cost of ownership
+   • Maintenance capabilities and spare parts availability
+
+3. Coordination study REQUIRED per IEEE 242:
+   • Plot time-current curves for all series protective devices
+   • Verify selective coordination (if required by code)
+   • Maintain minimum 0.3 second separation
+   • Document coordination rationale and settings
+
+4. Equipment testing and verification:
+   • Factory acceptance testing (FAT) recommended for critical equipment
+   • Site acceptance testing (SAT) required before energization
+   • Protective device settings must be verified by testing
+   • Periodic testing per NETA standards recommended
+
+5. Arc flash hazard analysis:
+   • Perform per IEEE 1584 if equipment >240V
+   • Label equipment with arc flash boundary and PPE requirements
+   • Update study after any system changes
+   • Train personnel on arc flash hazards
+
+📌 MANUFACTURER-SPECIFIC NOTES
+────────────────────────────────────────────────────────────────────────────────
+• Verify availability and lead times before specifying
+• Request manufacturer coordination assistance for critical applications
+• Confirm ratings with manufacturer data sheets (not catalog ratings)
+• Consider standardization on single manufacturer for spare parts
+• Verify service and technical support availability in your region
+
+📌 COST CONSIDERATIONS
+────────────────────────────────────────────────────────────────────────────────
+• Cost indices shown are relative, not absolute prices
+• Actual pricing varies by:
+   - Project size and volume discounts
+   - Regional availability and logistics
+   - Currency exchange rates (imported equipment)
+   - Market conditions and supply chain
+   - Customization and engineering requirements
+• Request formal quotes from distributors for budget accuracy
+• Consider total cost of ownership, not just purchase price
+
+📌 LEGAL DISCLAIMER
+────────────────────────────────────────────────────────────────────────────────
+This protection device recommendation is based on calculated fault currents
+and standard industry practices. Final equipment selection and settings must
+be performed by qualified electrical engineers and verified per applicable
+codes and standards. The author and software assume no liability for
+equipment selection, installation, or operation. Always consult:
+   • Licensed professional electrical engineer
+   • Equipment manufacturer technical support
+   • Authority having jurisdiction (AHJ)
+   • Applicable national and local electrical codes
+
+════════════════════════════════════════════════════════════════════════════════
+END OF PROTECTION DEVICE REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+

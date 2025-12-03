@@ -1,0 +1,369 @@
+════════════════════════════════════════════════════════════════════════════════
+VOLTAGE DROP CALCULATION - ENHANCED
+════════════════════════════════════════════════════════════════════════════════
+
+📋 CALCULATION INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Date/Time:           2025-12-03 14:53:37 UTC
+Engineer:            B. P. Faraon
+Target Bus:          SH5-D1 (SH5-D1)
+Source Voltage:      13200.00 V
+Load Voltage Level:  440.00 V
+Power Factor:        0.87
+Temperature:         75°C
+Method:              Component-by-Component with Voltage Tracking
+
+📖 NEC & IEEE 141 STANDARDS
+────────────────────────────────────────────────────────────────────────────────
+• NEC 215.2(A)(1) - Feeders: 3% maximum recommended
+• NEC 210.19(A) - Branch Circuits: 5% maximum
+• IEEE 141 - Combined System: 7% maximum
+• Per NEC FPN: Voltage drop calculated at LOAD voltage level
+
+ℹ️ SOURCE IMPEDANCE HANDLING
+────────────────────────────────────────────────────────────────────────────────
+Source Bus:          MERALCO-CCP (MERALCO-CCP)
+Source Voltage:      13200V
+Available Fault:     10.00 kA
+Source Impedance:    0.762102 Ω (X/R: 6)
+
+⚠️ IMPORTANT: Per IEEE 141-1993 Section 3.2.1:
+   "Voltage drop calculations shall begin at the first
+    distribution point, NOT including utility source impedance."
+
+✅ SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION
+   Source impedance is ONLY used for short circuit analysis.
+   Voltage drop starts from FIRST COMPONENT after source.
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 1: CABLE - C-13k2-CCP-EHV1-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-13k2-CCP-EHV1-01
+Component Type:      CABLE
+Size:                500
+Material:            COPPER
+Length:              100 ft
+From Bus:            MERALCO-CCP
+To Bus:              EHV1
+Voltage Level:       13200V
+Temperature:         75°C
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000026 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000036 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000031 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        354.51 A
+Power Factor:        0.87 (cosθ=0.870, sinθ=0.493)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 354.51 × (0.003138×0.870 + 0.003600×0.493)
+ΔV = 2.766 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  13200.00 V
+   Voltage Drop:    2.77 V (0.021%)
+   Voltage After:   13197.23 V
+   Status:          ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 2: CABLE - C-13k2-EHV-DS05-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-13k2-EHV-DS05-01
+Component Type:      CABLE
+Size:                250
+Material:            COPPER
+Length:              1253 ft
+From Bus:            EHV1
+To Bus:              DS05
+Voltage Level:       13200V
+Temperature:         75°C
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000051 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000039 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000063 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        225.76 A
+Power Factor:        0.87 (cosθ=0.870, sinθ=0.493)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 225.76 × (0.078478×0.870 + 0.048867×0.493)
+ΔV = 36.118 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  13197.23 V
+   Voltage Drop:    36.12 V (0.274%)
+   Voltage After:   13161.12 V
+   Status:          ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 3: CABLE - C-13k2-DS05-DS06-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-13k2-DS05-DS06-01
+Component Type:      CABLE
+Size:                250
+Material:            COPPER
+Length:              617 ft
+From Bus:            DS05
+To Bus:              DS06
+Voltage Level:       13200V
+Temperature:         75°C
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000051 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000039 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000063 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        97.43 A
+Power Factor:        0.87 (cosθ=0.870, sinθ=0.493)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 97.43 × (0.038644×0.870 + 0.024063×0.493)
+ΔV = 7.676 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  13161.12 V
+   Voltage Drop:    7.68 V (0.058%)
+   Voltage After:   13153.44 V
+   Status:          ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 4: CABLE - C-13k2-DS06-LCB1-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-13k2-DS06-LCB1-01
+Component Type:      CABLE
+Size:                3/0
+Material:            COPPER
+Length:              35 ft
+From Bus:            DS06
+To Bus:              LCB1-1
+Voltage Level:       13200V
+Temperature:         75°C
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000077 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000041 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000093 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        97.43 A
+Power Factor:        0.87 (cosθ=0.870, sinθ=0.493)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 97.43 × (0.003260×0.870 + 0.001435×0.493)
+ΔV = 0.598 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  13153.44 V
+   Voltage Drop:    0.60 V (0.005%)
+   Voltage After:   13152.84 V
+   Status:          ✅ LOW
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔧 STEP 5: TRANSFORMER - XFMR07
+════════════════════════════════════════════════════════════════════════════════
+
+🔧 TRANSFORMER INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       XFMR07
+Component Type:      TRANSFORMER
+Rating:              1000 kVA
+Voltage Ratio:       13200V / 440V
+Turns Ratio:         30.0000:1
+Impedance:           4% on 1000 kVA base
+X/R Ratio:           2.91
+From Bus:            LCB1-1
+To Bus:              LCB1-4
+
+⚙️ TAP SETTING: +2.5%
+   Adjusted Secondary: 451.00V
+
+📐 IMPEDANCE (Secondary Side)
+────────────────────────────────────────────────────────────────────────────────
+R = 0.002517 Ω
+X = 0.007324 Ω
+Z = 0.007744 Ω
+
+📊 LOADING ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+PRIMARY SIDE (13200V):
+   Voltage Entering: 13152.84 V
+   Current:          97.43 A
+
+SECONDARY SIDE (440V):
+   Current:          2923.03 A
+   Full Load:        1312.16 A
+   Loading:          222.8% ❌ OVERLOAD
+
+⚡ VOLTAGE DROP THROUGH TRANSFORMER
+────────────────────────────────────────────────────────────────────────────────
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 2923.03 × (0.002517×0.870 + 0.007324×0.493)
+ΔV = 29.367 V (6.511%)
+
+VOLTAGE TRANSFORMATION:
+   Primary voltage:     13152.84 V
+   Ideal secondary:     438.43 V
+   With tap:            449.39 V
+   After drop:          420.02 V
+   Status:              ⚠️ HIGH
+
+❌ CRITICAL: Transformer OVERLOADED!
+   Loading: 222.8% (Max: 100%)
+   Recommendations:
+   • Install larger transformer (minimum 2785 kVA)
+   • Reduce load on secondary side
+   • Add parallel transformer
+
+
+════════════════════════════════════════════════════════════════════════════════
+🔌 STEP 6: CABLE - C-440-LCB14-SH5D1-01
+════════════════════════════════════════════════════════════════════════════════
+
+🔌 CABLE INFORMATION
+────────────────────────────────────────────────────────────────────────────────
+Component Tag:       C-440-LCB14-SH5D1-01
+Component Type:      CABLE
+Size:                500
+Material:            COPPER
+Length:              935.04 ft
+From Bus:            LCB1-4
+To Bus:              SH5-D1
+Voltage Level:       440V
+Temperature:         75°C
+Parallel Config:     3 cables (current per cable: 267.50A)
+
+📐 IMPEDANCE VALUES
+────────────────────────────────────────────────────────────────────────────────
+Base (per 1000ft @ 20°C):
+   R_base = 0.000026 Ω/1000ft (NEC Ch 9 Table 9)
+   X_base = 0.000036 Ω/1000ft (NEC Ch 9 Table 9)
+
+Temperature Correction (20°C → 75°C):
+   R_corrected = 0.000031 Ω/1000ft
+   ℹ️ Reactance not affected by temperature
+
+Parallel Configuration:
+   R = 0.000031 / 3 = 0.000010 Ω/1000ft
+   X = 0.000036 / 3 = 0.000012 Ω/1000ft
+
+📊 VOLTAGE DROP CALCULATION
+────────────────────────────────────────────────────────────────────────────────
+Load Current:        802.51 A
+Power Factor:        0.87 (cosθ=0.870, sinθ=0.493)
+
+Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)
+ΔV = 1.7321 × 802.51 × (0.009779×0.870 + 0.011220×0.493)
+ΔV = 19.516 V
+
+⚡ VOLTAGE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+   Voltage Before:  420.02 V
+   Voltage Drop:    19.52 V (4.435%)
+   Voltage After:   400.51 V
+   Status:          ⚠️ HIGH
+
+⚠️ WARNING: Exceeds recommended limits!
+   Recommendations:
+   • Review cable sizing
+   • Consider parallel conductors
+
+
+════════════════════════════════════════════════════════════════════════════════
+VOLTAGE DROP SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+📊 FINAL RESULTS
+────────────────────────────────────────────────────────────────────────────────
+Source Voltage:          13200.00 V
+Nominal Secondary:       440.00 V
+Tap Setting:             +2.5%
+Tap-Adjusted Nominal:    451.00 V  ← BASELINE FOR VD%
+Actual Voltage at Load:  400.51 V (88.80% of baseline)
+Total Voltage Drop:      50.49 V (11.196%)
+
+ℹ️ IEEE 141-1993 COMPLIANCE NOTE:
+   VD% calculated against tap-adjusted nominal (451.00V)
+   Legacy calculation (against 440.00V): 8.976%
+   CORRECT calculation: 11.196%
+
+⚡ VOLTAGE PROGRESSION
+────────────────────────────────────────────────────────────────────────────────
+Point                           Voltage(V)  Drop(V)  Cumulative(V)
+────────────────────────────────────────────────────────────────────────────────
+Source                             13200.00     0.00          0.00
+Cable 1 (C-13k2-CCP-EHV1-01)       13197.23     2.77          2.77
+Cable 2 (C-13k2-EHV-DS05-01)       13161.12    36.12         38.88
+Cable 3 (C-13k2-DS05-DS06-01)      13153.44     7.68         46.56
+Cable 4 (C-13k2-DS06-LCB1-01)      13152.84     0.60         47.16
+Transformer 5 (XFMR07)               420.02    29.37      12779.98 (Tap: +2.5%)
+Cable 6 (C-440-LCB14-SH5D1-01)       400.51    19.52      12799.49
+────────────────────────────────────────────────────────────────────────────────
+
+❌ NEC & IEEE 141 COMPLIANCE: NON-COMPLIANT
+────────────────────────────────────────────────────────────────────────────────
+❌ NON-COMPLIANT - Exceeds maximum allowed
+
+COMPLIANCE LIMITS:
+  Feeder:      3% ❌
+  Branch:      5% ❌
+  Combined:    7% ❌
+
+📚 STANDARDS REFERENCED
+────────────────────────────────────────────────────────────────────────────────
+✓ NEC 210.19(A) - Branch Circuit Conductors
+✓ NEC 215.2(A)(1) - Feeder Conductors
+✓ IEEE 141-1993 Section 3.4 - Voltage Drop Calculations
+✓ IEEE 141-1993 Section 3.4.2 - Transformer Tap Adjustment Applied
+
+════════════════════════════════════════════════════════════════════════════════
+END OF VOLTAGE DROP CALCULATION
+════════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,47 @@
+====================================================================================================
+LOAD FLOW ANALYSIS REPORT - BUS: MERALCO-CCP
+====================================================================================================
+
+Project: AG&P Industrial Yard
+Project Number: AGP-25101-CAL-ELE-1001.00
+Engineer: B. P. Faraon
+Date: 2025-12-03 14:47:34 UTC
+Software: PwrSys Pro - Load Flow Analyzer v1.0
+Author: Engr. B. P. Faraon
+
+BUS INFORMATION:
+----------------------------------------------------------------------------------------------------
+Name: MERALCO-CCP
+Voltage: 13200 V
+Type: source
+Bus Load (Direct): 0 A
+
+LOAD FLOW SUMMARY:
+----------------------------------------------------------------------------------------------------
+Total Downstream Load: 354.51 A
+Total Apparent Power: 8105.13 kVA
+Power Factor: 0.87
+Active Power: 7051.46 kW
+
+LOAD BREAKDOWN BY TYPE:
+----------------------------------------------------------------------------------------------------
+Motor Loads: 0.00 A (0.0%)
+Transformer Loads: 0.00 A (0.0%)
+Cable Loads: 0.00 A (0.0%)
+Direct Bus Loads: 0.00 A (0.0%)
+
+DETAILED COMPONENT BREAKDOWN:
+----------------------------------------------------------------------------------------------------
+Type          Description             Location                Current(A)   Power(kVA)
+----------------------------------------------------------------------------------------------------
+
+LOAD FLOW PATH TRACING:
+----------------------------------------------------------------------------------------------------
+Starting from: MERALCO-CCP (13200V)
+Tracing downstream loads...
+
+See browser console for detailed path trace.
+
+====================================================================================================
+END OF LOAD FLOW REPORT
+====================================================================================================
