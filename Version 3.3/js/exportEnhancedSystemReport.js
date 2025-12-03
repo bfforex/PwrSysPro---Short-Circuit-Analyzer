@@ -1497,48 +1497,18 @@ Subtotal Long-Term Improvements: $${longTermMin.toLocaleString()}-$${longTermMax
     report += `Note: Diversity factors are already applied in this analysis per Feature #5.\n\n`;
 
     // ════════════════════════════════════════════════════════════════════════════
-    // PHASE 3: RECALCULATE LOAD VARIABLES FOR THIS SECTION
-    // Added: 2025-11-03 15:13:45 UTC by bfforex
-    // Fix: Variables not in scope - recalculate here
+    // PHASE 3: USE CENTRALIZED LOAD AGGREGATION
+    // Updated: 2025-12-03 by bfforex
+    // Uses centralized computeSystemLoadAggregates for consistency
     // ════════════════════════════════════════════════════════════════════════════
 
-    // Recalculate totals for this section (same logic as generateSystemLoadAnalysis)
-    let totalConnected = 0;
-    let totalDemand = 0;
-    let totalDiversity = 0;
-    let busesWithDemandData = 0;
-
-    buses.forEach(bus => {
-        if (bus.results?.loadFlow) {
-            const lf = bus.results.loadFlow;
-            const summary = lf.summary || {};
-            const demandSummary = lf.demandSummary || {};
-
-            const connected = summary.connectedCurrent || summary.totalCurrent || 0;
-            
-            let demand = connected;
-            let diversity = connected;
-            
-            if (lf.demandFactorsApplied) {
-                demand = demandSummary.demandCurrent || connected;
-                diversity = demandSummary.diversityCurrent || demand;
-                busesWithDemandData++;
-            } else {
-                // Apply default diversity by bus type
-                let diversityFactor = 1.0;
-                if (bus.type === 'source') diversityFactor = 1.0;
-                else if (bus.type === 'distribution') diversityFactor = 1.2;
-                else if (bus.type === 'branch') diversityFactor = 1.3;
-                
-                diversity = connected / diversityFactor;
-                demand = connected;
-            }
-
-            totalConnected += connected;
-            totalDemand += demand;
-            totalDiversity += diversity;
-        }
-    });
+    // Use centralized aggregation function (ensures consistency across all sections)
+    const {
+        totalConnected,
+        totalDemand,
+        totalDiversity,
+        busesWithDemandData
+    } = computeSystemLoadAggregates(buses);
 
     // Calculate power values
     const avgVoltage = analytics.statistics?.voltages?.mean || 7245;
@@ -1550,7 +1520,7 @@ Subtotal Long-Term Improvements: $${longTermMin.toLocaleString()}-$${longTermMax
     const avgDemandFactor = totalConnected > 0 ? totalDemand / totalConnected : 1.0;
     const avgDiversityFactor = totalDemand > 0 ? totalDemand / totalDiversity : 1.0;
 
-    console.log('📊 Phase 3: Variables recalculated for Cost Impact Analysis');
+    console.log('📊 Cost Impact Analysis: Using centralized load aggregates');
     console.log(`   Connected: ${totalConnected.toFixed(2)} A`);
     console.log(`   Demand: ${totalDemand.toFixed(2)} A`);
     console.log(`   Diversity: ${totalDiversity.toFixed(2)} A`);

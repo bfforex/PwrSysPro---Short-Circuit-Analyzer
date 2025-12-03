@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Totals Tests - PwrSys Pro v3.3</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #4ec9b0;
+        }
+        pre {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .success {
+            color: #4ec9b0;
+        }
+        .error {
+            color: #f48771;
+        }
+        .info {
+            color: #dcdcaa;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 System Totals Module Tests</h1>
+    <p>Version 3.3.0 - Testing system entry bus identification and load aggregation</p>
+    
+    <h2>Test Output:</h2>
+    <pre id="output"></pre>
+    
+    <!-- Load the system totals module -->
+    <script src="../js/systemTotals.js"></script>
+    
+    <!-- Load and run the tests -->
+    <script src="test_systemTotals.js"></script>
+    
+    <script>
+        // Capture console output
+        const outputElement = document.getElementById('output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function captureOutput(message, type = 'log') {
+            const span = document.createElement('span');
+            if (type === 'error') {
+                span.className = 'error';
+            } else if (type === 'warn') {
+                span.className = 'info';
+            } else if (message.includes('✅')) {
+                span.className = 'success';
+            }
+            span.textContent = message + '\n';
+            outputElement.appendChild(span);
+        }
+        
+        console.log = function(...args) {
+            captureOutput(args.join(' '), 'log');
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            captureOutput(args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            captureOutput(args.join(' '), 'warn');
+            originalWarn.apply(console, args);
+        };
+    </script>
+</body>
+</html>
