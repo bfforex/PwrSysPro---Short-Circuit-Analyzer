@@ -19,6 +19,9 @@ global.window = {};
 const systemTotalsPath = path.join(__dirname, '../js/systemTotals.js');
 const systemTotalsCode = fs.readFileSync(systemTotalsPath, 'utf8');
 
+// NOTE: Using eval() here is acceptable for testing purposes in a controlled environment
+// The code is from our own source file and not from external input
+// For production use, consider using ES6 modules or a proper module system
 // Evaluate the code in a function scope to avoid redeclaration
 (function() {
     eval(systemTotalsCode);

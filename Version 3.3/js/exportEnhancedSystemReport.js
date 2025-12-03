@@ -118,7 +118,7 @@ Project: ${projectName}
 Project Number: ${projectNumber}
 Engineer: ${engineer}
 Date: ${new Date(timestamp).toLocaleString()} UTC
-Software: PwrSys Pro - Short Circuit Analyzer v${typeof VERSION !== 'undefined' ? VERSION : '3.3.0'}
+Software: PwrSys Pro - Short Circuit Analyzer v${typeof VERSION !== 'undefined' ? VERSION : '1.0'}
 Author: ${typeof AUTHOR !== 'undefined' ? AUTHOR : 'Unknown'}
 Report Type: Enhanced System Report (Version 3.3)
 

@@ -200,7 +200,10 @@ try {
         console.error(`❌ Expected 2 buses with demand data, got ${aggregates.busesWithDemandData}`);
     }
     
-    console.log(`\n📊 Key Insight: System Entry Total (${totals.totalConnectedA.toFixed(2)} A) != Per-Bus Aggregate (${aggregates.totalConnected.toFixed(2)} A)`);
+    // Get the entry totals for comparison
+    const entryTotals = getSystemEntryTotals(testBuses);
+    
+    console.log(`\n📊 Key Insight: System Entry Total (${entryTotals.totalConnectedA.toFixed(2)} A) != Per-Bus Aggregate (${aggregates.totalConnected.toFixed(2)} A)`);
     console.log(`   This is EXPECTED - entry total is authoritative for system capacity`);
     console.log(`   Per-bus aggregate is for MD/diversity analysis only`);
     
