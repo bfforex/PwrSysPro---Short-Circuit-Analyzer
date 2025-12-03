@@ -35,9 +35,12 @@ const ENERGY_CALCULATION_CONSTANTS = {
 /**
  * Generate comprehensive system report with all analysis sections
  * @param {Array} buses - Array of all buses with calculation results
+ * @param {Object} options - Report generation options
+ * @param {String} options.scenarioId - Scenario identifier (default: 'base')
+ * @param {String} options.mode - Calculation mode 'design' or 'operating' (default: 'design')
  * @returns {String} Complete report text
  */
-function generateEnhancedSystemReport(buses) {
+function generateEnhancedSystemReport(buses, options = {}) {
     if (!buses || buses.length === 0) {
         console.error('❌ No buses provided for system report');
         return null;
@@ -50,7 +53,11 @@ function generateEnhancedSystemReport(buses) {
         return null;
     }
 
+    // Extract scenario and mode from options
+    const { scenarioId = 'base', mode = 'design' } = options;
+
     console.log(`📊 Generating enhanced system report for ${calculatedBuses.length} buses...`);
+    console.log(`   Scenario: ${scenarioId}, Mode: ${mode}`);
 
     // Initialize report analytics
     const analytics = new ReportAnalytics();
@@ -64,7 +71,7 @@ function generateEnhancedSystemReport(buses) {
     // Build comprehensive report
     let report = '';
     
-    report += generateReportHeader();
+    report += generateReportHeader(scenarioId, mode);
     report += generateExecutiveSummary(calculatedBuses, analytics, systemReport);
     report += generateSystemLoadAnalysis(calculatedBuses, analytics);
     report += generateEquipmentSummary(calculatedBuses);
@@ -86,12 +93,22 @@ function generateEnhancedSystemReport(buses) {
 
 /**
  * Generate report header
+ * @param {String} scenarioId - Scenario identifier
+ * @param {String} mode - Calculation mode ('design' or 'operating')
  */
-function generateReportHeader() {
+function generateReportHeader(scenarioId = 'base', mode = 'design') {
     const projectName = document.getElementById('projectName')?.value || 'Untitled';
     const projectNumber = document.getElementById('projectNumber')?.value || 'N/A';
     const engineer = document.getElementById('engineer')?.value || 'Unknown';
     const timestamp = new Date().toISOString();
+
+    // Scenario name mapping
+    const scenarioNames = {
+        'base': 'Baseline',
+        'bus_ties_closed': 'Bus Ties Closed',
+        'emergency': 'Emergency Configuration'
+    };
+    const scenarioName = scenarioNames[scenarioId] || scenarioId;
 
     return `${'='.repeat(100)}
 COMPREHENSIVE SYSTEM ANALYSIS REPORT
@@ -101,9 +118,12 @@ Project: ${projectName}
 Project Number: ${projectNumber}
 Engineer: ${engineer}
 Date: ${new Date(timestamp).toLocaleString()} UTC
-Software: PwrSys Pro - Short Circuit Analyzer v${typeof VERSION !== 'undefined' ? VERSION : '1.0'}
+Software: PwrSys Pro - Short Circuit Analyzer v${typeof VERSION !== 'undefined' ? VERSION : '3.3.0'}
 Author: ${typeof AUTHOR !== 'undefined' ? AUTHOR : 'Unknown'}
-Report Type: Enhanced System Report (Issue #6)
+Report Type: Enhanced System Report (Version 3.3)
+
+Scenario: ${scenarioName} (${scenarioId})
+Mode: ${mode.toUpperCase()} ${mode === 'design' ? '(100% FLC - Sizing Basis)' : '(With Demand/Diversity Factors)'}
 
 `;
 }
@@ -280,6 +300,7 @@ ${'-'.repeat(100)}
  * Generate System Load Analysis
  * FIXED: 2025-11-01 11:30:15 UTC by bfforex
  * Issue: Double counting fixed
+ * UPDATED: 2025-12-03 - Use system entry bus totals as authoritative source
  */
 function generateSystemLoadAnalysis(buses, analytics) {
     let report = `${'='.repeat(100)}
@@ -288,48 +309,33 @@ ${'='.repeat(100)}
 
 `;
 
-    // ✅ FIX: Calculate totals ONCE (not twice)
-    let totalConnected = 0;
-    let totalDemand = 0;
-    let totalDiversity = 0;
-    let busesWithDemandData = 0;
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // STEP 1: Get authoritative system totals from entry buses
+    // This is the SINGLE SOURCE OF TRUTH for system connected load
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    const { 
+        totalConnectedA: systemConnectedA, 
+        totalConnectedKVA: systemConnectedKVA,
+        entryBuses 
+    } = getSystemEntryTotals(buses);
 
-    buses.forEach(bus => {
-        if (bus.results?.loadFlow) {
-            const lf = bus.results.loadFlow;
-            const summary = lf.summary || {};
-            const demandSummary = lf.demandSummary || {};
-
-            const connected = summary.connectedCurrent || summary.totalCurrent || 0;
-            
-            // Handle both explicit and implicit demand factors
-            let demand = connected;
-            let diversity = connected;
-            
-            if (lf.demandFactorsApplied) {
-                demand = demandSummary.demandCurrent || connected;
-                diversity = demandSummary.diversityCurrent || demand;
-                busesWithDemandData++;
-            } else {
-                // Apply default diversity by bus type
-                let diversityFactor = 1.0;
-                if (bus.type === 'source') diversityFactor = 1.0;
-                else if (bus.type === 'distribution') diversityFactor = 1.2;
-                else if (bus.type === 'branch') diversityFactor = 1.3;
-                
-                diversity = connected / diversityFactor;
-                demand = connected;
-            }
-
-            totalConnected += connected;
-            totalDemand += demand;
-            totalDiversity += diversity;
-        }
-    });
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // STEP 2: Compute per-bus aggregates for MD/diversity analysis
+    // These are for informational/analysis purposes, NOT the primary system total
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    const {
+        totalConnected,
+        totalDemand,
+        totalDiversity,
+        busesWithDemandData
+    } = computeSystemLoadAggregates(buses);
     
     // ✅ LOG: Verify totals
     console.log(`📊 Load Analysis Totals:`);
-    console.log(`   Connected: ${totalConnected.toFixed(2)} A`);
+    console.log(`   System Entry Buses: ${systemConnectedA.toFixed(2)} A (AUTHORITATIVE)`);
+    console.log(`   Per-Bus Aggregate: ${totalConnected.toFixed(2)} A (for MD analysis)`);
     console.log(`   Demand: ${totalDemand.toFixed(2)} A`);
     console.log(`   Diversity: ${totalDiversity.toFixed(2)} A`);
     console.log(`   Buses with demand data: ${busesWithDemandData}`);
@@ -338,32 +344,41 @@ ${'='.repeat(100)}
     const avgDiversityFactor = totalDemand > 0 ? totalDemand / totalDiversity : 1.0;
     const combinedFactor = totalConnected > 0 ? totalDiversity / totalConnected : 1.0;
 
-    // Calculate total power
+    // Calculate total power (use system entry bus totals)
     const avgVoltage = analytics.statistics.voltages?.mean || 480;
-    const totalPowerKVA = (totalConnected * avgVoltage * Math.sqrt(3)) / 1000;
+    const powerFactor = parseFloat(document.getElementById('powerFactor')?.value || 0.85);
+    const systemConnectedKW = systemConnectedKVA * powerFactor;
+    
+    // Also calculate demand/diversity power for comparison
     const demandPowerKVA = (totalDemand * avgVoltage * Math.sqrt(3)) / 1000;
     const diversityPowerKVA = (totalDiversity * avgVoltage * Math.sqrt(3)) / 1000;
-
-    const powerFactor = parseFloat(document.getElementById('powerFactor')?.value || 0.85);
-    const totalPowerKW = totalPowerKVA * powerFactor;
     const demandPowerKW = demandPowerKVA * powerFactor;
-    const diversityPowerKW = diversityPowerKVA * powerFactor;  // ✅ Bug #3 FIX: Added for energy savings calculation
+    const diversityPowerKW = diversityPowerKVA * powerFactor;
 
-    report += `CONNECTED LOAD SUMMARY:
+    report += `CONNECTED LOAD SUMMARY (From System Entry Buses):
 ${'-'.repeat(100)}
-Total Connected Load: ${totalConnected.toFixed(2)} A
-Total Connected Power: ${totalPowerKVA.toFixed(2)} kVA (${totalPowerKW.toFixed(2)} kW @ PF=${powerFactor})
+System Entry Buses: ${entryBuses.map(b => b.name).join(', ')}
+Total Connected Load: ${systemConnectedA.toFixed(2)} A
+Total Connected Power: ${systemConnectedKVA.toFixed(2)} kVA (${systemConnectedKW.toFixed(2)} kW @ PF=${powerFactor})
 System Power Factor: ${powerFactor}
 Average Voltage Level: ${avgVoltage.toFixed(0)} V
 
 `;
 
     if (busesWithDemandData > 0) {
+        // Calculate kVA for per-bus aggregates
+        const totalPowerKVA = (totalConnected * avgVoltage * Math.sqrt(3)) / 1000;
+        const totalPowerKW = totalPowerKVA * powerFactor;
+        
         report += `DEMAND & DIVERSITY ANALYSIS (Feature #5):
 ${'-'.repeat(100)}
 Buses with Diversity Applied: ${busesWithDemandData} of ${buses.length}
 
-Load Summary:
+NOTE: The following MD/diversity analysis uses per-bus aggregation for
+      informational purposes. The authoritative system connected load is
+      ${systemConnectedA.toFixed(2)} A from entry buses (shown above).
+
+Load Summary (Per-Bus Aggregate):
   • Connected Load:    ${totalConnected.toFixed(2)} A  |  ${totalPowerKVA.toFixed(2)} kVA  (100.0%)
   • Demand Load:       ${totalDemand.toFixed(2)} A  |  ${demandPowerKVA.toFixed(2)} kVA  (${(avgDemandFactor * 100).toFixed(1)}%)
   • Diversity Load:    ${totalDiversity.toFixed(2)} A  |  ${diversityPowerKVA.toFixed(2)} kVA  (${(combinedFactor * 100).toFixed(1)}%)
@@ -373,7 +388,7 @@ Factors Applied:
   • Average Diversity Factor:   ${avgDiversityFactor.toFixed(3)}
   • Combined Reduction:         ${((1 - combinedFactor) * 100).toFixed(1)}%
 
-Power Savings:
+Power Savings (Estimated):
   • Load Reduction:     ${(totalConnected - totalDiversity).toFixed(2)} A
   • Power Savings:      ${(totalPowerKVA - diversityPowerKVA).toFixed(2)} kVA (${(totalPowerKW - diversityPowerKW).toFixed(2)} kW)
   • Estimated Annual Energy Savings: ${(() => {
@@ -610,8 +625,9 @@ ${'-'.repeat(100)}
     });
 
     report += `${'-'.repeat(100)}
-Total                 ${totalConnected.toFixed(2).padStart(18)}    ${totalPowerKVA.toFixed(2).padStart(18)}
+Total                 ${systemConnectedA.toFixed(2).padStart(18)}    ${systemConnectedKVA.toFixed(2).padStart(18)}
 ${'-'.repeat(100)}
+Note: Total shown is authoritative system connected load from entry buses.
 
 `;
 
@@ -2772,7 +2788,17 @@ ${'='.repeat(100)}
 function exportEnhancedSystemReport() {
     console.log('📊 Generating enhanced system report...');
     
-    const report = generateEnhancedSystemReport(buses);
+    // Get current scenario and mode from state (with defaults)
+    const scenarioId = (typeof window.currentScenarioId !== 'undefined') 
+        ? window.currentScenarioId 
+        : 'base';
+    const mode = (typeof window.currentMode !== 'undefined') 
+        ? window.currentMode 
+        : 'design';
+    
+    const options = { scenarioId, mode };
+    
+    const report = generateEnhancedSystemReport(buses, options);
     
     if (!report) {
         return;
@@ -2781,12 +2807,12 @@ function exportEnhancedSystemReport() {
     try {
         const projectName = document.getElementById('projectName')?.value || 'Untitled';
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const fileName = `${projectName.replace(/\s+/g, '_')}_EnhancedSystemReport_${timestamp}.txt`;
+        const fileName = `${projectName.replace(/\s+/g, '_')}_EnhancedSystemReport_${scenarioId}_${mode}_${timestamp}.txt`;
         
         downloadTextFile(report, fileName);
         
         console.log(`✅ Enhanced system report exported: ${fileName}`);
-        alert(`✅ Enhanced System Report Generated!\n\nComprehensive ${report.length} character report with:\n• Executive Summary\n• Load Analysis\n• Equipment Summary\n• Critical Path Analysis\n• Cost Impact Analysis\n• And more...`);
+        alert(`✅ Enhanced System Report Generated!\n\nScenario: ${scenarioId}\nMode: ${mode}\n\nComprehensive ${report.length} character report with:\n• Executive Summary\n• Load Analysis\n• Equipment Summary\n• Critical Path Analysis\n• Cost Impact Analysis\n• And more...`);
     } catch (error) {
         console.error('❌ Error exporting enhanced report:', error);
         alert(`❌ Error generating report: ${error.message}`);
