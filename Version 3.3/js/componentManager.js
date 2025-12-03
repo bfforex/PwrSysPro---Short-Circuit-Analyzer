@@ -1075,6 +1075,7 @@ function addComponent() {
  * Display all components with cable tags and From/To information
  * ENHANCED: 2025-10-29 14:14:42 UTC by bfforex
  * FIXED: 2025-12-02 - Event delegation with proper listener cleanup
+ * UPDATED: 2025-12-02 - Bus Tie: added Details + Edit buttons like other components
  */
 function displayComponents() {
     const container = document.getElementById('componentsList');
@@ -1096,9 +1097,9 @@ function displayComponents() {
         
         html += `<div class="component-item" data-component-id="${comp.id}">`;
         
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
         // CABLE COMPONENT (WITH TAGGING)
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
         if (comp.type === 'cable') {
             html += `
                 <div class="component-header">
@@ -1110,7 +1111,7 @@ function displayComponents() {
                         </span>
                     </div>
                     <div class="component-controls">
-                        <button class="btn btn-info btn-small btn-details" data-id="${comp.id}" title="View detailed cable information">
+                        <button class="btn btn-info btn-small btn-details" data-id="${comp.id}" data-type="cable" title="View detailed cable information">
                             📋 Details
                         </button>
                         <button class="btn btn-secondary btn-small btn-edit" data-id="${comp.id}" title="Edit cable">
@@ -1154,9 +1155,9 @@ function displayComponents() {
             `;
         }
         
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
         // TRANSFORMER COMPONENT
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
         else if (comp.type === 'transformer') {
             html += `
                 <div class="component-header">
@@ -1206,9 +1207,9 @@ function displayComponents() {
             `;
         }
         
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
         // GENERATOR COMPONENT
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
         else if (comp.type === 'generator') {
             html += `
                 <div class="component-header">
@@ -1244,9 +1245,9 @@ function displayComponents() {
             `;
         }
         
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
         // MOTOR COMPONENT (WITH TYPE INFO AND AUTO-TAG)
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
         else if (comp.type === 'motor') {
             const motorTypeDisplay = comp.motorType ? 
                 ` (${comp.motorType.replace('_', ' ')})` : '';
@@ -1290,9 +1291,9 @@ function displayComponents() {
             `;
         }
         
-        // ═══════════════════════════════════════════════════════════════════
-        // BUS TIE COMPONENT (WITH STATE INDICATOR)
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
+        // BUS TIE COMPONENT (WITH STATE INDICATOR + DETAILS + EDIT)
+        // ═══════════════════════════════════════════════════════════════
         else if (comp.type === 'bus-tie') {
             const isOpen = (comp.currentState || comp.normalState) === 'open';
             const stateIcon = isOpen ? '🔌' : '⚡';
@@ -1310,6 +1311,19 @@ function displayComponents() {
                         </span>
                     </div>
                     <div class="component-controls">
+                        <button 
+                            class="btn btn-info btn-small btn-details" 
+                            data-id="${comp.id}"
+                            data-type="bus-tie"
+                            title="View bus tie details">
+                            📋 Details
+                        </button>
+                        <button 
+                            class="btn btn-secondary btn-small btn-edit" 
+                            data-id="${comp.id}"
+                            title="Edit bus tie">
+                            ✏️ Edit
+                        </button>
                         <button 
                             class="btn btn-small btn-toggle-tie" 
                             data-id="${comp.id}"
@@ -1361,9 +1375,9 @@ function displayComponents() {
     
     html += '</div>'; // Close components-list
     
-    // ═══════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════
     // REMOVE OLD LISTENER AND SET NEW HTML
-    // ═══════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════
     
     // Clone container to remove all old event listeners
     const newContainer = container.cloneNode(false);
@@ -1372,22 +1386,23 @@ function displayComponents() {
     // Set the HTML
     newContainer.innerHTML = html;
     
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════
     // EVENT DELEGATION - Single listener for all buttons
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════
     newContainer.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
-        if (! btn) return;
+        if (!btn) return;
     
         const id = btn.dataset.id;  // ✅ Keep as string - don't parse! 
-        if (! id) return;
+        if (!id) return;
     
         // Debug logging
         console.log(`Button clicked: ${btn.className}, ID: ${id} (type: ${typeof id})`);
-        console.log(`Looking for component with ID ${id} in array of ${components. length} components`);
+        console.log(`Looking for component with ID ${id} in array of ${components.length} components`);
     
         if (btn.classList.contains('btn-details')) {
-            viewCableDetails(id);
+            const type = btn.dataset.type || null;
+            viewComponentDetails(id, type);
         } else if (btn.classList.contains('btn-edit')) {
             editComponent(id);
         } else if (btn.classList.contains('btn-delete')) {
@@ -1398,6 +1413,39 @@ function displayComponents() {
     });
     
     console.log(`📊 Displayed ${components.length} component(s)`);
+}
+
+/**
+ * Generic entry point for viewing component details.
+ * Routes to type-specific detail modals.
+ */
+function viewComponentDetails(componentId, explicitType) {
+           const comp = components.find(c => String(c.id) === String(componentId));
+           if (!comp) {
+                   alert('❌ Component not found!');
+                   console.error(`Component not found in viewComponentDetails. ID: ${componentId}`);
+                   return;
+           }
+
+           const type = explicitType || comp.type;
+
+           if (type === 'cable') {
+                   viewCableDetails(componentId);
+                   return;
+           }
+
+           if (type === 'bus-tie') {
+                   viewBusTieDetails(componentId);
+                   return;
+           }
+
+           // For other types, you can add dedicated viewers later.
+           alert(
+                      `Details viewer for "${type}" components is not implemented yet.\n\n` +
+                      `Tag/Name: ${comp.tag || comp.name || 'N/A'}\n` +
+                      `From: ${comp.fromBusName || comp.fromBus}\n` +
+                      `To: ${comp.toBusName || comp.toBus}`
+           );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1523,7 +1571,7 @@ function viewCableDetails(compId) {
     // Modal Footer - THIS IS THE CRITICAL PART
     modalHTML += '<div class="modal-footer">';
     modalHTML += '<button class="btn btn-secondary" onclick="closeCableDetailsModal()">Close</button>';
-    modalHTML += '<button class="btn btn-primary" onclick="editComponent(' + cableId + '); closeCableDetailsModal()">✏️ Edit Cable</button>';
+    modalHTML += '<button class="btn btn-primary" onclick="editComponent(\'' + String(cableId) + '\'); closeCableDetailsModal()">✏️ Edit Cable</button>';
     modalHTML += '</div>';
     
     modalHTML += '</div>'; // Close modal-content
@@ -1531,6 +1579,119 @@ function viewCableDetails(compId) {
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
+
+/**
+ * View detailed bus tie information in modal
+ */
+function viewBusTieDetails(componentId) {
+    const tie = components.find(c => String(c.id) === String(componentId));
+
+    if (!tie || tie.type !== 'bus-tie') {
+        alert('❌ Bus tie not found!');
+        console.error(`Bus tie not found in viewBusTieDetails. ID: ${componentId}`);
+        return;
+    }
+
+    const tag = tie.tag || 'N/A';
+    const fromBus = tie.fromBusName || tie.fromBus;
+    const toBus = tie.toBusName || tie.toBus;
+    const voltage = tie.voltage || 'N/A';
+    const rating = tie.rating || 'N/A';
+    const breakerType = tie.breakerType || 'N/A';
+    const length = tie.length || 'N/A';
+    const size = tie.size || 'N/A';
+    const normalState = (tie.normalState || 'open').toUpperCase();
+    const currentState = (tie.currentState || tie.normalState || 'open').toUpperCase();
+    const interlock = (tie.interlock || 'no').toUpperCase();
+    const impedance = (tie.impedance != null ? tie.impedance : BUS_TIE_CONFIG.DEFAULT_IMPEDANCE).toFixed(6);
+    const description = tie.description || '<em style="color:#999;">Not specified</em>';
+
+    let modalHTML = '<div class="modal-overlay" id="busTieDetailsModal" onclick="closeBusTieDetailsModal(event)">';
+    modalHTML += '<div class="modal-content large" onclick="event.stopPropagation()" style="max-width: 900px;">';
+    modalHTML += '<div class="modal-header">';
+    modalHTML += '<h2>🔌 Bus Tie Details: ' + tag + '</h2>';
+    modalHTML += '<span class="close-modal" onclick="closeBusTieDetailsModal()">&times;</span>';
+    modalHTML += '</div>';
+    modalHTML += '<div class="modal-body" style="max-height: 600px; overflow-y: auto;">';
+
+    // Top grid: Identification + Electrical
+    modalHTML += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">';
+
+    // Identification
+    modalHTML += '<div class="detail-section" style="background:#f8f9fa;padding:15px;border-radius:8px;">';
+    modalHTML += '<h3 style="color:#667eea;margin-bottom:15px;border-bottom:2px solid #667eea;padding-bottom:8px;">🏷️ Identification</h3>';
+    modalHTML += '<table style="width:100%;border-collapse:collapse;">';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;width:150px;">Tag:</td>';
+    modalHTML += '<td style="padding:8px;font-family:\'Courier New\',monospace;background:#fff;border-radius:4px;">' + tag + '</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">Description:</td>';
+    modalHTML += '<td style="padding:8px;">' + description + '</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">From Bus:</td>';
+    modalHTML += '<td style="padding:8px;color:#667eea;font-weight:600;">' + fromBus + '</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">To Bus:</td>';
+    modalHTML += '<td style="padding:8px;color:#667eea;font-weight:600;">' + toBus + '</td></tr>';
+    modalHTML += '</table></div>';
+
+    // Electrical
+    modalHTML += '<div class="detail-section" style="background:#f8f9fa;padding:15px;border-radius:8px;">';
+    modalHTML += '<h3 style="color:#667eea;margin-bottom:15px;border-bottom:2px solid #667eea;padding-bottom:8px;">⚡ Electrical Data</h3>';
+    modalHTML += '<table style="width:100%;border-collapse:collapse;">';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;width:150px;">Voltage Level:</td>';
+    modalHTML += '<td style="padding:8px;">' + voltage + ' V</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">Breaker Rating:</td>';
+    modalHTML += '<td style="padding:8px;">' + rating + ' A</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">Breaker Type:</td>';
+    modalHTML += '<td style="padding:8px;">' + breakerType + '</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">Bus Length:</td>';
+    modalHTML += '<td style="padding:8px;">' + length + ' ft</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">Conductor Size:</td>';
+    modalHTML += '<td style="padding:8px;">' + size + ' kcmil</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">Impedance (Z):</td>';
+    modalHTML += '<td style="padding:8px;">' + impedance + ' Ω</td></tr>';
+    modalHTML += '</table></div>';
+
+    modalHTML += '</div>'; // end grid
+
+    // Operating configuration
+    modalHTML += '<div class="detail-section" style="background:#e8f5e9;padding:15px;border-radius:8px;margin-bottom:20px;">';
+    modalHTML += '<h3 style="color:#388e3c;margin-bottom:10px;">⚙️ Operating Configuration</h3>';
+    modalHTML += '<table style="width:100%;border-collapse:collapse;">';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;width:170px;">Normal State:</td>';
+    modalHTML += '<td style="padding:8px;">' + normalState + '</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">Current State:</td>';
+    modalHTML += '<td style="padding:8px;">' + currentState + '</td></tr>';
+    modalHTML += '<tr><td style="padding:8px;font-weight:600;">Source Interlock:</td>';
+    modalHTML += '<td style="padding:8px;">' + interlock + '</td></tr>';
+    modalHTML += '</table>';
+    modalHTML += '<p style="margin-top:8px;font-size:0.9em;color:#555;">';
+    modalHTML += 'Per IEEE 141, bus ties normally operate OPEN for fault isolation. Closing the tie increases fault current and arc flash hazard.';
+    modalHTML += '</p>';
+    modalHTML += '</div>';
+
+    modalHTML += '</div>'; // modal-body
+
+    // Footer with edit shortcut
+    modalHTML += '<div class="modal-footer">';
+    modalHTML += '<button class="btn btn-secondary" onclick="closeBusTieDetailsModal()">Close</button>';
+    modalHTML += '<button class="btn btn-primary" onclick="editComponent(\'' + String(tie.id) + '\'); closeBusTieDetailsModal()">✏️ Edit Bus Tie</button>';
+    modalHTML += '</div>';
+
+    modalHTML += '</div>'; // modal-content
+    modalHTML += '</div>'; // modal-overlay
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+/**
+ * Close bus tie details modal
+ */
+function closeBusTieDetailsModal(event) {
+    if (event && event.target && event.target.closest('.modal-content')) {
+        return; // clicked inside modal
+    }
+    const modal = document.getElementById('busTieDetailsModal');
+    if (modal) modal.remove();
+}
+
 
 /**
  * Close cable details modal
@@ -1804,6 +1965,73 @@ function editComponent(id) {
                 </div>
             </details>
         `;
+    }  else if (component.type === 'bus-tie') {
+                    // BUS TIE EDIT FORM
+                    html += `
+                              <div class="form-group">
+                                        <label for="editBusTieTag">Equipment Tag:</label>
+                                        <input type="text" id="editBusTieTag" value="${component.tag || ''}" disabled>
+                                        <small>Auto-generated from connected buses; delete & re-create to change buses.</small>
+                              </div>
+
+                              <div class="form-group">
+                                        <label for="editBusTieDescription">Description:</label>
+                                        <input type="text" id="editBusTieDescription" value="${component.description || ''}" placeholder="e.g., Main tie between LCA1-4 and LCB1-4">
+                              </div>
+
+                              <div class="form-group">
+                                        <label for="editBusTieRating">Rating (A):</label>
+                                        <input type="number" id="editBusTieRating" value="${component.rating || BUS_TIE_CONFIG.DEFAULT_RATING}" min="0" step="100" required>
+                              </div>
+
+                              <div class="form-group">
+                                        <label for="editBusTieBreakerType">Breaker Type:</label>
+                                        <select id="editBusTieBreakerType" required>
+                                                    <option value="ACB" ${component.breakerType === 'ACB' ? 'selected' : ''}>ACB - Air Circuit Breaker</option>
+                                                    <option value="MCCB" ${component.breakerType === 'MCCB' ? 'selected' : ''}>MCCB - Molded Case Circuit Breaker</option>
+                                                    <option value="VCB" ${component.breakerType === 'VCB' ? 'selected' : ''}>VCB - Vacuum Circuit Breaker</option>
+                                                    <option value="OCB" ${component.breakerType === 'OCB' ? 'selected' : ''}>OCB - Oil Circuit Breaker</option>
+                                        </select>
+                              </div>
+
+                              <div class="form-group">
+                                         <label for="editBusTieLength">Bus Length (ft):</label>
+                                         <input type="number" id="editBusTieLength" value="${component.length || 10}" min="0" step="0.1" required>
+                              </div>
+
+                              <div class="form-group">
+                                        <label for="editBusTieSize">Conductor Size (kcmil):</label>
+                                        <select id="editBusTieSize" required>
+                                                    <option value="250" ${component.size === 250 ? 'selected' : ''}>250 kcmil</option>
+                                                    <option value="300" ${component.size === 300 ? 'selected' : ''}>300 kcmil</option>
+                                                    <option value="350" ${component.size === 350 ? 'selected' : ''}>350 kcmil</option>
+                                                    <option value="400" ${component.size === 400 ? 'selected' : ''}>400 kcmil</option>
+                                                    <option value="500" ${component.size === 500 ? 'selected' : ''}>500 kcmil</option>
+                                                    <option value="600" ${component.size === 600 ? 'selected' : ''}>600 kcmil</option>
+                                                    <option value="750" ${component.size === 750 ? 'selected' : ''}>750 kcmil</option>
+                                                    <option value="1000" ${component.size === 1000 ? 'selected' : ''}>1000 kcmil</option>
+                                                    <option value="1250" ${component.size === 1250 ? 'selected' : ''}>1250 kcmil</option>
+                                                    <option value="1500" ${component.size === 1500 ? 'selected' : ''}>1500 kcmil</option>
+                                                    <option value="2000" ${component.size === 2000 ? 'selected' : ''}>2000 kcmil</option>
+                                        </select>
+                             </div>
+
+                             <div class="form-group">
+                                        <label for="editBusTieNormalState">Normal Operating State:</label>
+                                        <select id="editBusTieNormalState" required>
+                                                    <option value="open" ${!component.normalState || component.normalState === 'open' ? 'selected' : ''}>OPEN (Isolated)</option>
+                                                    <option value="closed" ${component.normalState === 'closed' ? 'selected' : ''}>CLOSED (Paralleled)</option>
+                                        </select>
+                             </div>
+
+                             <div class="form-group">
+                                       <label for="editBusTieInterlock">Source Interlock:</label>
+                                       <select id="editBusTieInterlock">
+                                                  <option value="yes" ${component.interlock === 'yes' ? 'selected' : ''}>Yes - Interlocked (Recommended)</option>
+                                                  <option value="no" ${!component.interlock || component.interlock === 'no' ? 'selected' : ''}>No - Not interlocked</option>
+                                       </select>
+                             </div>
+        `;
     }
 
     modalBody.innerHTML = html;
@@ -1938,6 +2166,38 @@ function saveComponentEdits() {
         console.log(`   Type: ${component.motorType}`);
         console.log(`   Efficiency: ${(component.efficiency * 100).toFixed(1)}%`);
         console.log(`   Power Factor: ${component.powerFactor.toFixed(2)}`);
+
+    } else if (component.type === 'bus-tie') {
+        const rating = parseFloat(document.getElementById('editBusTieRating').value);
+             const length = parseFloat(document.getElementById('editBusTieLength').value);
+             const size = parseFloat(document.getElementById('editBusTieSize').value);
+             const breakerType = document.getElementById('editBusTieBreakerType').value;
+             const normalState = document.getElementById('editBusTieNormalState').value;
+             const interlock = document.getElementById('editBusTieInterlock').value;
+             const description = document.getElementById('editBusTieDescription').value.trim();
+
+             if (!rating || !length || !size || !breakerType || !normalState) {
+                     alert('❌ Please fill in all required bus tie fields!');
+                     return;
+             }
+
+             component.rating = rating;
+             component.length = length;
+             component.size = size;
+             component.breakerType = breakerType;
+             component.normalState = normalState;
+             // Keep currentState unless user changes state via toggle:
+             component.currentState = component.currentState || normalState;
+             component.interlock = interlock;
+             component.description = description;
+
+             // Recalculate impedance based on new length (same rule as addComponent)
+             const impedancePerFoot = 0.00001; // ohms/ft
+             component.impedance = length * impedancePerFoot;
+
+             // Update name to stay consistent
+             component.name = `${component.tag || 'BUS-TIE'} - ${component.rating}A ${component.breakerType} Tie`;
+             console.log('✅ Bus tie updated:', component);
     }
 
     closeEditComponentModal();
@@ -2261,6 +2521,8 @@ window.addComponent = addComponent;
 window.displayComponents = displayComponents;
 window.viewCableDetails = viewCableDetails;
 window.closeCableDetailsModal = closeCableDetailsModal;
+window.viewBusTieDetails = viewBusTieDetails;
+window.closeBusTieDetailsModal = closeBusTieDetailsModal;
 window.editComponent = editComponent;
 window.saveComponentEdits = saveComponentEdits;
 window.deleteComponent = deleteComponent;
