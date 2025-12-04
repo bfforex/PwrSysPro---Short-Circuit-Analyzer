@@ -4,9 +4,19 @@
  * 
  * @author bfforex
  * @date 2025-11-01 10:13:17 UTC
- * @version 1.1.0
+ * @version 1.3.0
  * @issue #6 - Enhanced System Report
  * @updated 2025-12-01 - Bug #3 fix: Energy savings formula corrected
+ * @updated 2025-12-04 - ALL CRITICAL FIXES APPLIED:
+ *   Issue #1: Load double-counting (uses getSystemEntryTotals for authoritative totals)
+ *   Issue #2: Transformer loading (uses diversityCurrent → demandCurrent → totalCurrent)
+ *   Issue #3: Motor kVA (calculated per motor at actual voltage)
+ *   Issue #4: Cable length (separates circuit vs conductor length)
+ *   Issue #5: VD average (separates source/intermediate/load buses)
+ *   Issue #6: Duplicate energy savings (removed duplicate section)
+ *   Issue #7: Bus summary status (more granular thresholds, prioritizes diversityCurrent)
+ *   Issue #8: Critical path scoring (weighted by VD × 50 + fault issues)
+ *   Issue #9: Maintenance (added system-specific section analyzing actual buses)
  * 
  * Features:
  * - Executive Summary
@@ -81,7 +91,7 @@ function generateEnhancedSystemReport(buses, options = {}) {
     report += generateCostImpactAnalysis(systemReport, calculatedBuses, analytics);
     report += generateStandardsComplianceDetails(calculatedBuses, systemReport);
     report += generateSystemEfficiencyMetrics(calculatedBuses, analytics);
-    report += generateMaintenanceRecommendations();
+    report += generateMaintenanceRecommendations(calculatedBuses);  // FIX ISSUE #9: Pass buses parameter
     report += generateConclusionAndNextSteps(calculatedBuses, analytics, systemReport);
     report += generateBusSummaryTable(calculatedBuses);
     report += generateCableTagDirectory();
@@ -729,13 +739,25 @@ ${'-'.repeat(100)}
         const primary = primaryV.toString().padStart(12);
         const secondary = secondaryV.toString().padStart(13);
         
-        // Calculate loading
+        // Calculate loading - FIX ISSUE #2: Use diversified load
         const toBus = buses.find(b => b.id === xfmr.toBus);
         let loading = 'N/A';
         let status = '✓ OK';
         
-        if (toBus?.results?.loadFlow?.summary) {
-            const current = toBus.results.loadFlow.summary.totalCurrent || 0;
+        if (toBus?.results?.loadFlow) {
+            const lf = toBus.results.loadFlow;
+            const demandSummary = lf.demandSummary || {};
+            
+            // Priority 1: diversityCurrent, Priority 2: demandCurrent, Priority 3: totalCurrent
+            let current = 0;
+            if (lf.demandFactorsApplied && demandSummary.diversityCurrent) {
+                current = demandSummary.diversityCurrent;
+            } else if (lf.demandFactorsApplied && demandSummary.demandCurrent) {
+                current = demandSummary.demandCurrent;
+            } else {
+                current = lf.summary?.totalCurrent || 0;
+            }
+            
             const voltage = toBus.voltage;
             const power = (current * voltage * Math.sqrt(3)) / 1000;
             const loadPercent = xfmr.rating > 0 ? (power / xfmr.rating) * 100 : 0;
@@ -759,20 +781,27 @@ Status: ${avgTransformerLoading > 100 ? '❌ OVERLOADED' : avgTransformerLoading
 
 `;
 
-    // Count cables
+    // Count cables - FIX ISSUE #4: Track circuit vs conductor length
     const cables = components.filter(c => c.type === 'cable');
-    let totalCableLength = 0;
+    let totalCircuitLength = 0;  // FIX ISSUE #4: Physical distance
+    let totalConductorLength = 0;  // FIX ISSUE #4: Material quantity
     const cableSizes = {};
 
     cables.forEach(cable => {
-        totalCableLength += parseFloat(cable.length) || 0;
+        const circuitLength = parseFloat(cable.length) || 0;
+        const parallel = parseInt(cable.parallel) || 1;
+        const conductorLength = circuitLength * parallel;  // FIX ISSUE #4: Account for parallel runs
+        
+        totalCircuitLength += circuitLength;
+        totalConductorLength += conductorLength;
+        
         const size = cable.size || 'Unknown';
         cableSizes[size] = (cableSizes[size] || 0) + 1;
     });
 
     report += `CABLES (${cables.length}):
 ${'-'.repeat(100)}
-Voltage Level   Count   Total Length(ft)   Avg Size        Material    Parallel Runs
+Voltage Level   Count   Circuit(ft)   Conductor(ft)   Avg Size        Material    Parallel
 ${'-'.repeat(100)}
 `;
 
@@ -790,7 +819,14 @@ ${'-'.repeat(100)}
     Object.keys(cablesByVoltage).sort((a, b) => b - a).forEach(voltage => {
         const groupCables = cablesByVoltage[voltage];
         const count = groupCables.length;
-        const totalLength = groupCables.reduce((sum, c) => sum + (parseFloat(c.length) || 0), 0);
+        
+        // FIX ISSUE #4: Separate circuit and conductor lengths
+        const circuitLength = groupCables.reduce((sum, c) => sum + (parseFloat(c.length) || 0), 0);
+        const conductorLength = groupCables.reduce((sum, c) => {
+            const length = parseFloat(c.length) || 0;
+            const parallel = parseInt(c.parallel) || 1;
+            return sum + (length * parallel);
+        }, 0);
         
         // Get most common size
         const sizes = groupCables.map(c => c.size);
@@ -799,14 +835,16 @@ ${'-'.repeat(100)}
         ).pop();
         
         const material = groupCables[0].material || 'Copper';
-        const parallelCount = groupCables.filter(c => c.parallel > 1).length;
+        const parallelCount = groupCables.filter(c => (c.parallel || 1) > 1).length;
         
-        report += `${voltage.toString().padStart(13)}    ${count.toString().padStart(5)}    ${totalLength.toFixed(1).padStart(16)}    ${(avgSize || 'N/A').toString().padEnd(12)}    ${material.padEnd(8)}    ${parallelCount > 0 ? parallelCount + '×' : 'None'}\n`;
+        report += `${voltage.toString().padStart(13)}    ${count.toString().padStart(5)}    ${circuitLength.toFixed(1).padStart(11)}    ${conductorLength.toFixed(1).padStart(13)}    ${(avgSize || 'N/A').toString().padEnd(12)}    ${material.padEnd(8)}    ${parallelCount > 0 ? parallelCount + '×' : 'None'}\n`;
     });
 
     report += `${'-'.repeat(100)}
-Total: ${cables.length} cables, ${totalCableLength.toFixed(0)} ft total length
-Estimated Cable Investment: $${(totalCableLength * 15).toFixed(0)} (estimated @ $15/ft avg)
+Total: ${cables.length} cables
+Circuit Length: ${totalCircuitLength.toFixed(0)} ft (physical distance)
+Conductor Length: ${totalConductorLength.toFixed(0)} ft (material quantity)
+Estimated Cable Investment: $${(totalConductorLength * 15).toFixed(0)} (estimated @ $15/ft avg)
 Status: ✓ All cables within thermal limits
 
 `;
@@ -815,8 +853,7 @@ Status: ✓ All cables within thermal limits
     const motors = components.filter(c => c.type === 'motor');
     let totalMotorHP = 0;
     let totalMotorFLC = 0;
-    let totalMotorVoltage = 0;
-    let motorCount = 0;        
+    let totalMotorKVA = 0;  // FIX ISSUE #3: Calculate kVA per motor
 
     report += `MOTORS (${motors.length}):
 ${'-'.repeat(100)}
@@ -833,10 +870,12 @@ ${'-'.repeat(100)}
         // ✅ CALCULATE FLC: I = (HP × 746) / (√3 × V × PF × Eff)
         const flc = hp > 0 ? (hp * 746) / (Math.sqrt(3) * voltage * powerFactor * efficiency) : 0;
     
+        // FIX ISSUE #3: Calculate kVA at EACH motor's voltage
+        const motorKVA = (flc * voltage * Math.sqrt(3)) / 1000;
+    
         totalMotorHP += hp;
         totalMotorFLC += flc;
-        totalMotorVoltage += voltage;  // ✅ Accumulate voltage for average
-        motorCount++;                   // ✅ Count motors
+        totalMotorKVA += motorKVA;  // FIX ISSUE #3: Sum individual motor kVA
     
         const tag = (motor.tag || motor.name || 'N/A').substring(0, 20).padEnd(20);
         const hpStr = hp.toString().padStart(6);
@@ -848,11 +887,7 @@ ${'-'.repeat(100)}
     });
 
     if (motors.length > 0) {
-        // ✅ Calculate average voltage from all motors
-        const avgMotorVoltage = motorCount > 0 ? totalMotorVoltage / motorCount : 480;
-        
-        // ✅ Use average voltage for kVA calculation
-        const totalMotorKVA = (totalMotorFLC * avgMotorVoltage * Math.sqrt(3)) / 1000;
+        // FIX ISSUE #3: totalMotorKVA already calculated correctly
         
         report += `${'-'.repeat(100)}
 Total Motor Load: ${totalMotorHP.toFixed(0)} HP (${totalMotorFLC.toFixed(1)} A, ${totalMotorKVA.toFixed(1)} kVA)
@@ -902,11 +937,12 @@ ${'-'.repeat(100)}
 
 `;
 
-    // ✅ FIX: Calculate voltage drop stats DIRECTLY from buses
+    // FIX ISSUE #5: Separate buses by type for meaningful VD averages
     let maxVoltageDrop = 0;
     let maxDropBus = 'N/A';
-    let totalDrop = 0;
-    let dropCount = 0;
+    let sourceBusVD = 0, sourceBusCount = 0;
+    let intermediateBusVD = 0, intermediateBusCount = 0;
+    let loadBusVD = 0, loadBusCount = 0;
     let compliantCount = 0;
     
     buses.forEach(bus => {
@@ -916,8 +952,18 @@ ${'-'.repeat(100)}
                          bus.results.voltageDrop.dropPercent || 0;
             
             if (drop >= 0) {
-                totalDrop += drop;
-                dropCount++;
+                // FIX ISSUE #5: Categorize buses by type
+                if (bus.type === 'source') {
+                    sourceBusVD += drop;
+                    sourceBusCount++;
+                } else if (bus.type === 'distribution') {
+                    intermediateBusVD += drop;
+                    intermediateBusCount++;
+                } else {
+                    // branch, load, or other end buses
+                    loadBusVD += drop;
+                    loadBusCount++;
+                }
                 
                 if (drop > maxVoltageDrop) {
                     maxVoltageDrop = drop;
@@ -929,7 +975,11 @@ ${'-'.repeat(100)}
         }
     });
     
-    const avgVoltageDrop = dropCount > 0 ? totalDrop / dropCount : 0;
+    // FIX ISSUE #5: Average ONLY load buses (the meaningful metric)
+    const avgLoadBusVD = loadBusCount > 0 ? loadBusVD / loadBusCount : 0;
+    const avgIntermediateBusVD = intermediateBusCount > 0 ? intermediateBusVD / intermediateBusCount : 0;
+    const avgSourceBusVD = sourceBusCount > 0 ? sourceBusVD / sourceBusCount : 0;
+    const avgVoltageDrop = avgLoadBusVD;  // Use load bus average as system average
     const totalBuses = buses.length;
     
     // ✅ Determine compliance status
@@ -949,9 +999,14 @@ ${'-'.repeat(100)}
     report += `OVERALL SYSTEM PERFORMANCE (DESIGN VD @ 100% FLC):
 ${'-'.repeat(100)}
 Worst Case Voltage Drop: ${maxVoltageDrop.toFixed(2)}% (${maxDropBus})
-System Average Drop: ${avgVoltageDrop.toFixed(2)}%
+System Average Drop (Load Buses): ${avgVoltageDrop.toFixed(2)}%
 IEEE 141 Compliance: ${complianceStatus}
 NEC Compliance: ${maxVoltageDrop <= 5 ? '✅ COMPLIANT' : '⚠️ REVIEW REQUIRED'}
+
+Voltage Drop by Bus Type (FIX ISSUE #5):
+  • Source Buses:        ${avgSourceBusVD.toFixed(2)}% avg (${sourceBusCount} buses)
+  • Intermediate Buses:  ${avgIntermediateBusVD.toFixed(2)}% avg (${intermediateBusCount} buses)
+  • Load Buses:          ${avgLoadBusVD.toFixed(2)}% avg (${loadBusCount} buses) ← PRIMARY METRIC
 
 Compliance Summary:
   • Compliant Buses: ${compliantCount} of ${totalBuses} (${compliancePercent.toFixed(1)}%)
@@ -1214,7 +1269,7 @@ ${'='.repeat(100)}
 
 `;
 
-    // Find longest electrical paths
+    // Find critical electrical paths - FIX ISSUE #8: Score by electrical issues, not length
     const paths = [];
     
     buses.forEach(bus => {
@@ -1237,6 +1292,16 @@ ${'='.repeat(100)}
                 pathVoltageDrop = bus.results.voltageDrop.cumulativeDropPercent || 0;
             }
             
+            const faultCurrent = bus.results?.faultCurrents?.threePhaseSym || 0;
+            
+            // FIX ISSUE #8: Calculate criticality score based on electrical issues
+            // VD × 50 (primary factor) + fault current issues + weak source penalty
+            let criticalityScore = pathVoltageDrop * 50;
+            if (faultCurrent > 42) criticalityScore += 100;  // High fault current
+            if (faultCurrent < 5) criticalityScore += 50;    // Weak source
+            if (pathVoltageDrop > 5) criticalityScore += 200; // High VD penalty
+            if (pathVoltageDrop > 7) criticalityScore += 500; // Critical VD penalty
+            
             paths.push({
                 busName: bus.name,
                 busId: bus.id,
@@ -1244,23 +1309,26 @@ ${'='.repeat(100)}
                 pathDepth: bus.pathComponents.length,
                 impedance: pathImpedance,
                 voltageDrop: pathVoltageDrop,
-                faultCurrent: bus.results?.faultCurrents?.threePhaseSym || 0,
-                voltageLevel: bus.voltage
+                faultCurrent: faultCurrent,
+                voltageLevel: bus.voltage,
+                criticalityScore: criticalityScore  // FIX ISSUE #8: New scoring metric
             });
         }
     });
 
-    // Sort by path length
-    paths.sort((a, b) => b.pathLength - a.pathLength);
+    // FIX ISSUE #8: Sort by criticality score (electrical issues), not path length
+    paths.sort((a, b) => b.criticalityScore - a.criticalityScore);
 
-    report += `LONGEST ELECTRICAL PATHS:
+    report += `MOST CRITICAL ELECTRICAL PATHS (FIX ISSUE #8 - Ranked by Electrical Issues):
 ${'-'.repeat(100)}
+Note: Paths ranked by criticality score:
+      VD × 50 + (fault > 42kA: +100) + (fault < 5kA: +50) + (VD > 5%: +200) + (VD > 7%: +500)
 `;
 
     paths.slice(0, 5).forEach((path, index) => {
         const bus = buses.find(b => b.id === path.busId);
         
-        report += `Path #${index + 1}: ${bus.pathComponents[0].bus.name} → ${path.busName}\n`;
+        report += `Path #${index + 1}: ${bus.pathComponents[0].bus.name} → ${path.busName} (Score: ${path.criticalityScore.toFixed(0)})\n`;
         report += `  • Total Length: ${path.pathLength.toFixed(1)} ft\n`;
         report += `  • Voltage Levels: ${[...new Set(bus.pathComponents.map(p => p.bus.voltage))].join('V → ')}V\n`;
         report += `  • Components: ${path.pathDepth - 1} (${bus.pathComponents.filter(p => p.component?.type === 'cable').length} cables`;
@@ -1482,19 +1550,8 @@ Subtotal Long-Term Improvements: $${longTermMin.toLocaleString()}-$${longTermMax
 
 `;
 
-    // ════════════════════════════════════════════════════════════════════════════
-    // COST AVOIDANCE THROUGH DIVERSITY FACTORS
-    // ════════════════════════════════════════════════════════════════════════════
-    
-    report += `COST AVOIDANCE THROUGH DIVERSITY FACTORS:\n`;
-    report += `${'-'.repeat(100)}\n`;
-    report += `By applying IEEE 141-1993 diversity factors, the system design can realize:\n`;
-    report += `  • Load Reduction: 20-30% through diversity (typical for industrial systems)\n`;
-    report += `  • Transformer Capacity Saved: ~500 kVA (reduced oversizing)\n`;
-    report += `  • Cable Size Reduction: ~2 AWG sizes smaller than without diversity\n`;
-    report += `  • Estimated Capital Savings: $50,000 - $100,000\n`;
-    report += `  • ROI: Immediate (design phase savings - no additional cost)\n\n`;
-    report += `Note: Diversity factors are already applied in this analysis per Feature #5.\n\n`;
+    // FIX ISSUE #6: Removed duplicate "COST AVOIDANCE THROUGH DIVERSITY FACTORS" section
+    // Energy savings are shown ONCE in the detailed payback analysis below
 
     // ════════════════════════════════════════════════════════════════════════════
     // PHASE 3: USE CENTRALIZED LOAD AGGREGATION
@@ -2120,12 +2177,124 @@ ${'-'.repeat(100)}
 /**
  * Generate Maintenance Recommendations
  */
-function generateMaintenanceRecommendations() {
+function generateMaintenanceRecommendations(buses) {  // FIX ISSUE #9: Add buses parameter
     let report = `${'='.repeat(100)}
 MAINTENANCE RECOMMENDATIONS
 ${'='.repeat(100)}
 
 `;
+
+    // FIX ISSUE #9: Add SYSTEM-SPECIFIC MAINTENANCE PRIORITIES section
+    report += `SYSTEM-SPECIFIC MAINTENANCE PRIORITIES:
+${'-'.repeat(100)}
+Based on actual system analysis of ${buses ? buses.length : 0} buses:
+
+`;
+
+    if (buses && buses.length > 0) {
+        // Find transformers with high loading
+        const transformers = components.filter(c => c.type === 'transformer');
+        const overloadedTransformers = [];
+        const highLoadTransformers = [];
+        
+        transformers.forEach(xfmr => {
+            const toBus = buses.find(b => b.id === xfmr.toBus);
+            if (toBus?.results?.loadFlow) {
+                const lf = toBus.results.loadFlow;
+                const demandSummary = lf.demandSummary || {};
+                
+                let current = 0;
+                if (lf.demandFactorsApplied && demandSummary.diversityCurrent) {
+                    current = demandSummary.diversityCurrent;
+                } else if (lf.demandFactorsApplied && demandSummary.demandCurrent) {
+                    current = demandSummary.demandCurrent;
+                } else {
+                    current = lf.summary?.totalCurrent || 0;
+                }
+                
+                const voltage = toBus.voltage;
+                const power = (current * voltage * Math.sqrt(3)) / 1000;
+                const loadPercent = xfmr.rating > 0 ? (power / xfmr.rating) * 100 : 0;
+                
+                if (loadPercent > 100) {
+                    overloadedTransformers.push({ name: xfmr.tag || xfmr.name, loading: loadPercent, bus: toBus.name });
+                } else if (loadPercent > 80) {
+                    highLoadTransformers.push({ name: xfmr.tag || xfmr.name, loading: loadPercent, bus: toBus.name });
+                }
+            }
+        });
+        
+        // Find buses with high voltage drop
+        const highVDBuses = buses.filter(b => {
+            const vd = b.results?.voltageDrop?.cumulativeDropPercent || 0;
+            return vd > 5;
+        }).sort((a, b) => {
+            const vdA = a.results?.voltageDrop?.cumulativeDropPercent || 0;
+            const vdB = b.results?.voltageDrop?.cumulativeDropPercent || 0;
+            return vdB - vdA;
+        }).slice(0, 5);
+        
+        // Find buses with high fault current
+        const highFaultBuses = buses.filter(b => {
+            const fault = b.results?.faultCurrents?.threePhaseSym || 0;
+            return fault > 42;
+        }).sort((a, b) => {
+            const faultA = a.results?.faultCurrents?.threePhaseSym || 0;
+            const faultB = b.results?.faultCurrents?.threePhaseSym || 0;
+            return faultB - faultA;
+        }).slice(0, 5);
+        
+        // Report findings
+        if (overloadedTransformers.length > 0) {
+            report += `🔴 CRITICAL - Overloaded Transformers:\n`;
+            overloadedTransformers.forEach(xfmr => {
+                report += `  • ${xfmr.name} (${xfmr.bus}): ${xfmr.loading.toFixed(1)}% loading - IMMEDIATE INSPECTION REQUIRED\n`;
+                report += `    → Monthly thermal monitoring, consider load reduction or transformer upgrade\n`;
+            });
+            report += `\n`;
+        }
+        
+        if (highLoadTransformers.length > 0) {
+            report += `⚠️ HIGH - Heavily Loaded Transformers:\n`;
+            highLoadTransformers.forEach(xfmr => {
+                report += `  • ${xfmr.name} (${xfmr.bus}): ${xfmr.loading.toFixed(1)}% loading\n`;
+                report += `    → Monthly thermal checks, verify cooling system operation\n`;
+            });
+            report += `\n`;
+        }
+        
+        if (highVDBuses.length > 0) {
+            report += `⚠️ HIGH - Buses with Elevated Voltage Drop:\n`;
+            highVDBuses.forEach(bus => {
+                const vd = bus.results?.voltageDrop?.cumulativeDropPercent || 0;
+                report += `  • ${bus.name}: ${vd.toFixed(2)}% voltage drop\n`;
+                report += `    → Verify actual voltage at terminals, consider cable upsizing\n`;
+            });
+            report += `\n`;
+        }
+        
+        if (highFaultBuses.length > 0) {
+            report += `⚠️ MEDIUM - Buses with High Fault Current:\n`;
+            highFaultBuses.forEach(bus => {
+                const fault = bus.results?.faultCurrents?.threePhaseSym || 0;
+                report += `  • ${bus.name}: ${fault.toFixed(2)} kA fault current\n`;
+                report += `    → Verify breaker ratings and arc flash protection\n`;
+            });
+            report += `\n`;
+        }
+        
+        const hasNoIssues = overloadedTransformers.length === 0 && 
+                            highLoadTransformers.length === 0 && 
+                            highVDBuses.length === 0 && 
+                            highFaultBuses.length === 0;
+        
+        if (hasNoIssues) {
+            report += `✅ No critical system-specific issues identified.\n`;
+            report += `   Follow standard preventive maintenance schedule below.\n\n`;
+        }
+    } else {
+        report += `⚠️ Bus data not available for system-specific analysis.\n\n`;
+    }
 
     report += `PREVENTIVE MAINTENANCE SCHEDULE:
 ${'-'.repeat(100)}
@@ -2550,12 +2719,17 @@ function generateBusSummaryTable(buses) {
         }
         const vdStr = vdValue.toFixed(2).padStart(9);
         
-        // FIX: Get demand current from correct location
+        // FIX ISSUE #7: Get demand current - prioritize diversityCurrent
         let demandCurrent = 'N/A';
         if (bus.results?.loadFlow) {
             const lf = bus.results.loadFlow;
-            if (lf.demandFactorsApplied && lf.demandSummary?.demandCurrent) {
-                demandCurrent = lf.demandSummary.demandCurrent.toFixed(2);
+            const demandSummary = lf.demandSummary || {};
+            
+            // Priority 1: diversityCurrent, Priority 2: demandCurrent, Priority 3: totalCurrent
+            if (lf.demandFactorsApplied && demandSummary.diversityCurrent) {
+                demandCurrent = demandSummary.diversityCurrent.toFixed(2);
+            } else if (lf.demandFactorsApplied && demandSummary.demandCurrent) {
+                demandCurrent = demandSummary.demandCurrent.toFixed(2);
             } else if (lf.summary?.totalCurrent) {
                 demandCurrent = lf.summary.totalCurrent.toFixed(2);
             }
@@ -2564,14 +2738,16 @@ function generateBusSummaryTable(buses) {
         }
         const demandStr = demandCurrent === 'N/A' ? 'N/A'.padStart(10) : demandCurrent.padStart(10);
         
-        // FIX: Improved status detection
+        // FIX ISSUE #7: More granular status thresholds
         let status = '✓ OK';
         
-        // Check voltage drop first
+        // Check voltage drop with more granular thresholds
         if (vdValue > 7) {
             status = '❌ CRITICAL';
+        } else if (vdValue > 6) {
+            status = '⚠️ HIGH';
         } else if (vdValue > 5) {
-            status = '⚠ HIGH';
+            status = '⚠️ WARN';
         } else if (vdValue > 3 || (faultCurrents.threePhaseSym || 0) > 42) {
             status = '⚠ MEDIUM';
         }
