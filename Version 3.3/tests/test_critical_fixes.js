@@ -203,7 +203,7 @@ if (toBus?.results?.loadFlow) {
     
     if (loadPercent < 100) {
         console.log(`✅ PASS: Transformer loading is ${loadPercent.toFixed(1)}% (< 100%)`);
-        console.log(`   Expected: ~78% with diversityCurrent (780A × 480V × √3 / 1000 = 648 kVA / 1000 kVA)`);
+        console.log(`   Expected: ~64.8% with diversityCurrent (780A × 480V × √3 / 1000 = 648.4 kVA / 1000 kVA)`);
     } else {
         console.log(`❌ FAIL: Transformer shows overload at ${loadPercent.toFixed(1)}%`);
     }

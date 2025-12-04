@@ -801,7 +801,7 @@ Status: ${avgTransformerLoading > 100 ? '❌ OVERLOADED' : avgTransformerLoading
 
     report += `CABLES (${cables.length}):
 ${'-'.repeat(100)}
-Voltage Level   Count   Circuit Length(ft)   Conductor Length(ft)   Avg Size        Material    Parallel Runs
+Voltage Level   Count   Circuit(ft)   Conductor(ft)   Avg Size        Material    Parallel
 ${'-'.repeat(100)}
 `;
 
@@ -837,7 +837,7 @@ ${'-'.repeat(100)}
         const material = groupCables[0].material || 'Copper';
         const parallelCount = groupCables.filter(c => (c.parallel || 1) > 1).length;
         
-        report += `${voltage.toString().padStart(13)}    ${count.toString().padStart(5)}    ${circuitLength.toFixed(1).padStart(18)}    ${conductorLength.toFixed(1).padStart(20)}    ${(avgSize || 'N/A').toString().padEnd(12)}    ${material.padEnd(8)}    ${parallelCount > 0 ? parallelCount + '×' : 'None'}\n`;
+        report += `${voltage.toString().padStart(13)}    ${count.toString().padStart(5)}    ${circuitLength.toFixed(1).padStart(11)}    ${conductorLength.toFixed(1).padStart(13)}    ${(avgSize || 'N/A').toString().padEnd(12)}    ${material.padEnd(8)}    ${parallelCount > 0 ? parallelCount + '×' : 'None'}\n`;
     });
 
     report += `${'-'.repeat(100)}
@@ -1321,7 +1321,8 @@ ${'='.repeat(100)}
 
     report += `MOST CRITICAL ELECTRICAL PATHS (FIX ISSUE #8 - Ranked by Electrical Issues):
 ${'-'.repeat(100)}
-Note: Paths ranked by criticality score (VD × 50 + fault current issues + weak source penalty)
+Note: Paths ranked by criticality score:
+      VD × 50 + (fault > 42kA: +100) + (fault < 5kA: +50) + (VD > 5%: +200) + (VD > 7%: +500)
 `;
 
     paths.slice(0, 5).forEach((path, index) => {
@@ -2282,8 +2283,12 @@ Based on actual system analysis of ${buses ? buses.length : 0} buses:
             report += `\n`;
         }
         
-        if (overloadedTransformers.length === 0 && highLoadTransformers.length === 0 && 
-            highVDBuses.length === 0 && highFaultBuses.length === 0) {
+        const hasNoIssues = overloadedTransformers.length === 0 && 
+                            highLoadTransformers.length === 0 && 
+                            highVDBuses.length === 0 && 
+                            highFaultBuses.length === 0;
+        
+        if (hasNoIssues) {
             report += `✅ No critical system-specific issues identified.\n`;
             report += `   Follow standard preventive maintenance schedule below.\n\n`;
         }
