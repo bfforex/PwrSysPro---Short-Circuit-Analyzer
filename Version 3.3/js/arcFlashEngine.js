@@ -4,10 +4,11 @@
  * 
  * @author bfforex
  * @date 2025-12-02
- * @version 3.3.0
+ * @version 3.4.0
+ * @updated 2025-12-05 - Added IEEE 1584-2002 compliance reference
  * 
  * This module provides a single authoritative source for arc-flash calculations
- * using consistent IEEE 1584-2018 and NFPA 70E-2021 parameters.
+ * using consistent IEEE 1584-2018, IEEE 1584-2002, and NFPA 70E-2021 parameters.
  * 
  * Key Features:
  * - Centralized calculation to ensure consistency across all reports
@@ -16,12 +17,14 @@
  * - Support for multiple scenarios (bus-tie analysis)
  * 
  * Standards:
- * - IEEE 1584-2018 - Guide for Performing Arc-Flash Hazard Calculations
+ * - IEEE 1584-2018 - Guide for Performing Arc-Flash Hazard Calculations (Latest Edition)
+ * - IEEE 1584-2002 - Guide for Performing Arc-Flash Hazard Calculations (Previous Edition)
  * - NFPA 70E-2021 - Standard for Electrical Safety in the Workplace
  * - NEC Article 110.16 - Arc-Flash Hazard Warning
  */
 
-console.log('🔥 Loading Arc Flash Engine Module v3.3.0...');
+console.log('🔥 Loading Arc Flash Engine Module v3.4.0...');
+console.log('   ✅ Standards: IEEE 1584-2018, IEEE 1584-2002, NFPA 70E-2021');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ARC FLASH ENGINE CONFIGURATION
@@ -29,7 +32,7 @@ console.log('🔥 Loading Arc Flash Engine Module v3.3.0...');
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const ARC_FLASH_ENGINE_CONFIG = {
-    // IEEE 1584-2018 Default Parameters
+    // IEEE 1584-2018 and IEEE 1584-2002 Default Parameters
     IEEE_1584: {
         // Working distances by voltage class (inches)
         WORKING_DISTANCE: {
@@ -234,7 +237,7 @@ function calculateArcFlashHazard(bus, options = {}) {
     
     if (voltage >= 208 && voltage <= 600) {
         // Low voltage calculation
-        calculationMethod = 'IEEE 1584-2018 (Low Voltage)';
+        calculationMethod = 'IEEE 1584-2018/2002 (Low Voltage)';
         incidentEnergy = calculateLowVoltageIncidentEnergy(
             arcingCurrentA,
             voltage,
@@ -244,7 +247,7 @@ function calculateArcFlashHazard(bus, options = {}) {
         );
     } else if (voltage > 600 && voltage <= 15000) {
         // Medium voltage calculation (Lee Method)
-        calculationMethod = 'IEEE 1584-2018 (Medium Voltage - Lee Method)';
+        calculationMethod = 'IEEE 1584-2018/2002 (Medium Voltage - Lee Method)';
         incidentEnergy = calculateMediumVoltageIncidentEnergy(
             arcingCurrentA,
             voltage,
@@ -252,7 +255,7 @@ function calculateArcFlashHazard(bus, options = {}) {
             workingDistance
         );
     } else {
-        throw new Error(`Voltage ${voltage}V outside IEEE 1584-2018 range (208V - 15kV)`);
+        throw new Error(`Voltage ${voltage}V outside IEEE 1584-2018/2002 range (208V - 15kV)`);
     }
     
     console.log(`   Incident Energy: ${incidentEnergy.toFixed(2)} cal/cm²`);
@@ -333,7 +336,7 @@ function calculateArcFlashHazard(bus, options = {}) {
         
         // Calculation metadata
         method: calculationMethod,
-        standard: 'IEEE 1584-2018 / NFPA 70E-2021',
+        standard: 'IEEE 1584-2018, IEEE 1584-2002, NFPA 70E-2021',
         calculationDate: new Date().toISOString(),
         
         // Compliance
@@ -434,7 +437,7 @@ function createMinimalArcFlashResult(bus, reason) {
         hazardLevel: 'Unknown',
         
         method: 'N/A',
-        standard: 'IEEE 1584-2018 / NFPA 70E-2021',
+        standard: 'IEEE 1584-2018, IEEE 1584-2002, NFPA 70E-2021',
         calculationDate: new Date().toISOString(),
         
         error: reason,
@@ -527,8 +530,8 @@ if (typeof window !== 'undefined') {
     window.calculateMediumVoltageIncidentEnergy = calculateMediumVoltageIncidentEnergy;
 }
 
-console.log('✅ Arc Flash Engine Module v3.3.0 loaded');
-console.log('   - IEEE 1584-2018 compliant');
+console.log('✅ Arc Flash Engine Module v3.4.0 loaded');
+console.log('   - IEEE 1584-2018 and IEEE 1584-2002 compliant');
 console.log('   - NFPA 70E-2021 PPE categories');
 console.log('   - Unified parameters for consistent results');
 console.log('   - Results stored in unified schema');

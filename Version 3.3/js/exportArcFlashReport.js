@@ -211,7 +211,8 @@ function exportArcFlashReport(busId) {
         
         report += 'ARC FLASH ANALYSIS STANDARDS:\n';
         report += '-'.repeat(80) + '\n';
-        report += '✓ IEEE 1584-2018 - Guide for Performing Arc-Flash Hazard Calculations\n';
+        report += '✓ IEEE 1584-2018 - Guide for Performing Arc-Flash Hazard Calculations (Latest)\n';
+        report += '✓ IEEE 1584-2002 - Guide for Performing Arc-Flash Hazard Calculations (Previous)\n';
         report += '  • Lee Method for low voltage systems (< 1000V)\n';
         report += '  • IEEE 1584 Model for medium/high voltage systems\n';
         report += '  • Arc flash boundary calculations\n';
@@ -236,7 +237,7 @@ function exportArcFlashReport(busId) {
         
         report += 'CALCULATION METHODOLOGY:\n';
         report += '-'.repeat(80) + '\n';
-        report += 'Incident Energy:     IEEE 1584-2018 equations\n';
+        report += 'Incident Energy:     IEEE 1584-2018/2002 equations\n';
         report += 'Working Distance:    Per IEEE 1584 recommendations\n';
         report += 'PPE Categories:      NFPA 70E-2021 Table 130.7(C)(15)\n';
         report += 'Arc Flash Boundary:  Based on 1.2 cal/cm² threshold\n';

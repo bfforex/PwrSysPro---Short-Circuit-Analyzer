@@ -549,7 +549,7 @@ ${'Circuit Breakers'.padEnd(25)}${'Diversity Load × 1.25'.padEnd(35)}${'NEC 430
 ${'Transformers'.padEnd(25)}${'Demand Load × 1.25'.padEnd(35)}${'IEEE C57.12, NEC 450'.padEnd(40)}
 ${'Voltage Drop'.padEnd(25)}${'Diversity Load'.padEnd(35)}${'IEEE 141-1993 Ch. 4 (2.5-5% limits)'.padEnd(40)}
 ${'Short Circuit'.padEnd(25)}${'Connected Load (worst-case)'.padEnd(35)}${'IEEE 141-1993 Ch. 5'.padEnd(40)}
-${'Arc Flash'.padEnd(25)}${'Connected Load (worst-case)'.padEnd(35)}${'IEEE 1584-2018, NFPA 70E-2021'.padEnd(40)}
+${'Arc Flash'.padEnd(25)}${'Connected Load (worst-case)'.padEnd(35)}${'IEEE 1584-2018/2002, NFPA 70E-2021'.padEnd(40)}
 ${'━'.repeat(100)}
 
 `;
@@ -3388,7 +3388,8 @@ PROTECTION & COORDINATION:
   ✓ IEEE 242-2001 - Protection and Coordination
 
 ARC FLASH ANALYSIS:
-  ✓ IEEE 1584-2018 - Arc Flash Hazard Calculation Methods
+  ✓ IEEE 1584-2018 - Arc Flash Hazard Calculation Methods (Latest Edition)
+  ✓ IEEE 1584-2002 - Arc Flash Hazard Calculation Methods (Previous Edition)
   ✓ NFPA 70E-2021 - Electrical Safety in the Workplace
   ✓ NFPA 70E-2021 Table 130.7(C)(15) - PPE Categories
 
