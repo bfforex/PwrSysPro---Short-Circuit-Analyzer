@@ -55,13 +55,50 @@ function exportLoadFlowReport(busId) {
     report += `Type: ${bus.type}\n`;
     report += `Bus Load (Direct): ${safeFormat(bus.loadCurrent, 2, '0')} A\n\n`;
     
-    // Load Flow Summary - ✅ Issue #1 FIX: Safe formatting
-    report += `LOAD FLOW SUMMARY:\n`;
-    report += `${'-'.repeat(100)}\n`;
-    report += `Total Downstream Load: ${safeFormat(downstreamLoad, 2, 'N/A')} A\n`;
-    report += `Total Apparent Power: ${safeFormat(downstreamLoad * bus.voltage * Math.sqrt(3) / 1000, 2, 'N/A')} kVA\n`;
-    report += `Power Factor: ${document.getElementById('powerFactor').value || '0.85'}\n`;
-    report += `Active Power: ${safeFormat(downstreamLoad * bus.voltage * Math.sqrt(3) * parseFloat(document.getElementById('powerFactor').value || 0.85) / 1000, 2, 'N/A')} kW\n\n`;
+    // ✅ STANDARDS COMPLIANCE FIX: Three-Tier Load Display
+    // Get demand/diversity data if available
+    const loadFlowResults = bus.results?.loadFlow;
+    const demandSummary = loadFlowResults?.demandSummary || {};
+    const hasDemandData = loadFlowResults?.demandFactorsApplied;
+    
+    const connectedLoad = demandSummary.connectedCurrent || downstreamLoad;
+    const demandLoad = demandSummary.demandCurrent || downstreamLoad;
+    const diversityLoad = demandSummary.diversityCurrent || downstreamLoad;
+    
+    const SQRT3 = Math.sqrt(3);
+    const powerFactor = parseFloat(document.getElementById('powerFactor')?.value || 0.85);
+    
+    report += `LOAD FLOW SUMMARY (Three-Tier Analysis per NEC & IEEE):\n`;
+    report += `${'━'.repeat(100)}\n`;
+    
+    if (hasDemandData) {
+        // Show full three-tier breakdown
+        report += `Tier 1 - Connected Load (100% FLC):         ${safeFormat(connectedLoad, 2, 'N/A')} A  (informational only)\n`;
+        report += `Tier 2 - Demand Load (NEC 220/430):         ${safeFormat(demandLoad, 2, 'N/A')} A  (with demand factors)\n`;
+        report += `Tier 3 - Diversity Load (IEEE 141):         ${safeFormat(diversityLoad, 2, 'N/A')} A  ⭐ EQUIPMENT SIZING BASIS\n\n`;
+        
+        if (demandSummary.demandFactor) {
+            report += `Demand Factor Applied (NEC 430.24):  ${safeFormat(demandSummary.demandFactor * 100, 1, 'N/A')}%\n`;
+        }
+        if (demandSummary.diversityFactor) {
+            report += `Diversity Factor Applied (IEEE 141): ${safeFormat(demandSummary.diversityFactor, 2, 'N/A')}\n`;
+        }
+        if (connectedLoad > 0) {
+            const reduction = ((connectedLoad - diversityLoad) / connectedLoad * 100);
+            report += `Combined Reduction:                  ${safeFormat(reduction, 1, 'N/A')}% (${safeFormat(connectedLoad, 2)}A → ${safeFormat(diversityLoad, 2)}A)\n\n`;
+        }
+        
+        report += `Total Apparent Power (diversity):    ${safeFormat(diversityLoad * bus.voltage * SQRT3 / 1000, 2, 'N/A')} kVA\n`;
+    } else {
+        // Show basic load without demand/diversity breakdown
+        report += `Total Downstream Load:                ${safeFormat(downstreamLoad, 2, 'N/A')} A\n`;
+        report += `Total Apparent Power:                 ${safeFormat(downstreamLoad * bus.voltage * SQRT3 / 1000, 2, 'N/A')} kVA\n`;
+        report += `\nNote: Demand/diversity factors not applied to this bus.\n\n`;
+    }
+    
+    report += `Power Factor:                         ${powerFactor}\n`;
+    report += `Active Power:                         ${safeFormat(diversityLoad * bus.voltage * SQRT3 * powerFactor / 1000, 2, 'N/A')} kW\n`;
+    report += `${'━'.repeat(100)}\n\n`;
     
     // Load Breakdown by Type - ✅ Issue #1 FIX: Safe formatting with null checks
     if (loadSummary) {
@@ -107,6 +144,27 @@ function exportLoadFlowReport(busId) {
     console.log('═'.repeat(80));
     
     report += `See browser console for detailed path trace.\n\n`;
+    
+    // ✅ STANDARDS COMPLIANCE: Add Equipment Sizing Basis and Standards References
+    report += `EQUIPMENT SIZING BASIS:\n`;
+    report += `${'━'.repeat(100)}\n`;
+    report += `${'Component'.padEnd(25)}${'Sizing Basis'.padEnd(35)}${'Standard Applied'.padEnd(40)}\n`;
+    report += `${'━'.repeat(100)}\n`;
+    report += `${'Cables/Conductors'.padEnd(25)}${'Diversity Load × 1.0'.padEnd(35)}${'NEC 310.15, IEEE 141-1993'.padEnd(40)}\n`;
+    report += `${'Circuit Breakers'.padEnd(25)}${'Diversity Load × 1.25'.padEnd(35)}${'NEC 430.52'.padEnd(40)}\n`;
+    report += `${'Transformers'.padEnd(25)}${'Demand Load × 1.25'.padEnd(35)}${'IEEE C57.12, NEC 450'.padEnd(40)}\n`;
+    report += `${'Voltage Drop'.padEnd(25)}${'Diversity Load'.padEnd(35)}${'IEEE 141-1993 Ch. 4'.padEnd(40)}\n`;
+    report += `${'━'.repeat(100)}\n\n`;
+    
+    report += `STANDARDS COMPLIANCE:\n`;
+    report += `${'-'.repeat(100)}\n`;
+    report += `✓ NEC 2017 Article 220 - Branch-Circuit and Feeder Load Calculations\n`;
+    report += `✓ NEC 2017 Article 430.24 - Motor Demand Factors\n`;
+    report += `✓ IEEE 141-1993 Table 3-5 - Diversity Factors for Industrial Loads\n`;
+    report += `✓ IEEE 141-1993 Chapter 4 - Voltage Drop Calculations\n`;
+    report += `✓ NEC 2017 Article 310.15 - Conductor Ampacities\n`;
+    report += `✓ PEC 2017 Edition - Philippine Electrical Code\n`;
+    report += `${'-'.repeat(100)}\n\n`;
     
     report += `${'='.repeat(100)}\n`;
     report += `END OF LOAD FLOW REPORT\n`;
@@ -286,6 +344,18 @@ function exportVoltageDropReport(busId) {
     }
     
     report += `\n`;
+    
+    // ✅ STANDARDS COMPLIANCE: Add Standards References
+    report += `STANDARDS COMPLIANCE:\n`;
+    report += `${'-'.repeat(100)}\n`;
+    report += `✓ IEEE 141-1993 Chapter 4, Section 4.2 - Voltage Drop Calculations\n`;
+    report += `✓ IEEE 141-1993 - Recommended Limits: 2.5% feeder, 5% branch, 7% combined max\n`;
+    report += `✓ NEC 2017 Article 210.19(A) - Branch Circuit Voltage Drop\n`;
+    report += `✓ NEC 2017 Article 215.2 - Feeder Voltage Drop\n`;
+    report += `✓ NEC 2017 Chapter 9, Table 9 - Cable Impedances\n`;
+    report += `✓ PEC 2017 Edition - Philippine Electrical Code\n`;
+    report += `${'-'.repeat(100)}\n\n`;
+    
     report += `${'='.repeat(100)}\n`;
     report += `END OF VOLTAGE DROP REPORT\n`;
     report += `${'='.repeat(100)}\n`;

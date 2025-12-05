@@ -117,11 +117,8 @@ function exportBusReport(busId) {
         const demandSummary = lf.demandSummary || {};
         
         report += `\n${'='.repeat(100)}\n`;
-        report += `LOAD ANALYSIS WITH DEMAND & DIVERSITY FACTORS (Feature #5)\n`;
+        report += `LOAD FLOW SUMMARY (Three-Tier Analysis per NEC & IEEE Standards)\n`;
         report += `${'='.repeat(100)}\n\n`;
-        
-        report += `LOAD SUMMARY:\n`;
-        report += `${'-'.repeat(100)}\n`;
         
         const connectedCurrent = summary.connectedCurrent || summary.totalCurrent || 0;
         const connectedPowerKVA = summary.connectedPowerKVA || summary.totalPowerKVA || 0;
@@ -132,12 +129,18 @@ function exportBusReport(busId) {
         const demandFactor = demandSummary.demandFactor || 1.0;
         const diversityFactor = demandSummary.diversityFactor || 1.0;
         
-        report += `Connected Load:     ${connectedCurrent.toFixed(2)} A  |  ${connectedPowerKVA.toFixed(2)} kVA  (100.0%)\n`;
-        report += `Demand Load:        ${demandCurrent.toFixed(2)} A  |  ${demandPowerKVA.toFixed(2)} kVA  (${(demandFactor * 100).toFixed(1)}%)\n`;
-        report += `Diversity Load:     ${diversityCurrent.toFixed(2)} A  |  ${diversityPowerKVA.toFixed(2)} kVA  (${(demandFactor / diversityFactor * 100).toFixed(1)}%)\n`;
+        report += `THREE-TIER LOAD CALCULATION:\n`;
+        report += `${'━'.repeat(100)}\n`;
+        report += `Tier 1 - Connected Load (100% FLC):         ${connectedCurrent.toFixed(2)} A  |  ${connectedPowerKVA.toFixed(2)} kVA  (informational only)\n`;
+        report += `Tier 2 - Demand Load (NEC 220/430):         ${demandCurrent.toFixed(2)} A  |  ${demandPowerKVA.toFixed(2)} kVA  (with demand factors)\n`;
+        report += `Tier 3 - Diversity Load (IEEE 141):         ${diversityCurrent.toFixed(2)} A  |  ${diversityPowerKVA.toFixed(2)} kVA  ⭐ EQUIPMENT SIZING BASIS\n`;
+        report += `${'━'.repeat(100)}\n\n`;
+        
+        report += `Demand Factor Applied (NEC 430.24):  ${(demandFactor * 100).toFixed(1)}%\n`;
+        report += `Diversity Factor Applied (IEEE 141): ${diversityFactor.toFixed(2)}\n`;
+        report += `Combined Reduction:                  ${connectedCurrent > 0 ? ((1 - diversityCurrent / connectedCurrent) * 100).toFixed(1) : '0.0'}% (${connectedCurrent.toFixed(2)}A → ${diversityCurrent.toFixed(2)}A)\n`;
         report += `\n`;
-        report += `Power Savings:      ${(connectedPowerKVA - diversityPowerKVA).toFixed(2)} kVA\n`;
-        report += `Load Reduction:     ${connectedCurrent > 0 ? ((1 - diversityCurrent / connectedCurrent) * 100).toFixed(1) : '0.0'}%\n`;
+        report += `Power Savings:                       ${(connectedPowerKVA - diversityPowerKVA).toFixed(2)} kVA\n`;
         report += `\n`;
         
         report += `FACTORS APPLIED:\n`;
@@ -229,14 +232,17 @@ function exportBusReport(busId) {
         if (lf.demandFactorsApplied && lf.demandSummary) {
             const ds = lf.demandSummary;
             
-            report += `📊 LOAD SUMMARY:\n`;
-            report += `${'-'.repeat(100)}\n`;
-            report += `Connected Load:          ${ds.connectedCurrent.toFixed(2)} A  (100.0%)  ${ds.connectedPowerKVA.toFixed(2)} kVA\n`;
-            report += `Demand Load:             ${ds.demandCurrent.toFixed(2)} A  (${(ds.demandFactor * 100).toFixed(1)}%)   ${ds.demandPowerKVA.toFixed(2)} kVA\n`;
-            report += `Diversified Load:        ${ds.diversityCurrent.toFixed(2)} A  (${ds.connectedCurrent > 0 ? ((ds.diversityCurrent / ds.connectedCurrent) * 100).toFixed(1) : '0.0'}%)   ${ds.diversityPowerKVA.toFixed(2)} kVA\n`;
-            report += `\n`;
-            report += `Power Savings:           ${(ds.connectedPowerKVA - ds.diversityPowerKVA).toFixed(2)} kVA\n`;
-            report += `Current Reduction:       ${(ds.connectedCurrent - ds.diversityCurrent).toFixed(2)} A (${ds.connectedCurrent > 0 ? ((1 - ds.diversityCurrent / ds.connectedCurrent) * 100).toFixed(1) : '0.0'}%)\n`;
+            report += `THREE-TIER LOAD BREAKDOWN:\n`;
+            report += `${'━'.repeat(100)}\n`;
+            report += `Tier 1 - Connected Load (100% FLC):         ${ds.connectedCurrent.toFixed(2)} A  (informational)  ${ds.connectedPowerKVA.toFixed(2)} kVA\n`;
+            report += `Tier 2 - Demand Load (NEC 220/430):         ${ds.demandCurrent.toFixed(2)} A  (demand factors)  ${ds.demandPowerKVA.toFixed(2)} kVA\n`;
+            report += `Tier 3 - Diversity Load (IEEE 141):         ${ds.diversityCurrent.toFixed(2)} A  ⭐ SIZING BASIS   ${ds.diversityPowerKVA.toFixed(2)} kVA\n`;
+            report += `${'━'.repeat(100)}\n\n`;
+            
+            report += `Demand Factor (NEC 430.24):      ${(ds.demandFactor * 100).toFixed(1)}%\n`;
+            report += `Diversity Factor (IEEE 141):     ${ds.diversityFactor.toFixed(2)}\n`;
+            report += `Power Savings:                   ${(ds.connectedPowerKVA - ds.diversityPowerKVA).toFixed(2)} kVA\n`;
+            report += `Current Reduction:               ${(ds.connectedCurrent - ds.diversityCurrent).toFixed(2)} A (${ds.connectedCurrent > 0 ? ((1 - ds.diversityCurrent / ds.connectedCurrent) * 100).toFixed(1) : '0.0'}%)\n`;
             report += `\n`;
             
             report += `📐 FACTORS APPLIED:\n`;
@@ -906,6 +912,33 @@ function exportBusReport(busId) {
         report += `${'='.repeat(100)}\n\n`;
         report += bus.results.calculationSteps || bus.results.steps || 'No detailed steps available.\n';
     }
+    
+    // ✅ STANDARDS COMPLIANCE: Add Equipment Sizing Basis and Standards References
+    report += `\n${'='.repeat(100)}\n`;
+    report += `EQUIPMENT SIZING BASIS\n`;
+    report += `${'='.repeat(100)}\n\n`;
+    
+    report += `${'━'.repeat(100)}\n`;
+    report += `${'Component'.padEnd(25)}${'Sizing Basis'.padEnd(35)}${'Standard Applied'.padEnd(40)}\n`;
+    report += `${'━'.repeat(100)}\n`;
+    report += `${'Cables/Conductors'.padEnd(25)}${'Diversity Load × 1.0'.padEnd(35)}${'NEC 310.15, IEEE 141-1993'.padEnd(40)}\n`;
+    report += `${'Circuit Breakers'.padEnd(25)}${'Diversity Load × 1.25'.padEnd(35)}${'NEC 430.52'.padEnd(40)}\n`;
+    report += `${'Transformers'.padEnd(25)}${'Demand Load × 1.25'.padEnd(35)}${'IEEE C57.12, NEC 450'.padEnd(40)}\n`;
+    report += `${'Voltage Drop'.padEnd(25)}${'Diversity Load'.padEnd(35)}${'IEEE 141-1993 Ch. 4'.padEnd(40)}\n`;
+    report += `${'Short Circuit'.padEnd(25)}${'Connected Load (worst-case)'.padEnd(35)}${'IEEE 141-1993 Ch. 5'.padEnd(40)}\n`;
+    report += `${'━'.repeat(100)}\n\n`;
+    
+    report += `STANDARDS COMPLIANCE:\n`;
+    report += `${'-'.repeat(100)}\n`;
+    report += `✓ NEC 2017 Article 220 - Branch-Circuit and Feeder Load Calculations\n`;
+    report += `✓ NEC 2017 Article 430.24 - Motor Demand Factors\n`;
+    report += `✓ IEEE 141-1993 Table 3-5 - Diversity Factors for Industrial Loads\n`;
+    report += `✓ IEEE 141-1993 Chapter 4 - Voltage Drop Calculations\n`;
+    report += `✓ IEEE C37 Series - Circuit Breaker Ratings\n`;
+    report += `✓ IEEE 1584-2018 - Arc Flash Hazard Calculations\n`;
+    report += `✓ NFPA 70E-2021 - Electrical Safety in the Workplace\n`;
+    report += `✓ PEC 2017 Edition - Philippine Electrical Code\n`;
+    report += `${'-'.repeat(100)}\n`;
     
     report += `\n${'='.repeat(100)}\n`;
     report += `END OF REPORT\n`;

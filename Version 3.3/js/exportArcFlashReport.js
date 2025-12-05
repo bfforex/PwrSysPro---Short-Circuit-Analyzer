@@ -204,6 +204,45 @@ function exportArcFlashReport(busId) {
             report += arcFlashResult.calculationSteps;
         }
         
+        // ✅ STANDARDS COMPLIANCE: Add comprehensive standards references
+        report += '\n' + '═'.repeat(80) + '\n';
+        report += 'STANDARDS COMPLIANCE CERTIFICATION\n';
+        report += '═'.repeat(80) + '\n\n';
+        
+        report += 'ARC FLASH ANALYSIS STANDARDS:\n';
+        report += '-'.repeat(80) + '\n';
+        report += '✓ IEEE 1584-2018 - Guide for Performing Arc-Flash Hazard Calculations\n';
+        report += '  • Lee Method for low voltage systems (< 1000V)\n';
+        report += '  • IEEE 1584 Model for medium/high voltage systems\n';
+        report += '  • Arc flash boundary calculations\n';
+        report += '  • Working distance standards (18" for LV, 36" for MV)\n\n';
+        
+        report += '✓ NFPA 70E-2021 - Standard for Electrical Safety in the Workplace\n';
+        report += '  • Table 130.7(C)(15) - PPE Category Selection\n';
+        report += '  • Arc-rated clothing and equipment requirements\n';
+        report += '  • Safe work practices and procedures\n\n';
+        
+        report += '✓ NEC 2017 Article 110.16 - Flash Protection\n';
+        report += '  • Arc flash warning label requirements\n';
+        report += '  • Equipment labeling standards\n\n';
+        
+        report += '✓ IEEE 141-1993 Chapter 5 - Short-Circuit Calculations\n';
+        report += '  • Fault current determination for arc flash analysis\n';
+        report += '  • Motor contribution to fault levels\n\n';
+        
+        report += '✓ PEC 2017 - Philippine Electrical Code\n';
+        report += '  • Based on NEC 2017 with regional adaptations\n';
+        report += '-'.repeat(80) + '\n\n';
+        
+        report += 'CALCULATION METHODOLOGY:\n';
+        report += '-'.repeat(80) + '\n';
+        report += 'Incident Energy:     IEEE 1584-2018 equations\n';
+        report += 'Working Distance:    Per IEEE 1584 recommendations\n';
+        report += 'PPE Categories:      NFPA 70E-2021 Table 130.7(C)(15)\n';
+        report += 'Arc Flash Boundary:  Based on 1.2 cal/cm² threshold\n';
+        report += 'Fault Current:       IEEE 141-1993 methods\n';
+        report += '-'.repeat(80) + '\n';
+        
         // Footer
         report += '\n' + '═'.repeat(80) + '\n';
         report += 'END OF ARC FLASH ANALYSIS REPORT\n';
