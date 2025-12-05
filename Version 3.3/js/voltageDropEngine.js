@@ -4,18 +4,19 @@
  * 
  * @author bfforex
  * @date 2025-12-02
- * @version 3.3.0
+ * @version 3.4.0
+ * @updated 2025-12-05 - Default mode changed to use diversified load current
  * 
  * Key Features:
  * - Single function computeVoltageDrop(bus, mode) with clear modes
  * - Mode 'design': Always 100% FLC - for NEC/IEEE compliance checks
  * - Mode 'oper_demand': With demand factors applied
- * - Mode 'oper_demand_df': With demand AND diversity factors applied
+ * - Mode 'oper_demand_df': With demand AND diversity factors applied (DEFAULT)
  * 
  * Convention:
- * - Design VD is ALWAYS based on 100% connected load (FLC)
- * - Operating VD uses demand/diversity for INFORMATIONAL purposes only
- * - Compliance checks are ALWAYS against design VD
+ * - DEFAULT: Voltage drop uses load current with demand & diversity applied
+ * - Design VD (100% FLC) available for compliance checks when explicitly requested
+ * - Operating VD (with demand/diversity) is the standard calculation mode
  * 
  * Standards:
  * - NEC 210.19(A) - Branch Circuit Conductors (5% max)
@@ -23,7 +24,8 @@
  * - IEEE 141-1993 - Combined System (7% max)
  */
 
-console.log('🔧 Loading Voltage Drop Engine Module v3.3.0...');
+console.log('🔧 Loading Voltage Drop Engine Module v3.4.0...');
+console.log('   ✅ Default mode: Uses diversified load current (demand + diversity)');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // VOLTAGE DROP ENGINE CONFIGURATION
@@ -59,11 +61,11 @@ const VOLTAGE_DROP_ENGINE_CONFIG = {
  * Compute voltage drop for a bus with specified mode
  * 
  * @param {Object} bus - Bus object
- * @param {String} mode - 'design', 'oper_demand', or 'oper_demand_df'
+ * @param {String} mode - 'design', 'oper_demand', or 'oper_demand_df' (default: 'oper_demand_df')
  * @param {Object} options - Additional options
  * @returns {Object} Voltage drop results
  */
-function computeVoltageDrop(bus, mode = 'design', options = {}) {
+function computeVoltageDrop(bus, mode = 'oper_demand_df', options = {}) {
     const SQRT3 = Math.sqrt(3);
     
     // ─────────────────────────────────────────────────────────────────────────
@@ -116,14 +118,15 @@ function computeVoltageDrop(bus, mode = 'design', options = {}) {
             break;
             
         case 'oper_demand_df':
-            // Operating with demand AND diversity factors
+            // Operating with demand AND diversity factors (DEFAULT)
             loadCurrent = getDiversifiedLoadCurrent(bus);
             currentDescription = 'Demand + Diversity Applied';
             break;
             
         default:
-            loadCurrent = getConnectedLoadCurrent(bus);
-            currentDescription = '100% FLC (Design)';
+            // Default to diversified load current
+            loadCurrent = getDiversifiedLoadCurrent(bus);
+            currentDescription = 'Demand + Diversity Applied (Default)';
     }
     
     console.log(`   Load Current: ${loadCurrent.toFixed(2)} A (${currentDescription})`);

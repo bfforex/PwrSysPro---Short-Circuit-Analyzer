@@ -1099,7 +1099,7 @@ function generateArcFlashHazardSection(incidentEnergy, hazardLevel, hazardClass)
                 </ul>
                 
                 <p class="text-muted" style="margin-top: 10px;">
-                    <small>Per IEEE 1584-2018 and NFPA 70E-2021</small>
+                    <small>Per IEEE 1584-2018, IEEE 1584-2002, and NFPA 70E-2021</small>
                 </p>
             </div>
         </div>
@@ -1194,7 +1194,7 @@ function generateArcFlashParametersTable(results) {
                 <tr>
                     <td>Arcing Current</td>
                     <td>${results.arcingCurrentKA.toFixed(3)} kA</td>
-                    <td>IEEE 1584-2018 (85% factor)</td>
+                    <td>IEEE 1584-2018/2002 (85% factor)</td>
                 </tr>
                 <tr>
                     <td>Clearing Time</td>
@@ -1204,17 +1204,17 @@ function generateArcFlashParametersTable(results) {
                 <tr>
                     <td>Working Distance</td>
                     <td>${results.workingDistance} inches</td>
-                    <td>IEEE 1584-2018 Table 4.5</td>
+                    <td>IEEE 1584-2018/2002 Table 4.5</td>
                 </tr>
                 <tr>
                     <td>Equipment Type</td>
                     <td>${results.equipmentType}</td>
-                    <td>IEEE 1584-2018</td>
+                    <td>IEEE 1584-2018/2002</td>
                 </tr>
                 <tr>
                     <td>Electrode Gap</td>
                     <td>${results.electrodeGap} mm</td>
-                    <td>IEEE 1584-2018</td>
+                    <td>IEEE 1584-2018/2002</td>
                 </tr>
             </tbody>
         </table>
