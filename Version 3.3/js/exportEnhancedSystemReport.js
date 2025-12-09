@@ -395,10 +395,10 @@ ${'-'.repeat(100)}
     report += `EQUIPMENT SIZING METHODOLOGY:
 ${'-'.repeat(100)}
 Per IEEE 141-1993 and NEC 2017:
-  ✓ All equipment (cables, breakers, transformers) sized for connected load
-  ✓ 25% safety margin added per NEC requirements
+  ✓ All equipment sized for 100% Full Load Current (connected load)
+  ✓ Additional 25% safety margin per NEC requirements (e.g., 430.52)
   ✓ Demand/diversity factors used for operational analysis only
-  ✓ Design based on worst-case (100% FLC) conditions
+  ✓ Design calculations use worst-case 100% FLC conditions
 
 STANDARDS COMPLIANCE:
   ✓ NEC 2017 Article 220 - Branch-Circuit and Feeder Load Calculations
