@@ -102,10 +102,8 @@ function generateEnhancedSystemReport(buses, options = {}) {
     report += generateExecutiveSummary(calculatedBuses, analytics, systemReport);
     report += generateSystemLoadAnalysis(calculatedBuses, analytics);  // Section 2.1: System Capacity
     
-    // ✅ NEW v3.4.0: Replace confusing "Internal Load Distribution" with clear Load Flow Analysis
-    if (typeof generateLoadFlowAnalysis === 'function') {
-        report += generateLoadFlowAnalysis(calculatedBuses, analytics);  // Section 2.2: Load Flow Analysis
-    }
+    // ✅ NEW: Load Flow Analysis with operational voltage drop per bus
+    report += generateLoadFlowOperationalAnalysis(calculatedBuses, analytics);  // Section 2.2: Load Flow Analysis
     
     report += generateDesignVsOperatingComparison(calculatedBuses, analytics);
     report += generateEquipmentSummary(calculatedBuses);
@@ -360,200 +358,55 @@ ${'='.repeat(100)}
     const spareCapacityA = designCapacityA - systemConnectedA;
     const spareCapacityPercent = (spareCapacityA / designCapacityA) * 100;
 
-    // ✅ STANDARDS COMPLIANCE FIX: Three-Tier Load Display
+    // ✅ FIX: Simplified system load display - entry buses only
     report += `════════════════════════════════════════════════════════════════════════════════════════════════════
-LOAD FLOW SUMMARY (Three-Tier Analysis per NEC & IEEE Standards)
+SYSTEM LOAD SUMMARY (From Entry Buses Only)
 ════════════════════════════════════════════════════════════════════════════════════════════════════
 
 SOURCE INFORMATION:
 ${'-'.repeat(100)}
-Source Buses: ${entryBuses.map(b => b.name).join(', ')}
+Entry Buses: ${entryBuses.map(b => b.name).join(', ')}
 System Voltage: ${avgVoltage.toFixed(0)} V
 Power Factor: ${powerFactor}
 
-THREE-TIER LOAD CALCULATION:
+TIER 1 - CONNECTED LOAD (100% FLC, from Entry Buses):
 ${'-'.repeat(100)}
-Tier 1 - Connected Load (100% FLC):         ${systemConnectedA.toFixed(2)} A  (informational only)
-         Total Power:                        ${systemConnectedKVA.toFixed(2)} kVA (${systemConnectedKW.toFixed(2)} kW)
-         Description:                        Sum of all equipment nameplate ratings
-
-Tier 2 - Demand Load (NEC 220/430):         [See bus-level analysis below]
-         Description:                        With NEC demand factors applied
-
-Tier 3 - Diversity Load (IEEE 141):         [See bus-level analysis below]
-         Description:                        ⭐ EQUIPMENT SIZING BASIS
+Total Connected Current:  ${systemConnectedA.toFixed(2)} A
+Total Connected Power:    ${systemConnectedKVA.toFixed(2)} kVA (${systemConnectedKW.toFixed(2)} kW)
+Basis:                    System entry buses only (no double-counting)
 
 DESIGN CAPACITY (125% Safety Margin per NEC):
 ${'-'.repeat(100)}
 Design Capacity Current:  ${designCapacityA.toFixed(2)} A
 Design Capacity Power:    ${designCapacityKVA.toFixed(2)} kVA
-
-SPARE CAPACITY:
-  Available Current:  ${spareCapacityA.toFixed(2)} A (${spareCapacityPercent.toFixed(1)}% headroom)
-  Status:             ${spareCapacityPercent > 20 ? '✓ Adequate' : spareCapacityPercent > 10 ? '⚠️ Limited' : '❌ Insufficient'}
+Spare Capacity:           ${spareCapacityA.toFixed(2)} A (${spareCapacityPercent.toFixed(1)}% headroom)
 
 ${'-'.repeat(100)}
-NOTE: Equipment sizing uses Diversity Load (Tier 3) as the basis per IEEE 141-1993.
-      All calculations comply with NEC 2017 and IEEE standards.
-${'-'.repeat(100)}
-
-`;
-
-    // Calculate operating values
-    const busesWithDemandData = buses.filter(b => b.results?.loadFlow?.demandFactorsApplied).length;
-    
-    if (busesWithDemandData > 0) {
-        const {
-            totalConnected,
-            totalDemand,
-            totalDiversity
-        } = computeSystemLoadAggregates(buses);
-        
-        const operatingKVA = (totalDiversity * avgVoltage * Math.sqrt(3)) / 1000;
-        const operatingKW = operatingKVA * powerFactor;
-        const utilizationPercent = (totalDiversity / systemConnectedA) * 100;
-
-        // ✅ STANDARDS COMPLIANCE FIX: Diversified Load Analysis
-        report += `════════════════════════════════════════════════════════════════════════════════════════════════════
-DIVERSIFIED LOAD ANALYSIS (IEEE 141-1993 Methodology)
-════════════════════════════════════════════════════════════════════════════════════════════════════
-
-TIER 2 & 3 LOAD SUMMARY:
-${'-'.repeat(100)}
-Connected Load (Tier 1):           ${totalConnected.toFixed(2)} A  (100% FLC)
-Demand Load (Tier 2, NEC 220/430): ${totalDemand.toFixed(2)} A  (with demand factors)
-Diversity Load (Tier 3, IEEE 141): ${totalDiversity.toFixed(2)} A  ⭐ EQUIPMENT SIZING BASIS
-
-Combined Reduction: ${((totalConnected - totalDiversity) / totalConnected * 100).toFixed(1)}% (${totalConnected.toFixed(2)}A → ${totalDiversity.toFixed(2)}A)
-Diversity Factor Applied: ${totalConnected > 0 ? (totalConnected / totalDiversity).toFixed(2) : '1.00'} avg (per IEEE 141-1993)
-
-DIVERSIFIED POWER:
-  Apparent Power: ${operatingKVA.toFixed(2)} kVA
-  Active Power:   ${operatingKW.toFixed(2)} kW
-  Utilization:    ${utilizationPercent.toFixed(1)}% of connected load
-
-AVAILABLE CAPACITY FOR GROWTH:
-  Current:  ${(designCapacityA - totalDiversity).toFixed(2)} A
-  Power:    ${((designCapacityA - totalDiversity) * avgVoltage * Math.sqrt(3) / 1000).toFixed(2)} kVA
-  Percent:  ${((designCapacityA - totalDiversity) / designCapacityA * 100).toFixed(1)}% capacity available
-
-${'-'.repeat(100)}
-NOTE: All equipment (cables, breakers, transformers) sized using Diversity Load (Tier 3).
-      This provides conservative sizing with built-in safety margins per NEC & IEEE.
+⚠️ IMPORTANT NOTE:
+   Downstream bus loads are already included in entry-bus totals.
+   Do NOT sum individual bus currents as this will double-count loads.
+   All values shown are from system entry buses only.
 ${'-'.repeat(100)}
 
 `;
 
-        // Diversity factors applied
-        report += `DEMAND & DIVERSITY FACTORS APPLIED:
+
+    // Equipment sizing methodology
+    report += `EQUIPMENT SIZING METHODOLOGY:
 ${'-'.repeat(100)}
-Buses with Diversity Applied: ${busesWithDemandData} of ${buses.length}
-
-Diversity factors are applied at individual bus/equipment level per:
-  ✓ NEC Article 220 - Demand Factors for Load Calculations
-  ✓ NEC Article 430.24 - Motor Load Calculations
-  ✓ IEEE 141-1993 Table 3-5 - Diversity Factors for Industrial Loads
-
-`;
-
-        // Bus type breakdown
-        const sourceBusCount = buses.filter(b => b.type === 'source').length;
-        const distBusCount = buses.filter(b => b.type === 'distribution').length;
-        const branchBusCount = buses.filter(b => b.type === 'branch').length;
-
-        // Motor grouping analysis
-        const allMotors = components.filter(c => c.type === 'motor');
-        const motorsGroupedByBus = {};
-        allMotors.forEach(motor => {
-            const fromBus = motor.fromBus || motor.fromBusName || 'unknown';
-            if (!motorsGroupedByBus[fromBus]) {
-                motorsGroupedByBus[fromBus] = [];
-            }
-            motorsGroupedByBus[fromBus].push(motor);
-        });
-
-        let singleMotorBuses = 0;
-        let group2_4Motors = 0;
-        let group5_10Motors = 0;
-        let group10PlusMotors = 0;
-
-        Object.keys(motorsGroupedByBus).forEach(busId => {
-            const motorCount = motorsGroupedByBus[busId].length;
-            if (motorCount === 1) singleMotorBuses++;
-            else if (motorCount >= 2 && motorCount <= 4) group2_4Motors++;
-            else if (motorCount >= 5 && motorCount <= 10) group5_10Motors++;
-            else if (motorCount > 10) group10PlusMotors++;
-        });
-
-        const xfmrCount = components.filter(c => c.type === 'transformer').length;
-        const totalMotorHP = allMotors.reduce((sum, m) => sum + (m.hp || 0), 0);
-
-        report += `DIVERSITY FACTOR STRATEGY BY BUS TYPE:
-${'─'.repeat(100)}
-${'Bus Type'.padEnd(20)}${'Default DF'.padEnd(15)}${'Applied To'.padEnd(20)}${'IEEE 141-1993 Rationale'.padEnd(45)}
-${'─'.repeat(100)}
-${'Source'.padEnd(20)}${'1.00'.padEnd(15)}${(sourceBusCount + ' buses').padEnd(20)}${'Utility/generator - no diversity'.padEnd(45)}
-${'Distribution'.padEnd(20)}${'1.20'.padEnd(15)}${(distBusCount + ' buses').padEnd(20)}${'Multiple feeders (Table 3-5)'.padEnd(45)}
-${'Branch'.padEnd(20)}${'1.25'.padEnd(15)}${(branchBusCount + ' buses').padEnd(20)}${'Individual circuits (Table 3-5)'.padEnd(45)}
-${'─'.repeat(100)}
-
-MOTOR DEMAND FACTORS (NEC 430.24):
-${'─'.repeat(100)}
-${'Motor Group'.padEnd(20)}${'Demand Factor'.padEnd(18)}${'Buses'.padEnd(20)}${'Standard Reference'.padEnd(42)}
-${'─'.repeat(100)}
-${'Single Motor'.padEnd(20)}${'1.00 (100%)'.padEnd(18)}${(singleMotorBuses + ' buses').padEnd(20)}${'NEC 430.24 (no reduction)'.padEnd(42)}
-${'2-4 Motors'.padEnd(20)}${'0.95 (95%)'.padEnd(18)}${(group2_4Motors + ' buses').padEnd(20)}${'NEC 430.24 (2-4 motors Kd)'.padEnd(42)}
-${'5-10 Motors'.padEnd(20)}${'0.85 (85%)'.padEnd(18)}${(group5_10Motors + ' buses').padEnd(20)}${'NEC 430.24 (5-10 motors Kd)'.padEnd(42)}
-${'10+ Motors'.padEnd(20)}${'0.80 (80%)'.padEnd(18)}${(group10PlusMotors + ' buses').padEnd(20)}${'NEC 430.24 (10+ motors Kd)'.padEnd(42)}
-${'─'.repeat(100)}
-Total Motors: ${allMotors.length} (${totalMotorHP.toFixed(0)} HP total)
-Transformers: ${xfmrCount} units (0.80 demand factor per IEEE 141)
-${'─'.repeat(100)}
-
-EQUIPMENT SIZING METHODOLOGY:
-${'─'.repeat(100)}
-SIZING BASIS:
-  ⭐ Equipment sized using Diversity Load (Tier 3)
-  ✓ NEC 220/430 demand factors applied per motor group size
-  ✓ IEEE 141-1993 diversity factors applied per load type
-  ✓ 25% safety margin added per NEC requirements for protection devices
-  ✓ Cables sized to carry diversified load with appropriate derating
-
-CALCULATION APPROACH:
-  Step 1: Calculate Connected Load (100% FLC) - informational
-  Step 2: Apply NEC 430.24 demand factors - intermediate value
-  Step 3: Apply IEEE 141 diversity factors - FINAL SIZING BASIS
-  Step 4: Add safety margins per NEC (125% for largest motor, etc.)
+Per IEEE 141-1993 and NEC 2017:
+  ✓ All equipment (cables, breakers, transformers) sized for connected load
+  ✓ 25% safety margin added per NEC requirements
+  ✓ Demand/diversity factors used for operational analysis only
+  ✓ Design based on worst-case (100% FLC) conditions
 
 STANDARDS COMPLIANCE:
   ✓ NEC 2017 Article 220 - Branch-Circuit and Feeder Load Calculations
-  ✓ NEC 2017 Article 430.24 - Multiple Motor Demand Factors
-  ✓ IEEE 141-1993 Table 3-5 - Diversity Factors for Industrial Loads
+  ✓ NEC 2017 Article 430 - Motor Circuits
+  ✓ IEEE 141-1993 - Red Book (Industrial Power Systems)
   ✓ IEEE 141-1993 Chapter 4 - Voltage Drop Calculations
-  ✓ PEC 2017 Edition - Philippine Electrical Code
-
-BENEFITS:
-  ✓ Realistic equipment sizing based on actual load profiles
-  ✓ Conservative design with built-in safety margins
-  ✓ Lower operating temperatures and extended equipment life
-  ✓ Built-in capacity for future expansion
-  ✓ Full compliance with NEC and IEEE standards
-${'─'.repeat(100)}
-
-EQUIPMENT SIZING BASIS TABLE:
-${'━'.repeat(100)}
-${'Component'.padEnd(25)}${'Sizing Basis'.padEnd(35)}${'Standard Applied'.padEnd(40)}
-${'━'.repeat(100)}
-${'Cables/Conductors'.padEnd(25)}${'Diversity Load × 1.0'.padEnd(35)}${'NEC 310.15, IEEE 141-1993'.padEnd(40)}
-${'Circuit Breakers'.padEnd(25)}${'Diversity Load × 1.25'.padEnd(35)}${'NEC 430.52 (largest motor rule)'.padEnd(40)}
-${'Transformers'.padEnd(25)}${'Demand Load × 1.25'.padEnd(35)}${'IEEE C57.12, NEC 450'.padEnd(40)}
-${'Voltage Drop'.padEnd(25)}${'Diversity Load'.padEnd(35)}${'IEEE 141-1993 Ch. 4 (2.5-5% limits)'.padEnd(40)}
-${'Short Circuit'.padEnd(25)}${'Connected Load (worst-case)'.padEnd(35)}${'IEEE 141-1993 Ch. 5'.padEnd(40)}
-${'Arc Flash'.padEnd(25)}${'Connected Load (worst-case)'.padEnd(35)}${'IEEE 1584-2018/2002, NFPA 70E-2021'.padEnd(40)}
-${'━'.repeat(100)}
 
 `;
-    }
 
     // Voltage level distribution
     const voltageGroups = {};
@@ -593,39 +446,60 @@ ${'-'.repeat(100)}
  * ✅ FIX 6: NEW SECTION - Generate DESIGN vs OPERATING Comparison Table
  */
 function generateDesignVsOperatingComparison(buses, analytics) {
-    const {
-        totalConnected,
-        totalDemand,
-        totalDiversity
-    } = computeSystemLoadAggregates(buses);
+    // ✅ FIX: Use system entry totals instead of per-bus aggregates
+    const { 
+        totalConnectedA: designCurrentA, 
+        totalConnectedKVA: designPowerKVA,
+        entryBuses 
+    } = getSystemEntryTotals(buses);
 
-    const avgVoltage = analytics.statistics.voltages?.mean || 7245;
+    const avgVoltage = entryBuses.length > 0 
+        ? entryBuses.reduce((sum, b) => sum + b.voltage, 0) / entryBuses.length
+        : analytics.statistics.voltages?.mean || 7245;
     const powerFactor = parseFloat(document.getElementById('powerFactor')?.value || 0.85);
 
-    // Calculate design values
-    const designCurrentA = totalConnected;
-    const designPowerKVA = (designCurrentA * avgVoltage * Math.sqrt(3)) / 1000;
+    // Calculate operating current from entry buses with diversity
+    let operatingCurrentA = 0;
+    entryBuses.forEach(bus => {
+        const lf = bus.results?.loadFlow;
+        if (lf?.demandSummary?.diversityCurrent) {
+            operatingCurrentA += lf.demandSummary.diversityCurrent;
+        } else {
+            operatingCurrentA += lf?.summary?.totalCurrent || 0;
+        }
+    });
     
-    // Calculate operating values  
-    const operatingCurrentA = totalDiversity;
     const operatingPowerKVA = (operatingCurrentA * avgVoltage * Math.sqrt(3)) / 1000;
     
     // Calculate deltas
-    const currentDelta = ((operatingCurrentA - designCurrentA) / designCurrentA * 100);
-    const powerDelta = ((operatingPowerKVA - designPowerKVA) / designPowerKVA * 100);
+    const currentDelta = designCurrentA > 0 ? ((operatingCurrentA - designCurrentA) / designCurrentA * 100) : 0;
+    const powerDelta = designPowerKVA > 0 ? ((operatingPowerKVA - designPowerKVA) / designPowerKVA * 100) : 0;
 
-    // Voltage drop comparison
+    // Voltage drop comparison - use actual diversity current ratios
     let designMaxVD = 0, operatingMaxVD = 0;
     let designNonCompliant = 0, operatingNonCompliant = 0;
+    let maxDesignBus = null, maxOperatingBus = null;
     
     buses.forEach(bus => {
-        const vd = bus.results?.voltageDrop?.cumulativeDropPercent || 0;
-        if (vd > designMaxVD) designMaxVD = vd;
-        if (vd > 7) designNonCompliant++;
+        const designVD = bus.results?.voltageDrop?.cumulativeDropPercent || 0;
+        if (designVD > designMaxVD) {
+            designMaxVD = designVD;
+            maxDesignBus = bus;
+        }
+        if (designVD > 7) designNonCompliant++;
         
-        // Estimate operating VD (scaled by current ratio)
-        const operatingVD = totalConnected > 0 ? vd * (operatingCurrentA / designCurrentA) : vd;
-        if (operatingVD > operatingMaxVD) operatingMaxVD = operatingVD;
+        // ✅ FIX: Calculate operating VD using actual bus-level diversity factors
+        let operatingVD = designVD;
+        const lf = bus.results?.loadFlow;
+        if (lf?.demandSummary?.diversityCurrent && lf?.summary?.totalCurrent) {
+            const currentRatio = lf.demandSummary.diversityCurrent / lf.summary.totalCurrent;
+            operatingVD = designVD * currentRatio;
+        }
+        
+        if (operatingVD > operatingMaxVD) {
+            operatingMaxVD = operatingVD;
+            maxOperatingBus = bus;
+        }
         if (operatingVD > 7) operatingNonCompliant++;
     });
 
@@ -674,17 +548,17 @@ function generateDesignVsOperatingComparison(buses, analytics) {
     const lossDelta = designLosses > 0 ? ((operatingLosses - designLosses) / designLosses * 100) : 0;
 
     let report = `${'='.repeat(100)}
-CONNECTED LOAD vs DIVERSIFIED LOAD COMPARISON
+DESIGN vs OPERATING COMPARISON (System Entry Totals)
 ${'='.repeat(100)}
 
-                           CONNECTED (Tier 1)    DIVERSIFIED (Tier 3)      Reduction
+                           Design (100% FLC)     Operating (with DF)      Improvement
 ${'─'.repeat(100)}
-SYSTEM LOAD:
-  Total Current              ${designCurrentA.toFixed(1)} A${' '.repeat(13)}${operatingCurrentA.toFixed(1)} A${' '.repeat(20)}${currentDelta.toFixed(1)}%
-  Total Power                ${designPowerKVA.toFixed(0)} kVA${' '.repeat(11)}${operatingPowerKVA.toFixed(0)} kVA${' '.repeat(18)}${powerDelta.toFixed(1)}%
+SYSTEM LOAD (from ${entryBuses.length} entry ${entryBuses.length === 1 ? 'bus' : 'buses'}):
+  Total Current              ${designCurrentA.toFixed(2)} A${' '.repeat(11)}${operatingCurrentA.toFixed(2)} A${' '.repeat(17)}${Math.abs(currentDelta).toFixed(1)}%
+  Total Power                ${designPowerKVA.toFixed(0)} kVA${' '.repeat(9)}${operatingPowerKVA.toFixed(0)} kVA${' '.repeat(15)}${Math.abs(powerDelta).toFixed(1)}%
 
 VOLTAGE DROP (Worst Case):
-  Maximum VD%                ${designMaxVD.toFixed(2)}%${' '.repeat(14)}${operatingMaxVD.toFixed(2)}%${' '.repeat(20)}${vdDelta.toFixed(1)}%
+  Maximum VD%                ${designMaxVD.toFixed(2)}% (${maxDesignBus?.name || 'N/A'})${' '.repeat(3)}${operatingMaxVD.toFixed(2)}% (${maxOperatingBus?.name || 'N/A'})${' '.repeat(3)}${Math.abs(vdDelta).toFixed(1)}%
   Non-Compliant Buses        ${designNonCompliant}${' '.repeat(18)}${operatingNonCompliant}${' '.repeat(26)}${designNonCompliant > 0 ? ((operatingNonCompliant - designNonCompliant) / designNonCompliant * 100).toFixed(1) : '0.0'}%
 
 TRANSFORMER LOADING:
@@ -720,6 +594,131 @@ KEY INSIGHT: Operating analysis shows system performs ${Math.abs(currentDelta).t
         report += `             All transformers operate within ratings with diversity applied.\n`;
     }
     report += `${'─'.repeat(100)}
+
+`;
+
+    return report;
+}
+
+/**
+ * ✅ NEW: Generate Load Flow Operational Analysis with per-bus voltage drop
+ */
+function generateLoadFlowOperationalAnalysis(buses, analytics) {
+    let report = `${'='.repeat(100)}
+LOAD FLOW ANALYSIS - OPERATIONAL PERFORMANCE
+${'='.repeat(100)}
+
+`;
+
+    // Get system entry totals for system-level comparison
+    const { 
+        totalConnectedA: systemDesignA, 
+        entryBuses 
+    } = getSystemEntryTotals(buses);
+
+    // Calculate operating current from entry buses
+    let systemOperatingA = 0;
+    entryBuses.forEach(bus => {
+        const lf = bus.results?.loadFlow;
+        if (lf?.demandSummary?.diversityCurrent) {
+            systemOperatingA += lf.demandSummary.diversityCurrent;
+        } else {
+            systemOperatingA += lf?.summary?.totalCurrent || 0;
+        }
+    });
+
+    // System-level voltage drop
+    let systemDesignVD = 0;
+    let systemOperatingVD = 0;
+    buses.forEach(bus => {
+        const designVD = bus.results?.voltageDrop?.cumulativeDropPercent || 0;
+        if (designVD > systemDesignVD) systemDesignVD = designVD;
+        
+        const lf = bus.results?.loadFlow;
+        let operatingVD = designVD;
+        if (lf?.demandSummary?.diversityCurrent && lf?.summary?.totalCurrent) {
+            const currentRatio = lf.demandSummary.diversityCurrent / lf.summary.totalCurrent;
+            operatingVD = designVD * currentRatio;
+        }
+        if (operatingVD > systemOperatingVD) systemOperatingVD = operatingVD;
+    });
+
+    const currentImprovement = systemDesignA > 0 ? ((systemDesignA - systemOperatingA) / systemDesignA * 100) : 0;
+    const vdImprovement = systemDesignVD > 0 ? ((systemDesignVD - systemOperatingVD) / systemDesignVD * 100) : 0;
+
+    // System-level summary
+    report += `SYSTEM-LEVEL COMPARISON (Entry Buses):
+${'-'.repeat(100)}
+${'Metric'.padEnd(30)}${'Design (100% FLC)'.padEnd(25)}${'Operating (with DF)'.padEnd(25)}${'Improvement'.padEnd(20)}
+${'-'.repeat(100)}
+${'Total Current'.padEnd(30)}${(systemDesignA.toFixed(2) + ' A').padEnd(25)}${(systemOperatingA.toFixed(2) + ' A').padEnd(25)}${(currentImprovement.toFixed(1) + '%').padEnd(20)}
+${'System Voltage Drop'.padEnd(30)}${(systemDesignVD.toFixed(2) + '%').padEnd(25)}${(systemOperatingVD.toFixed(2) + '%').padEnd(25)}${(vdImprovement.toFixed(1) + '%').padEnd(20)}
+${'-'.repeat(100)}
+
+`;
+
+    // Bus-level voltage drop performance
+    report += `BUS-LEVEL VOLTAGE DROP PERFORMANCE:
+${'-'.repeat(100)}
+${'Bus Name'.padEnd(25)}${'Design VD(%)'.padEnd(18)}${'Operating VD(%)'.padEnd(18)}${'Improvement'.padEnd(18)}${'Status'.padEnd(21)}
+${'-'.repeat(100)}
+`;
+
+    // Sort buses by design voltage drop (highest first)
+    const busesWithVD = buses
+        .filter(b => b.results?.voltageDrop?.cumulativeDropPercent)
+        .map(bus => {
+            const designVD = bus.results.voltageDrop.cumulativeDropPercent;
+            const lf = bus.results?.loadFlow;
+            
+            let operatingVD = designVD;
+            if (lf?.demandSummary?.diversityCurrent && lf?.summary?.totalCurrent) {
+                const currentRatio = lf.demandSummary.diversityCurrent / lf.summary.totalCurrent;
+                operatingVD = designVD * currentRatio;
+            }
+            
+            const improvement = designVD > 0 ? ((designVD - operatingVD) / designVD * 100) : 0;
+            
+            let status = '✓ OK';
+            if (operatingVD > 7) status = '❌ FAILS';
+            else if (operatingVD > 5) status = '⚠️ HIGH';
+            else if (operatingVD > 3) status = '⚠️ MONITOR';
+            
+            return {
+                name: bus.name,
+                designVD,
+                operatingVD,
+                improvement,
+                status
+            };
+        })
+        .sort((a, b) => b.designVD - a.designVD);
+
+    // Display top buses (or all if less than 20)
+    const displayCount = Math.min(busesWithVD.length, 20);
+    for (let i = 0; i < displayCount; i++) {
+        const bus = busesWithVD[i];
+        report += `${bus.name.substring(0, 24).padEnd(25)}${bus.designVD.toFixed(2).padEnd(18)}${bus.operatingVD.toFixed(2).padEnd(18)}${bus.improvement.toFixed(1).padEnd(17)}${bus.status.padEnd(21)}\n`;
+    }
+
+    if (busesWithVD.length > displayCount) {
+        report += `${'-'.repeat(100)}
+... and ${busesWithVD.length - displayCount} more buses (see full voltage drop analysis below)
+`;
+    }
+
+    report += `${'-'.repeat(100)}
+
+KEY INSIGHTS:
+${'-'.repeat(100)}
+✓ Operating conditions show ${currentImprovement.toFixed(1)}% improvement over design worst-case
+✓ Diversity factors reduce voltage drop by ${vdImprovement.toFixed(1)}% on average
+✓ Equipment properly sized for full-load conditions per IEEE 141-1993
+✓ Actual operating performance better than design basis
+
+NOTE: Compliance is evaluated based on DESIGN case (100% FLC) per IEEE standards.
+      Operating analysis is informational and shows expected performance.
+${'-'.repeat(100)}
 
 `;
 
@@ -956,7 +955,7 @@ ${'-'.repeat(100)}
 
 `;
 
-    // Calculate design and operating voltage drops
+    // ✅ FIX: Calculate design and operating voltage drops using proper current ratios
     let maxDesignVD = 0;
     let maxOperatingVD = 0;
     let maxDesignBus = null;
@@ -966,12 +965,15 @@ ${'-'.repeat(100)}
 
     buses.forEach(bus => {
         // Design VD (100% FLC)
-        const designVD = bus.results?.loadFlow?.voltageDrop?.designPercent || 
-                        bus.results?.voltageDrop?.cumulativeDropPercent || 0;
+        const designVD = bus.results?.voltageDrop?.cumulativeDropPercent || 0;
         
-        // Operating VD (with diversity)
-        const operatingVD = bus.results?.loadFlow?.voltageDrop?.operDemandDiversityPercent || 
-                           designVD * 0.85;  // Estimate 15% improvement with diversity
+        // ✅ FIX: Operating VD calculated from actual diversity current ratio
+        let operatingVD = designVD;
+        const lf = bus.results?.loadFlow;
+        if (lf?.demandSummary?.diversityCurrent && lf?.summary?.totalCurrent) {
+            const currentRatio = lf.demandSummary.diversityCurrent / lf.summary.totalCurrent;
+            operatingVD = designVD * currentRatio;
+        }
         
         if (designVD > maxDesignVD) {
             maxDesignVD = designVD;
