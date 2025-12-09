@@ -543,9 +543,14 @@ function generateDesignVsOperatingComparison(buses, analytics) {
     });
 
     // System losses comparison
+
     const designLosses = 306.7; // From design calculation
-    const operatingLosses = totalConnected > 0 ? designLosses * Math.pow(operatingCurrentA / designCurrentA, 2) : designLosses;
-    const lossDelta = designLosses > 0 ? ((operatingLosses - designLosses) / designLosses * 100) : 0;
+    const operatingLosses = designCurrentA > 0
+      ? designLosses * Math.pow(operatingCurrentA / designCurrentA, 2)
+      : designLosses;
+    const lossDelta = designLosses > 0 
+      ? ((operatingLosses - designLosses) / designLosses * 100) 
+      : 0;
 
     let report = `${'='.repeat(100)}
 DESIGN vs OPERATING COMPARISON (System Entry Totals)
@@ -1264,33 +1269,62 @@ Combined System             ${avgVoltageDrop.toFixed(2).padStart(14)}        ${a
 
 `;
 
+
+
     const vdReport = analytics.getVoltageDropReport();
-    
-    if (vdReport.criticalBuses && vdReport.criticalBuses.length > 0) {
+
+    if (vdReport && vdReport.criticalBuses && vdReport.criticalBuses.length > 0) {
+        // Collect all components with drop > 3% from all critical buses
+        const criticalComps = [];
+        vdReport.criticalBuses.forEach(vd => {
+            (vd.components || []).forEach(c => {
+                if ((c.dropPercent || 0) > 3) {
+                    criticalComps.push(c);
+                }
+            });
+        });
+
+        // De-duplicate by a stable key and keep the worst (highest dropPercent) per equipment
+        const uniqueByKey = new Map();
+        criticalComps.forEach(c => {
+            const key = (
+                c.id ||
+                c.equipmentId ||
+                `${c.type}:${c.name}` ||
+                `${c.type}:${c.tag}` ||
+                'unknown'
+            ).toString().toLowerCase();
+
+            const existing = uniqueByKey.get(key);
+            if (!existing || (c.dropPercent || 0) > (existing.dropPercent || 0)) {
+                uniqueByKey.set(key, c);
+            }
+        });
+
+        // Sort unique components by highest drop and cap to top 10
+        const topComps = Array.from(uniqueByKey.values())
+            .sort((a, b) => (b.dropPercent || 0) - (a.dropPercent || 0))
+            .slice(0, 10);
+
         report += `CRITICAL VOLTAGE DROP COMPONENTS (>3%):
 ${'-'.repeat(100)}
 Component                Type          Drop(%)   Drop(V)   Status      Action Required
 ${'-'.repeat(100)}
 `;
 
-        vdReport.criticalBuses.slice(0, 10).forEach(vd => {
-            const comp = vd.components?.reduce((max, c) => 
-                c.dropPercent > (max?.dropPercent || 0) ?  c : max
-            , null);
+        topComps.forEach(comp => {
+            const name = (comp.name || comp.tag || 'Unknown').substring(0, 20).padEnd(20);
+            const type = (comp.type || 'component').padEnd(12);
+            const dropP = ((comp.dropPercent || 0).toFixed(2)).padStart(8);
+            const dropV = ((comp.voltageDrop || 0).toFixed(2)).padStart(8);
+            const severity = (comp.severity || (comp.dropPercent > 5 ? 'HIGH' : 'MEDIUM')).padEnd(10);
+            const action = comp.dropPercent > 5 ? 'Resize/Replace' : 'Monitor';
 
-            if (comp) {
-                const name = comp.name.substring(0, 20).padEnd(20);
-                const type = comp.type.padEnd(12);
-                const dropP = comp.dropPercent.toFixed(2).padStart(8);
-                const dropV = comp.voltageDrop.toFixed(2).padStart(8);
-                const severity = comp.severity.padEnd(10);
-                const action = comp.dropPercent > 5 ? 'Resize/Replace' : 'Monitor';
-
-                report += `${name}  ${type}  ${dropP}  ${dropV}  ${severity}  ${action}\n`;
-            }
+            report += `${name}  ${type}  ${dropP}  ${dropV}  ${severity}  ${action}\n`;
         });
 
         report += `\n`;
+
     }
 
     report += `VOLTAGE REGULATION IMPROVEMENT OPPORTUNITIES:
@@ -1968,28 +2002,37 @@ Conclusion: Diversity factor application provides IMMEDIATE positive ROI
     return report;
 }
 
+
 /**
- * Generate Future Capacity Analysis (maintained from v1.4.0)
+ * Generate Future Capacity Analysis (consistent with entry-bus basis)
  */
 function generateFutureCapacityAnalysis(buses, analytics) {
-    const {
-        totalConnected,
-        totalDemand,
-        totalDiversity
-    } = computeSystemLoadAggregates(buses);
+  // Entry-bus totals (same basis used in other sections)
+  const {
+    totalConnectedA: systemConnectedA,
+    entryBuses
+  } = getSystemEntryTotals(buses);
 
-    const { 
-        totalConnectedA: systemConnectedA
-    } = getSystemEntryTotals(buses);
+  // Operating current from entry buses with diversity factors
+  let systemOperatingA = 0;
+  entryBuses.forEach(bus => {
+    const lf = bus.results?.loadFlow;
+    if (lf?.demandSummary?.diversityCurrent) {
+      systemOperatingA += lf.demandSummary.diversityCurrent;
+    } else {
+      systemOperatingA += lf?.summary?.totalCurrent ?? 0;
+    }
+  });
 
-    const designCapacity = systemConnectedA * 1.25;
-    const currentUtilization = (systemConnectedA / designCapacity) * 100;
-    const spareCapacity = designCapacity - systemConnectedA;
-    const spareCapacityPercent = (spareCapacity / designCapacity) * 100;
+  // Design capacity at 125% of connected
+  const designCapacity = systemConnectedA * 1.25;
+  const currentUtilization = (systemConnectedA / designCapacity) * 100;
+  const spareCapacity = designCapacity - systemConnectedA;
+  const spareCapacityPercent = (spareCapacity / designCapacity) * 100;
 
-    let report = `FUTURE CAPACITY ANALYSIS:
+  // Header
+  let report = `FUTURE CAPACITY ANALYSIS:
 ${'-'.repeat(100)}
-
 Current System Utilization:
   Connected Load:                         ${systemConnectedA.toFixed(2)} A
   Design Capacity:                        ${designCapacity.toFixed(2)} A (conservatively sized at 125% FLC)
@@ -1997,8 +2040,8 @@ Current System Utilization:
   Spare Capacity:                         ${spareCapacity.toFixed(2)} A (${spareCapacityPercent.toFixed(1)}%)
 
 With Diversity Factors:
-  Operating Load:                         ${totalDiversity.toFixed(2)} A (${totalDiversity > 0 && systemConnectedA > 0 ?  (totalDiversity/systemConnectedA*100).toFixed(1) : '100.0'}% of connected)
-  Available for Growth:                   ${(designCapacity - totalDiversity).toFixed(2)} A (${((designCapacity-totalDiversity)/designCapacity*100).toFixed(1)}% growth potential)
+  Operating Load:                         ${systemOperatingA.toFixed(2)} A (${systemOperatingA > 0 && systemConnectedA > 0 ? (systemOperatingA / systemConnectedA * 100).toFixed(1) : '100.0'}% of connected)
+  Available for Growth:                   ${(designCapacity - systemOperatingA).toFixed(2)} A (${(((designCapacity - systemOperatingA) / designCapacity) * 100).toFixed(1)}% growth potential)
 
 5-Year Load Growth Projections:
   Assumed Annual Growth: 3% (typical industrial)
@@ -2007,52 +2050,54 @@ ${'-'.repeat(100)}
 ${'-'.repeat(100)}
 `;
 
-    const annualGrowthRate = 0.03;
-    
-    for (let year = 1; year <= 5; year++) {
-        const projectedConnected = systemConnectedA * Math.pow(1 + annualGrowthRate, year);
-        const projectedDiversity = totalDiversity * Math.pow(1 + annualGrowthRate, year);
-        const projectedUtilization = (projectedDiversity / designCapacity) * 100;
-        
-        let status = '✓ OK';
-        if (projectedUtilization > 95) status = '❌ CRITICAL';
-        else if (projectedUtilization > 90) status = '⚠️ Plan upgrade';
-        else if (projectedUtilization > 85) status = '⚠️ Monitor';
-        
-        report += `  ${year}      ${projectedConnected.toFixed(2).padStart(10)}   ${projectedDiversity.toFixed(2).padStart(12)}   ${projectedUtilization.toFixed(1).padStart(11)}%   ${status}\n`;
+  // Projections
+  const annualGrowthRate = 0.03;
+  for (let year = 1; year <= 5; year++) {
+    const projectedConnected = systemConnectedA * Math.pow(1 + annualGrowthRate, year);
+    const projectedDiversity = systemOperatingA * Math.pow(1 + annualGrowthRate, year);
+    const projectedUtilization = (projectedDiversity / designCapacity) * 100;
+
+    let status = '✓ OK';
+    if (projectedUtilization > 95) status = '❌ CRITICAL';
+    else if (projectedUtilization > 90) status = '⚠️ Plan upgrade';
+    else if (projectedUtilization > 85) status = '⚠️ Monitor';
+
+    report += `  ${year.toString().padStart(1)}${projectedConnected.toFixed(2).padStart(13)}${projectedDiversity.toFixed(2).padStart(15)}${projectedUtilization.toFixed(1).padStart(14)}%   ${status}\n`;
+  }
+  report += `${'-'.repeat(100)}\n`;
+
+  // Upgrade recommendation window
+  let upgradeYear = 0;
+  for (let year = 1; year <= 10; year++) {
+    const projectedDiversity = systemOperatingA * Math.pow(1 + annualGrowthRate, year);
+    const utilization = (projectedDiversity / designCapacity) * 100;
+    if (utilization > 90 && upgradeYear === 0) {
+      upgradeYear = year;
+      break;
     }
-    
-    report += `${'-'.repeat(100)}
+  }
 
-`;
+  report += `Recommendation:\n`;
+  if (upgradeYear === 0) {
+    report += ` • Sufficient capacity for >10 years of growth at ${(annualGrowthRate * 100).toFixed(0)}% annual rate\n`;
+    report += ` • Continue monitoring load trends annually\n`;
+    report += ` • Re-evaluate if growth rate exceeds ${(annualGrowthRate * 100).toFixed(0)}%\n`;
+  } else {
+    report += ` • Monitor load growth annually\n`;
+    report += ` • Plan capacity upgrade by Year ${upgradeYear} (${new Date().getFullYear() + upgradeYear})\n`;
+    report += ` • Estimated upgrade cost: $75K-$150K (transformer/cable upsizing)\n`;
+    report += ` • Consider upgrade during scheduled maintenance outage\n`;
+  }
 
-    let upgradeYear = 0;
-    for (let year = 1; year <= 10; year++) {
-        const projectedDiversity = totalDiversity * Math.pow(1 + annualGrowthRate, year);
-        const utilization = (projectedDiversity / designCapacity) * 100;
-        if (utilization > 90 && upgradeYear === 0) {
-            upgradeYear = year;
-            break;
-        }
-    }
+  // Buffer statement aligned to operating load at entry buses
+  const operatingBufferPercent = (((designCapacity - systemOperatingA) / designCapacity) * 100);
+  report += ` • Diversity factors provide ${operatingBufferPercent.toFixed(1)}% buffer for unexpected growth\n`;
+  report += ` • System designed conservatively (125% of FLC) ensures adequate margin\n\n`;
 
-    report += `Recommendation:\n`;
-    if (upgradeYear === 0) {
-        report += `  • Sufficient capacity for >10 years of growth at ${(annualGrowthRate*100).toFixed(0)}% annual rate\n`;
-        report += `  • Continue monitoring load trends annually\n`;
-        report += `  • Re-evaluate if growth rate exceeds ${(annualGrowthRate*100).toFixed(0)}%\n`;
-    } else {
-        report += `  • Monitor load growth annually\n`;
-        report += `  • Plan capacity upgrade by Year ${upgradeYear} (${new Date().getFullYear() + upgradeYear})\n`;
-        report += `  • Estimated upgrade cost: $75K-150K (transformer/cable upsizing)\n`;
-        report += `  • Consider upgrade during scheduled maintenance outage\n`;
-    }
-    
-    report += `  • Diversity factors provide ${spareCapacityPercent.toFixed(1)}% buffer for unexpected growth\n`;
-    report += `  • System designed conservatively (125% of FLC) ensures adequate margin\n\n`;
-
-    return report;
+  return report;
 }
+
+
 
 /**
  * Generate Risk Analysis (maintained from v1.4.0)
