@@ -837,6 +837,13 @@ function loadAutoSavedProject() {
             updateBusesContent();
             
             console.log('✅ Auto-saved project restored');
+
+            try {
+              // Signal to the app that project restoration completed so other modules (diagnostic, UI) can react.
+              window.dispatchEvent(new Event('project:restored'));
+            } catch (e) {
+              console.warn('Could not dispatch project:restored event', e);
+            }
             
             return true;
         }
