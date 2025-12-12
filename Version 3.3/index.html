@@ -8,30 +8,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="css/styles.css" rel="stylesheet"/>
 </head>
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- PERMANENT FIX: Voltage Drop Compatibility Patch -->
-<!-- Issue #6: Ensures both property names work -->
-<!-- Date: 2025-11-01 by bfforex -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<script>
-if (window.calculateVoltageDrop) {
-    const original = window.calculateVoltageDrop;
-    window.calculateVoltageDrop = function(busId, path, loadFlowData) {
-        const result = original(busId, path, loadFlowData);
-        if (result) {
-            // Ensure both property name variants exist
-            if (result.totalDropPercent !== undefined && !result.cumulativeDropPercent) {
-                result.cumulativeDropPercent = result.totalDropPercent;
-            }
-            if (result.totalDropVolts !== undefined && !result.cumulativeDropVolts) {
-                result.cumulativeDropVolts = result.totalDropVolts;
-            }
-        }
-        return result;
-    };
-    console.log('✅ Voltage drop compatibility patch loaded');
-}
-</script>
 <body>
 <div class="auto-save-indicator" id="autoSaveIndicator">✓ Auto-saved</div>
 <div class="container">
@@ -591,6 +567,81 @@ if (window.calculateVoltageDrop) {
 <!-- Protection Device Ratings Module -->
 <script src="js/protectionDeviceRatings.js"></script>
 <script src="js/voltageDropCalc.js"></script>
+
+<!-- Deferred Voltage Drop Compatibility Patch
+     This patch is non-destructive and will attempt to wrap the
+     calculateVoltageDrop implementation once it becomes available.
+     Placing here (after voltageDropCalc.js) ensures better chances
+     that the original function is defined before patching.
+-->
+<script>
+(function patchVoltageDropCompatibility() {
+    function applyPatch() {
+        try {
+            if (typeof calculateVoltageDrop !== 'function') {
+                return false;
+            }
+
+            if (calculateVoltageDrop.__isCompatibilityPatched) {
+                console.log('✅ Voltage drop compatibility patch already applied');
+                return true;
+            }
+
+            const original = calculateVoltageDrop;
+            function wrappedCalculateVoltageDrop(busId, path, loadFlowData) {
+                const result = original(busId, path, loadFlowData);
+                try {
+                    if (result) {
+                        if (result.totalDropPercent !== undefined && result.cumulativeDropPercent === undefined) {
+                            result.cumulativeDropPercent = result.totalDropPercent;
+                        }
+                        if (result.totalDropVolts !== undefined && result.cumulativeDropVolts === undefined) {
+                            result.cumulativeDropVolts = result.totalDropVolts;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Voltage drop compatibility wrapper internal error', e);
+                }
+                return result;
+            }
+
+            wrappedCalculateVoltageDrop.__isCompatibilityPatched = true;
+            wrappedCalculateVoltageDrop.__original = original;
+
+            try {
+                // eslint-disable-next-line no-global-assign
+                calculateVoltageDrop = wrappedCalculateVoltageDrop;
+            } catch (assignError) {
+                window.calculateVoltageDropWrapped = wrappedCalculateVoltageDrop;
+                console.warn('Could not reassign calculateVoltageDrop; provided alias calculateVoltageDropWrapped instead', assignError);
+            }
+
+            console.log('✅ Voltage drop compatibility patch applied');
+            return true;
+        } catch (err) {
+            console.warn('Voltage drop compatibility patch attempt failed:', err);
+            return false;
+        }
+    }
+
+    if (applyPatch()) {
+        return;
+    }
+
+    const maxAttempts = 50;
+    let attempts = 0;
+    const handle = setInterval(() => {
+        attempts++;
+        if (applyPatch() || attempts >= maxAttempts) {
+            clearInterval(handle);
+            if (attempts >= maxAttempts && typeof calculateVoltageDrop !== 'function') {
+                console.warn('Voltage drop function not found after retries — compatibility patch was not applied.');
+            }
+        }
+    }, 100);
+})();
+</script>
+
 <script src="js/shortCircuitCalc.js"></script>
 <script src="js/loadFlowCalc.js"></script>
 <!-- Arc Flash Analysis -->
@@ -633,16 +684,6 @@ if (window.calculateVoltageDrop) {
 <script src="js/arcFlashEngine.js"></script>
 <script src="js/scenarioManager.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!-- LAYER 10.6: VERSION 3.4.0 SPRINT 1-2 ENHANCEMENTS -->
-<!-- Added: 2025-12-05 by bfforex -->
-<!-- Key improvements: ETAP-grade reporting, motor decay, -->
-<!-- enhanced diversity, transformer severity analysis -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-<script src="js/loadFlowAnalysis.js"></script>
-<script src="js/transformerAnalysisEngine.js"></script>
-<script src="js/motorContributionDecay.js"></script>
-<script src="js/enhancedDiversityFactors.js"></script>
-<!-- ═══════════════════════════════════════════════════════════ -->
 <!-- LAYER 11: PROJECT MANAGEMENT -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script src="js/projectManager.js"></script>
@@ -651,42 +692,43 @@ if (window.calculateVoltageDrop) {
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script src="js/main.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
-<!-- DIAGNOSTIC SCRIPT - Check module loading -->
+<!-- DIAGNOSTIC SCRIPT - Check module loading (deferred to window.load) -->
 <!-- Updated: 2025-11-01 09:42:15 UTC by bfforex -->
 <!-- Fixed: Correct variable names for diversity factors -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script>
+window.addEventListener('load', function () {
     console.log('\n' + '═'.repeat(80));
-    console.log('MODULE LOADING DIAGNOSTIC v2.1');
+    console.log('MODULE LOADING DIAGNOSTIC (deferred) v2.1');
     console.log('═'.repeat(80));
-    
+
     const requiredFunctions = {
         // Short Circuit Functions
         'calculateShortCircuit': typeof calculateShortCircuit !== 'undefined',
         'calculateShortCircuitPointToPoint': typeof calculateShortCircuitPointToPoint !== 'undefined',
         'calculateShortCircuitPerUnit': typeof calculateShortCircuitPerUnit !== 'undefined',
-        
+
         // Load Flow Functions
         'calculateLoadFlow': typeof calculateLoadFlow !== 'undefined',
         'calculateLoadFlowWithDemand': typeof calculateLoadFlowWithDemand !== 'undefined',
         'applyDemandFactorsToLoadFlow': typeof applyDemandFactorsToLoadFlow !== 'undefined',
-        
+
         // Voltage Drop Functions
-        'calculateVoltageDrop': typeof calculateVoltageDrop !== 'undefined',
-        
+        'calculateVoltageDrop': typeof calculateVoltageDrop !== 'undefined' || typeof calculateVoltageDropWrapped !== 'undefined',
+
         // Motor Contribution Functions
         'calculateMotorContribution': typeof calculateMotorContribution !== 'undefined',
         'calculateTotalMotorContribution': typeof calculateTotalMotorContribution !== 'undefined',
         'combineSystemAndMotorFault': typeof combineSystemAndMotorFault !== 'undefined',
         'combineMotorWithSystem': typeof combineMotorWithSystem !== 'undefined',
-        
+
         // Calculation Coordinator
         'calculateBus': typeof calculateBus !== 'undefined',
         'calculateAllBuses': typeof calculateAllBuses !== 'undefined',
-        
+
         // Display Functions
         'displayCalculationResults': typeof displayCalculationResults !== 'undefined',
-        
+
         // Demand & Diversity Factors (CORRECTED)
         'DIVERSITY_FACTORS': typeof window.DIVERSITY_FACTORS !== 'undefined',
         'DEMAND_FACTORS': typeof window.DEMAND_FACTORS !== 'undefined',
@@ -695,22 +737,22 @@ if (window.calculateVoltageDrop) {
         'calculateDiversifiedLoad': typeof window.calculateDiversifiedLoad === 'function',
         'getDiversityFactorForBus': typeof getDiversityFactorForBus !== 'undefined'
     };
-    
+
     let allLoaded = true;
     let criticalMissing = [];
-    
+
     for (const [funcName, isLoaded] of Object.entries(requiredFunctions)) {
         const status = isLoaded ? '✅' : '❌';
         console.log(`${status} ${funcName}: ${isLoaded ? 'LOADED' : 'MISSING'}`);
-        
+
         if (!isLoaded) {
             allLoaded = false;
             criticalMissing.push(funcName);
         }
     }
-    
+
     console.log('═'.repeat(80));
-    
+
     if (allLoaded) {
         console.log('✅ ALL MODULES LOADED SUCCESSFULLY');
         console.log('✅ Feature #1: Motor Contribution - READY');
@@ -724,34 +766,39 @@ if (window.calculateVoltageDrop) {
         console.error('   Check browser console for JavaScript errors');
         console.error('   Verify all .js files are accessible');
     }
-    
+
     console.log('═'.repeat(80) + '\n');
-    
+
     // Additional system checks
-    console.log('SYSTEM HEALTH CHECK:');
-    console.log('  - buses array:', Array.isArray(buses) ? `✅ (${buses.length} buses)` : '❌ Not initialized');
-    console.log('  - components array:', Array.isArray(components) ? `✅ (${components.length} components)` : '❌ Not initialized');
-    console.log('  - SQRT3 constant:', typeof SQRT3 !== 'undefined' ? `✅ (${SQRT3.toFixed(4)})` : '❌ Missing');
-    console.log('  - CABLE_IMPEDANCE_DATA:', typeof CABLE_IMPEDANCE_DATA !== 'undefined' ? '✅ Loaded' : '❌ Missing');
-    
-    // Diversity Factors Check
-    if (typeof window.DIVERSITY_FACTORS !== 'undefined') {
-        console.log('  - DIVERSITY_FACTORS:', '✅ Loaded');
-        console.log('    - Motors:', typeof window.DIVERSITY_FACTORS.motors !== 'undefined' ? '✅' : '❌');
-        console.log('    - Welding:', typeof window.DIVERSITY_FACTORS.welding !== 'undefined' ? '✅' : '❌');
-        console.log('    - LNG Plant:', typeof window.DIVERSITY_FACTORS.lng_plant !== 'undefined' ? '✅' : '❌');
-        console.log('    - Fabrication Yard:', typeof window.DIVERSITY_FACTORS.fabrication_yard !== 'undefined' ? '✅' : '❌');
-    } else {
-        console.log('  - DIVERSITY_FACTORS:', '❌ Not loaded');
+    try {
+        console.log('SYSTEM HEALTH CHECK:');
+        console.log('  - buses array:', Array.isArray(buses) ? `✅ (${buses.length} buses)` : '❌ Not initialized');
+        console.log('  - components array:', Array.isArray(components) ? `✅ (${components.length} components)` : '❌ Not initialized');
+        console.log('  - SQRT3 constant:', typeof SQRT3 !== 'undefined' ? `✅ (${Number(SQRT3).toFixed(4)})` : '❌ Missing');
+        console.log('  - CABLE_IMPEDANCE_DATA:', typeof CABLE_IMPEDANCE_DATA !== 'undefined' ? '✅ Loaded' : '❌ Missing');
+
+        // Diversity Factors Check
+        if (typeof window.DIVERSITY_FACTORS !== 'undefined') {
+            console.log('  - DIVERSITY_FACTORS:', '✅ Loaded');
+            console.log('    - Motors:', typeof window.DIVERSITY_FACTORS.motors !== 'undefined' ? '✅' : '❌');
+            console.log('    - Welding:', typeof window.DIVERSITY_FACTORS.welding !== 'undefined' ? '✅' : '❌');
+            console.log('    - LNG Plant:', typeof window.DIVERSITY_FACTORS.lng_plant !== 'undefined' ? '✅' : '❌');
+            console.log('    - Fabrication Yard:', typeof window.DIVERSITY_FACTORS.fabrication_yard !== 'undefined' ? '✅' : '❌');
+        } else {
+            console.log('  - DIVERSITY_FACTORS:', '❌ Not loaded');
+        }
+
+        if (typeof window.DEMAND_FACTORS !== 'undefined') {
+            console.log('  - DEMAND_FACTORS:', '✅ Loaded');
+        } else {
+            console.log('  - DEMAND_FACTORS:', '❌ Not loaded');
+        }
+    } catch (e) {
+        console.warn('Diagnostic system checks encountered an error:', e);
     }
-    
-    if (typeof window.DEMAND_FACTORS !== 'undefined') {
-        console.log('  - DEMAND_FACTORS:', '✅ Loaded');
-    } else {
-        console.log('  - DEMAND_FACTORS:', '❌ Not loaded');
-    }
-    
+
     console.log('');
+});
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -768,255 +815,248 @@ function calculateSystemDemand() {
     console.log('🏭 Starting System-Wide Maximum Demand Calculation...');
     console.log('Date/Time: 2025-11-05 02:13:18 UTC');
     console.log('User: bfforex');
-    
+
     try {
-        // ═══════════════════════════════════════════════════════════════
-        // IDENTIFY SUBSTATIONS BY LVSG (LOW VOLTAGE SWITCHGEAR)
-        // 
-        // System Architecture:
-        //   Each substation contains:
-        //     - MVSG (LCxx1-1) at 13.8kV (Medium Voltage Switchgear)
-        //     - Distribution Transformer (13.8kV → 440V)
-        //     - LVSG (LCxx1-4) at 440V (Low Voltage Switchgear)
-        //     - Connected loads (shops, panels, MCCs, motors)
-        //
-        // Strategy:
-        //   Calculate system MD based on LVSG buses (LCxx1-4) because:
-        //   - All substation loads connect to LVSG
-        //   - Load flow at LVSG captures full substation demand
-        //   - Transformer automatically reflects load to MV side
-        //   - No double-counting
-        //
-        // Updated: 2025-11-05 02:15:00 UTC by bfforex
-        // ═══════════════════════════════════════════════════════════════
-        
         console.log('📊 Identifying substations by LVSG (Low Voltage Switchgear)...');
-        
+
         // Step 1: Find all transformers (they define substation boundaries)
-        const transformers = components.filter(c => c.type === 'transformer');
+        const transformers = Array.isArray(components) ? components.filter(c => c.type === 'transformer') : [];
         console.log('📊 Total transformers found:', transformers.length);
-        
+
         // Step 2: Get LVSG buses (secondary side of transformers)
-        //         These are the LCxx1-4 buses (440V side)
-        const lvsgBusIds = transformers.map(t => t.toBus);
+        const lvsgBusIds = transformers.map(t => t.toBus).filter(Boolean);
         console.log('📊 LVSG buses (transformer secondary sides):', lvsgBusIds.length);
-        
+
         // Step 3: Filter to get actual LVSG buses (should be distribution/branch type)
-        const lvsgBuses = buses.filter(b => lvsgBusIds.includes(b.id));
-        
-        console.log('📊 LVSG buses identified:', 
-            lvsgBuses.map(b => ({
-                name: b.name,
-                type: b.type,
-                voltage: b.voltage,
-                id: b.id
-            }))
-        );
-        
+        const lvsgBuses = Array.isArray(buses) ? buses.filter(b => lvsgBusIds.includes(b.id)) : [];
+
+        console.log('📊 LVSG buses identified:', lvsgBuses.map(b => ({
+            name: b.name,
+            type: b.type,
+            voltage: b.voltage,
+            id: b.id
+        })));
+
         // Step 4: Get corresponding MVSG and transformer details for each substation
         console.log('\n📊 SUBSTATION DETAILS:');
         const substationDetails = lvsgBuses.map(lvsg => {
-            // Find the transformer feeding this LVSG
             const xfmr = transformers.find(t => t.toBus === lvsg.id);
-            
-            // Find the MVSG (fromBus of transformer)
             const mvsg = xfmr ? buses.find(b => b.id === xfmr.fromBus) : null;
-            
             const detail = {
-                substationName: lvsg.name.replace('-4', ''), // LCJ1-4 → LCJ1
+                substationName: (lvsg && lvsg.name) ? lvsg.name.replace(/-4$/, '') : 'Unknown',
                 mvsg: mvsg ? mvsg.name : 'Unknown',
-                mvsgVoltage: xfmr ? xfmr.primary : 0,
-                transformer: xfmr ? `${xfmr.rating} kVA` : 'None',
-                lvsg: lvsg.name,
-                lvsgVoltage: xfmr ? xfmr.secondary : lvsg.voltage,
-                lvsgId: lvsg.id
+                mvsgVoltage: xfmr && xfmr.primary ? xfmr.primary : 0,
+                transformer: xfmr ? `${xfmr.rating || xfmr.kva || xfmr.size || 'unknown'} kVA` : 'None',
+                lvsg: lvsg ? lvsg.name : 'Unknown',
+                lvsgVoltage: xfmr && xfmr.secondary ? xfmr.secondary : (lvsg ? lvsg.voltage : 0),
+                lvsgId: lvsg ? lvsg.id : null
             };
-            
+
             console.log(`   ${detail.substationName}:`);
             console.log(`      MVSG: ${detail.mvsg} (${detail.mvsgVoltage}V)`);
             console.log(`      Transformer: ${detail.transformer}`);
             console.log(`      LVSG: ${detail.lvsg} (${detail.lvsgVoltage}V) ← Calculate MD here`);
-            
+
             return detail;
         });
-        
+
         // Step 5: The substations for system calculation are the LVSG buses
         const substationBuses = lvsgBuses;
-        
+
         // Step 6: Identify other buses (not substations)
-        const allBuses = buses.filter(b => b.type === 'distribution' || b.type === 'branch');
+        const allBuses = Array.isArray(buses) ? buses.filter(b => b.type === 'distribution' || b.type === 'branch') : [];
         const nonSubstationBuses = allBuses.filter(b => !lvsgBusIds.includes(b.id));
-        
+
         if (nonSubstationBuses.length > 0) {
             console.log('\nℹ️ Other buses (not LVSG, excluded from system calculation):');
             nonSubstationBuses.forEach(b => {
-                const feedingComp = components.find(c => c.toBus === b.id);
+                const feedingComp = Array.isArray(components) ? components.find(c => c.toBus === b.id) : null;
                 const parent = feedingComp ? buses.find(pb => pb.id === feedingComp.fromBus) : null;
                 console.log(`   - ${b.name} (${b.voltage}V) - fed from: ${parent ? parent.name : 'unknown'} via ${feedingComp ? feedingComp.type : 'unknown'}`);
             });
         }
-        
+
         // ═══════════════════════════════════════════════════════════════
         // VALIDATION CHECKS
-        // ═══════════════════════════════════════════════════════════════
-        
+        // ═════════════════════════════════════════════════════════════==
         if (substationBuses.length === 0) {
-            alert('⚠️ No substations found.\n\n' +
-                  'Substations are identified by their LVSG (Low Voltage Switchgear) buses.\n' +
-                  'These are the secondary side of distribution transformers (e.g., LCxx1-4).\n\n' +
-                  'Current system has:\n' +
-                  '  • ' + transformers.length + ' transformer(s)\n' +
-                  '  • ' + allBuses.length + ' distribution/branch bus(es)\n' +
-                  '  • 0 LVSG buses identified\n\n' +
-                  'Please check:\n' +
-                  '1. Distribution transformers are defined with type="transformer"\n' +
-                  '2. Transformers have secondary buses (LVSG)\n' +
-                  '3. System topology matches: MVSG → Transformer → LVSG → Loads');
+            // Use non-blocking UI feedback if possible; fallback to alert
+            const resultDiv = document.getElementById('resultsContainer');
+            const msg = [
+                '⚠️ No substations found.',
+                'Substations are identified by their LVSG (Low Voltage Switchgear) buses.',
+                'These are the secondary side of distribution transformers (e.g., LCxx1-4).',
+                '',
+                `Current system has: • ${transformers.length} transformer(s) • ${allBuses.length} distribution/branch bus(es) • 0 LVSG buses identified`,
+                '',
+                'Please check:',
+                '  1. Distribution transformers are defined with type="transformer"',
+                '  2. Transformers have secondary buses (LVSG)',
+                '  3. System topology matches: MVSG → Transformer → LVSG → Loads'
+            ].join('\n');
+
+            if (resultDiv) {
+                resultDiv.innerHTML = `<div class="alert alert-warning" style="white-space: pre-wrap;">${escapeHtml(msg)}</div>`;
+            } else {
+                alert(msg);
+            }
             return;
         }
-        
+
         if (substationBuses.length < 2) {
-            const msg = '⚠️ System calculation requires at least 2 substations.\n\n' +
-                       'You currently have ' + substationBuses.length + ' substation:\n' +
-                       '  • ' + substationDetails[0].substationName + ' (LVSG: ' + substationDetails[0].lvsg + ')\n\n';
-            
-            alert(msg + 
-                  'Each substation should have:\n' +
-                  '  - MVSG (Medium Voltage Switchgear)\n' +
-                  '  - Distribution Transformer\n' +
-                  '  - LVSG (Low Voltage Switchgear)\n\n' +
-                  'Add more substations to perform system-wide diversity analysis.');
+            const detail = substationDetails[0] || { substationName: 'Unknown', lvsg: 'Unknown' };
+            const msg = `⚠️ System calculation requires at least 2 substations.\n\nYou currently have ${substationBuses.length} substation:\n  • ${detail.substationName} (LVSG: ${detail.lvsg})\n\nEach substation should have:\n  - MVSG (Medium Voltage Switchgear)\n  - Distribution Transformer\n  - LVSG (Low Voltage Switchgear)\n\nAdd more substations to perform system-wide diversity analysis.`;
+
+            const resultDiv = document.getElementById('resultsContainer');
+            if (resultDiv) {
+                resultDiv.innerHTML = `<div class="alert alert-warning" style="white-space: pre-wrap;">${escapeHtml(msg)}</div>`;
+            } else {
+                alert(msg);
+            }
             return;
         }
-        
+
         // Get custom diversity factor if specified
         const customDFInput = document.getElementById('customSystemDF');
         const customDF = customDFInput && customDFInput.value ? parseFloat(customDFInput.value) : null;
-        
+
         if (customDF !== null && (customDF < 1.0 || customDF > 2.0)) {
-            alert('⚠️ Invalid Diversity Factor\n\n' +
-                  'System diversity factor must be between 1.0 and 2.0\n' +
-                  '(Typical range: 1.3 to 1.6 for industrial facilities)\n\n' +
-                  'Current value: ' + customDF);
+            alert('⚠️ Invalid Diversity Factor\n\nSystem diversity factor must be between 1.0 and 2.0\n\nCurrent value: ' + customDF);
             return;
         }
-        
+
         // Validate that calculateSystemMaximumDemand function exists
         if (typeof calculateSystemMaximumDemand !== 'function') {
-            alert('❌ Error: System calculation function not loaded.\n\n' +
-                  'The required module (loadFlowCalc.js) may not have loaded correctly.\n' +
-                  'Please refresh the page and try again.\n\n' +
-                  'If the problem persists, check the browser console for errors.');
+            alert('❌ Error: System calculation function not loaded.\n\nThe required module (loadFlowCalc.js) may not have loaded correctly.\nPlease refresh the page and try again.');
             console.error('❌ calculateSystemMaximumDemand function not found');
-            console.error('   Check that js/loadFlowCalc.js has been modified correctly');
             return;
         }
-        
-        // Show loading indicator
+
+        // Show loading indicator (use inline SVG spinner for robust cross-browser animation)
         const resultDiv = document.getElementById('resultsContainer');
         if (resultDiv) {
             const substationNames = substationDetails.map(s => s.substationName).join(', ');
-            
-            resultDiv.innerHTML = 
-                '<div style="text-align: center; padding: 60px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; color: white;">' +
-                '<h2 style="margin: 0 0 20px 0; font-size: 28px;">⏳ Calculating System Maximum Demand...</h2>' +
-                '<p style="font-size: 16px; margin: 0 0 10px 0;">Analyzing ' + substationBuses.length + ' substations</p>' +
-                '<p style="font-size: 13px; margin: 0 0 15px 0; opacity: 0.9;">' + substationNames + '</p>' +
-                '<p style="font-size: 12px; margin: 0 0 15px 0; opacity: 0.8;">Calculating load flow at each LVSG (Low Voltage Switchgear)...</p>' +
-                '<div style="display: inline-block; width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>' +
-                '</div>' +
-                '<style>@keyframes spin { to { transform: rotate(360deg); } }</style>';
-            
-            // Switch to Results tab
-            const resultsTab = document.querySelector('[onclick*="results"]');
-            if (resultsTab) {
-                resultsTab.click();
+
+            resultDiv.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; color: white;">
+                    <h2 style="margin: 0 0 12px 0; font-size: 22px;">⏳ Calculating System Maximum Demand...</h2>
+                    <p style="font-size: 14px; margin: 0 0 6px 0;">Analyzing ${substationBuses.length} substations</p>
+                    <p style="font-size: 12px; margin: 0 0 12px 0; opacity: 0.95;">${escapeHtml(substationNames)}</p>
+                    <div style="display:inline-block; width: 56px; height: 56px; margin-top: 12px;">
+                        <!-- Inline SVG spinner -->
+                        <svg width="56" height="56" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="6"></circle>
+                            <path d="M45 25a20 20 0 0 1-20 20" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round">
+                                <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite"/>
+                            </path>
+                        </svg>
+                    </div>
+                </div>`;
+
+            // Switch to Results tab programmatically (if tab button exists)
+            const resultsTabButton = document.querySelector('.tab[onclick*="results"], .tab[onclick*="Results"]');
+            if (resultsTabButton) {
+                resultsTabButton.click();
             }
-            
+
+            // Smooth scroll to results
             resultDiv.scrollIntoView({ behavior: 'smooth' });
         }
-        
+
         // Extract LVSG bus IDs for calculation
         const substationIds = substationBuses.map(b => b.id);
-        
+
         console.log(`\n✅ Found ${substationIds.length} substations for system analysis`);
         console.log('📋 Calculating MD at LVSG buses:', substationBuses.map(b => b.name).join(', '));
-        
-        // Perform calculation with a small delay to show loading animation
+
+        // Perform calculation after a short delay to allow UI to render
         setTimeout(() => {
             try {
                 const options = {
                     facilityType: 'heavy_fabrication_yard',
                     includeDetailedSteps: true
                 };
-                
+
                 if (customDF !== null) {
                     options.systemDiversityFactor = customDF;
                     console.log(`Using custom system DF: ${customDF}`);
                 } else {
                     console.log('Using automatic system DF based on substation count');
                 }
-                
+
                 const result = calculateSystemMaximumDemand(substationIds, options);
-                
+
                 // Enhance result with substation details
-                result.substations.forEach((sub, idx) => {
-                    const detail = substationDetails.find(d => d.lvsgId === sub.busId);
-                    if (detail) {
-                        sub.substationName = detail.substationName;
-                        sub.mvsg = detail.mvsg;
-                        sub.lvsg = detail.lvsg;
-                        sub.transformer = detail.transformer;
+                if (result && Array.isArray(result.substations)) {
+                    result.substations.forEach((sub) => {
+                        const detail = substationDetails.find(d => d.lvsgId === sub.busId);
+                        if (detail) {
+                            sub.substationName = detail.substationName;
+                            sub.mvsg = detail.mvsg;
+                            sub.lvsg = detail.lvsg;
+                            sub.transformer = detail.transformer;
+                        }
+                    });
+                }
+
+                // Display results (assumes displaySystemMaximumDemandResults is defined)
+                if (typeof displaySystemMaximumDemandResults === 'function') {
+                    displaySystemMaximumDemandResults(result);
+                } else {
+                    // Fallback: render a simple summary if display function is missing
+                    if (resultDiv) {
+                        const totalMD = result && result.totalSystemMD ? result.totalSystemMD : 'n/a';
+                        const reduction = result && result.currentReductionPercent ? result.currentReductionPercent : 0;
+                        resultDiv.innerHTML = `<div class="results-section"><h4>System Maximum Demand</h4><p>Total System MD: <strong>${escapeHtml(String(totalMD))}</strong> A</p><p>Reduction: <strong>${escapeHtml(String(reduction))}</strong> %</p></div>`;
                     }
-                });
-                
-                // Display results
-                displaySystemMaximumDemandResults(result);
-                
+                }
+
                 console.log('✅ System calculation complete');
-                console.log('   Total System MD:', result.totalSystemMD.toFixed(2), 'A');
-                console.log('   Reduction:', result.currentReductionPercent.toFixed(1), '%');
-                
+                if (result && result.totalSystemMD) {
+                    console.log('   Total System MD:', Number(result.totalSystemMD).toFixed(2), 'A');
+                }
+                if (result && typeof result.currentReductionPercent !== 'undefined') {
+                    console.log('   Reduction:', Number(result.currentReductionPercent).toFixed(1), '%');
+                }
+
             } catch (calcError) {
                 console.error('❌ Error during calculation:', calcError);
-                console.error('Stack trace:', calcError.stack);
-                
                 if (resultDiv) {
-                    resultDiv.innerHTML = 
-                        '<div style="color: #d32f2f; padding: 30px; background: #ffebee; border-radius: 8px; border-left: 5px solid #d32f2f;">' +
-                        '<h3 style="margin-top: 0;">❌ Calculation Error</h3>' +
-                        '<p><strong>Error:</strong> ' + calcError.message + '</p>' +
-                        '<p>Please check:</p>' +
-                        '<ul style="text-align: left;">' +
-                        '<li>All LVSG buses (LCxx1-4) have loads connected</li>' +
-                        '<li>Load flow calculations can run for each substation</li>' +
-                        '<li>Transformers are properly configured</li>' +
-                        '<li>Browser console for detailed error messages</li>' +
-                        '</ul>' +
-                        '<button class="btn btn-secondary" onclick="location.reload()">Refresh Page</button>' +
-                        '</div>';
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger" style="padding: 20px;">
+                            <h3 style="margin-top: 0;">❌ Calculation Error</h3>
+                            <p><strong>Error:</strong> ${escapeHtml(calcError && calcError.message ? calcError.message : 'Unknown error')}</p>
+                            <p>Please check:</p>
+                            <ul style="text-align: left;">
+                                <li>All LVSG buses (LCxx1-4) have loads connected</li>
+                                <li>Load flow calculations can run for each substation</li>
+                                <li>Transformers are properly configured</li>
+                                <li>Open the browser console for detailed error messages</li>
+                            </ul>
+                            <button class="btn btn-secondary" onclick="location.reload()">Refresh Page</button>
+                        </div>`;
+                } else {
+                    alert('❌ Calculation Error\n\n' + (calcError && calcError.message ? calcError.message : 'Unknown error') + '\n\nCheck console for details.');
                 }
-                
-                alert('❌ Calculation Error\n\n' + calcError.message + '\n\nCheck console for details.');
             }
-        }, 500); // 500ms delay for smooth UX
-        
-    } catch (error) {
-        console.error('❌ Error in system calculation setup:', error);
-        console.error('Stack trace:', error.stack);
-        alert('❌ Setup Error\n\n' + error.message + '\n\nCheck console for details.');
-        
-        const resultDiv = document.getElementById('resultsContainer');
-        if (resultDiv) {
-            resultDiv.innerHTML = 
-                '<div style="color: red; padding: 20px; background: #ffebee; border-radius: 5px;">' +
-                '<h3>❌ Error</h3>' +
-                '<p>' + error.message + '</p>' +
-                '<pre style="background: white; padding: 10px; overflow-x: auto; font-size: 12px;">' + 
-                error.stack + 
-                '</pre>' +
-                '</div>';
-        }
+        }, 120); // small delay to allow UI update
+
+    } catch (err) {
+        console.error('❌ Unexpected error in calculateSystemDemand:', err);
+        alert('Unexpected error: ' + (err && err.message ? err.message : String(err)));
+    }
+
+    // -----------------------------
+    // Helper: simple HTML-escape for inserted content
+    // -----------------------------
+    function escapeHtml(str) {
+        if (str === null || str === undefined) { return ''; }
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 }
 
@@ -1029,58 +1069,57 @@ function displaySystemMaximumDemandResults(result) {
         console.error('❌ Results container not found');
         return;
     }
-    
+
     let html = '';
-    
+
     // Header Card
     html += '<div class="calculation-result" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">';
     html += '<h2 style="margin: 0 0 10px 0; font-size: 32px;">🏭 SYSTEM-WIDE MAXIMUM DEMAND</h2>';
     html += '<p style="margin: 0; opacity: 0.95; font-size: 16px;">Hierarchical Level 2 Analysis - IEEE 141-1993 Red Book</p>';
     html += '<p style="margin: 5px 0 0 0; opacity: 0.85; font-size: 13px;">Calculation Date: ' + result.calculationDate + '</p>';
     // ✅ DYNAMIC: Show detected system voltage
- const systemVoltage = result.substations[0]?.primaryVoltage || 'Unknown'; 
- const voltages = [...new Set(result.substations.map(s => s.primaryVoltage))];
- const voltageDisplay = voltages.length === 0 
-             ? 'Unknown (no substations)'
-     : voltages.length === 1
-                     ? `${voltages[0]}V`
-                      : `${voltages.join('V, ')}V (mixed)`;
- html += '<p style="margin: 5px 0 0 0; opacity: 0.85; font-size: 13px;">';
- html += 'System Primary Voltage: ' + voltageDisplay;
- if (voltages.length > 1) {
-     html += ' ⚠️ (calculations use individual voltages)';
-   }
- html += '</p>';
-   html += '</div>';
-    
+    const voltages = Array.isArray(result.substations) ? [...new Set(result.substations.map(s => s.primaryVoltage).filter(Boolean))] : [];
+    const voltageDisplay = voltages.length === 0
+        ? 'Unknown (no substations)'
+        : voltages.length === 1
+            ? `${voltages[0]}V`
+            : `${voltages.join('V, ')}V (mixed)`;
+    html += '<p style="margin: 5px 0 0 0; opacity: 0.85; font-size: 13px;">';
+    html += 'System Primary Voltage: ' + voltageDisplay;
+    if (voltages.length > 1) {
+        html += ' ⚠️ (calculations use individual voltages)';
+    }
+    html += '</p>';
+    html += '</div>';
+
     // Summary Cards Grid
     html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px;">';
-    
+
     // Card 1: Substations
     html += '<div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 20px; border-radius: 10px; border-left: 5px solid #4caf50; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
     html += '<h4 style="margin: 0 0 10px 0; color: #2e7d32; font-size: 14px;">📊 Substations Analyzed</h4>';
-    html += '<p style="font-size: 36px; font-weight: bold; margin: 0; color: #1b5e20;">' + result.substationCount + '</p>';
+    html += '<p style="font-size: 36px; font-weight: bold; margin: 0; color: #1b5e20;">' + (result.substationCount || (result.substations ? result.substations.length : 0)) + '</p>';
     html += '<p style="font-size: 12px; margin: 5px 0 0 0; color: #558b2f;">Distribution & branch buses</p>';
     html += '</div>';
-    
+
     // Card 2: Total System MD
     html += '<div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
     html += '<h4 style="margin: 0 0 10px 0; color: #e65100; font-size: 14px;">⚡ Total System MD</h4>';
-    html += '<p style="font-size: 32px; font-weight: bold; margin: 0; color: #bf360c;">' + result.totalSystemMD.toFixed(2) + ' A</p>';
-    html += '<p style="font-size: 14px; margin: 5px 0 0 0; color: #e65100; font-weight: 600;">' + result.totalSystemPowerKVA.toFixed(2) + ' kVA</p>';
+    html += '<p style="font-size: 32px; font-weight: bold; margin: 0; color: #bf360c;">' + (Number(result.totalSystemMD || 0).toFixed(2)) + ' A</p>';
+    html += '<p style="font-size: 14px; margin: 5px 0 0 0; color: #e65100; font-weight: 600;">' + (Number(result.totalSystemPowerKVA || 0).toFixed(2)) + ' kVA</p>';
     html += '</div>';
-    
+
     // Card 3: Load Reduction
     html += '<div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 20px; border-radius: 10px; border-left: 5px solid #2196f3; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
     html += '<h4 style="margin: 0 0 10px 0; color: #0d47a1; font-size: 14px;">📉 Load Reduction</h4>';
-    html += '<p style="font-size: 32px; font-weight: bold; margin: 0; color: #1565c0;">' + result.currentReductionPercent.toFixed(1) + '%</p>';
-    html += '<p style="font-size: 14px; margin: 5px 0 0 0; color: #1976d2;">' + result.currentReduction.toFixed(2) + ' A saved</p>';
+    html += '<p style="font-size: 32px; font-weight: bold; margin: 0; color: #1565c0;">' + (Number(result.currentReductionPercent || 0).toFixed(1)) + '%</p>';
+    html += '<p style="font-size: 14px; margin: 5px 0 0 0; color: #1976d2;">' + (Number(result.currentReduction || 0).toFixed(2)) + ' A saved</p>';
     html += '</div>';
-    
+
     // Card 4: System DF
     html += '<div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); padding: 20px; border-radius: 10px; border-left: 5px solid #9c27b0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
     html += '<h4 style="margin: 0 0 10px 0; color: #4a148c; font-size: 14px;">🔢 System DF</h4>';
-    html += '<p style="font-size: 36px; font-weight: bold; margin: 0; color: #6a1b9a;">' + result.systemDiversityFactor.toFixed(3) + '</p>';
+    html += '<p style="font-size: 36px; font-weight: bold; margin: 0; color: #6a1b9a;">' + (Number(result.systemDiversityFactor || 1).toFixed(3)) + '</p>';
     html += '<p style="font-size: 12px; margin: 5px 0 0 0; color: #7b1fa2;">';
     html += 'IEEE 141-1993 Table 3-5';
     if (result.systemDFSource) {
@@ -1090,9 +1129,9 @@ function displaySystemMaximumDemandResults(result) {
     }
     html += '</p>';
     html += '</div>';
-    
+
     html += '</div>';
-    
+
     // Substation Breakdown Table
     html += '<div class="result-section" style="margin-bottom: 25px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
     html += '<h3 style="color: #2c3e50; margin-top: 0;">📋 Individual Substation Maximum Demands (Level 1)</h3>';
@@ -1109,97 +1148,92 @@ function displaySystemMaximumDemandResults(result) {
     html += '<th style="padding: 12px 8px; text-align: right; font-weight: 600;">Power (kVA)</th>';
     html += '<th style="padding: 12px 8px; text-align: right; font-weight: 600;">DF</th>';
     html += '</tr></thead><tbody>';
-    
-    result.substations.forEach((sub, idx) => {
-                      const rowBg = idx % 2 === 0 ? '#f9f9f9' : 'white';
-    
-                      // ✅ ADD NULL SAFETY CHECKS
-                      const voltage = sub.voltage || sub.secondaryVoltage || 0;
-                      const connectedCurrent = sub.connectedCurrent || sub.connectedCurrent_Secondary || 0;
-                      const demandCurrent = sub.demandCurrent || sub.demandCurrent_Secondary || 0;
-                      const mdSecondary = sub.maxDemandCurrent_Secondary || sub.maxDemandCurrent || 0;
-                      const mdPrimary = sub.maxDemandCurrent_Primary || sub.maxDemandCurrent || 0;
-                      const powerKVA = sub.maxDemandPowerKVA || 0;
-                      const diversityFactor = sub.diversityFactor || 1.0;
-    
-                      html += '<tr style="background: ' + rowBg + '; border-bottom: 1px solid #e0e0e0;">';
-                      html += '<td style="padding: 12px 8px; font-weight: 600;">' + sub.index + '</td>';
-                      html += '<td style="padding: 12px 8px;"><strong>' + sub.busName + '</strong></td>';
-                      html += '<td style="padding: 12px 8px; text-align: right;">' + voltage + 'V</td>';
-                      html += '<td style="padding: 12px 8px; text-align: right;">' + connectedCurrent.toFixed(2) + '</td>';
-                      html += '<td style="padding: 12px 8px; text-align: right;">' + demandCurrent.toFixed(2) + '</td>';
-                      html += '<td style="padding: 12px 8px; text-align: right; color: #666;">' + mdSecondary.toFixed(2) + '</td>';
-                      html += '<td style="padding: 12px 8px; text-align: right; font-weight: bold; color: #ff6f00;">' + mdPrimary.toFixed(2) + '</td>';
-                      html += '<td style="padding: 12px 8px; text-align: right;">' + powerKVA.toFixed(2) + '</td>';
-                      html += '<td style="padding: 12px 8px; text-align: right; color: #7b1fa2; font-weight: 600;">' + diversityFactor.toFixed(3) + '</td>';
-                      html += '</tr>';
-                  });
-    
+
+    (Array.isArray(result.substations) ? result.substations : []).forEach((sub, idx) => {
+        const rowBg = idx % 2 === 0 ? '#f9f9f9' : 'white';
+
+        const voltage = sub.voltage || sub.secondaryVoltage || 0;
+        const connectedCurrent = sub.connectedCurrent || sub.connectedCurrent_Secondary || 0;
+        const demandCurrent = sub.demandCurrent || sub.demandCurrent_Secondary || 0;
+        const mdSecondary = sub.maxDemandCurrent_Secondary || sub.maxDemandCurrent || 0;
+        const mdPrimary = sub.maxDemandCurrent_Primary || sub.maxDemandCurrent || 0;
+        const powerKVA = sub.maxDemandPowerKVA || 0;
+        const diversityFactor = sub.diversityFactor || 1.0;
+
+        html += '<tr style="background: ' + rowBg + '; border-bottom: 1px solid #e0e0e0;">';
+        html += '<td style="padding: 12px 8px; font-weight: 600;">' + (sub.index || idx + 1) + '</td>';
+        html += '<td style="padding: 12px 8px;"><strong>' + (sub.busName || sub.substationName || 'Unnamed') + '</strong></td>';
+        html += '<td style="padding: 12px 8px; text-align: right;">' + voltage + 'V</td>';
+        html += '<td style="padding: 12px 8px; text-align: right;">' + Number(connectedCurrent).toFixed(2) + '</td>';
+        html += '<td style="padding: 12px 8px; text-align: right;">' + Number(demandCurrent).toFixed(2) + '</td>';
+        html += '<td style="padding: 12px 8px; text-align: right; color: #666;">' + Number(mdSecondary).toFixed(2) + '</td>';
+        html += '<td style="padding: 12px 8px; text-align: right; font-weight: bold; color: #ff6f00;">' + Number(mdPrimary).toFixed(2) + '</td>';
+        html += '<td style="padding: 12px 8px; text-align: right;">' + Number(powerKVA).toFixed(2) + '</td>';
+        html += '<td style="padding: 12px 8px; text-align: right; color: #7b1fa2; font-weight: 600;">' + Number(diversityFactor).toFixed(3) + '</td>';
+        html += '</tr>';
+    });
+
     // Totals row
+    const totalConnected = result.totalConnectedCurrent_Secondary ||
+        result.totalConnectedCurrent ||
+        (Array.isArray(result.substations) ? result.substations.reduce((sum, s) => sum + (s.connectedCurrent || 0), 0) : 0);
+
     html += '<tr style="background: #ecf0f1; font-weight: bold; border-top: 3px solid #2c3e50;">';
     html += '<td colspan="3" style="padding: 14px 8px; font-size: 15px;">TOTAL (Sum of MDs)</td>';
-
-    // ✅ NULL-SAFE: Use calculated value or fallback
-    const totalConnected = result.totalConnectedCurrent_Secondary || 
-                           result.totalConnectedCurrent || 
-                           result.substations.reduce((sum, s) => sum + (s.connectedCurrent || 0), 0);
-
-    html += '<td style="padding: 14px 8px; text-align: right;">' + totalConnected.toFixed(2) + '</td>';
+    html += '<td style="padding: 14px 8px; text-align: right;">' + Number(totalConnected).toFixed(2) + '</td>';
     html += '<td style="padding: 14px 8px; text-align: right;">—</td>';
     html += '<td style="padding: 14px 8px; text-align: right;">—</td>';
-    html += '<td style="padding: 14px 8px; text-align: right; color: #d32f2f; font-size: 16px;">' + (result.sumOfSubstationMDs || 0).toFixed(2) + '</td>';
-    html += '<td style="padding: 14px 8px; text-align: right; font-size: 15px;">' + (result.sumOfSubstationPowerKVA || 0).toFixed(2) + '</td>';
+    html += '<td style="padding: 14px 8px; text-align: right; color: #d32f2f; font-size: 16px;">' + (Number(result.sumOfSubstationMDs || 0).toFixed(2)) + '</td>';
+    html += '<td style="padding: 14px 8px; text-align: right; font-size: 15px;">' + (Number(result.sumOfSubstationPowerKVA || 0).toFixed(2)) + '</td>';
     html += '<td style="padding: 14px 8px; text-align: right;">—</td>';
     html += '</tr>';
-    
+
     html += '</tbody></table>';
     html += '</div>';
     html += '</div>';
-    
+
     // System Level Summary
     html += '<div style="background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%); padding: 25px; border-radius: 10px; border-left: 6px solid #fbc02d; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
     html += '<h3 style="margin-top: 0; color: #f57f17; font-size: 22px;">⚡ System-Level Calculation (Level 2)</h3>';
     html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 20px;">';
-    
+
     html += '<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
     html += '<p style="margin: 0 0 8px 0; color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;"><strong>Sum of Substation MDs:</strong></p>';
-    html += '<p style="font-size: 32px; margin: 0; color: #f57c00; font-weight: bold;">' + result.sumOfSubstationMDs.toFixed(2) + ' A</p>';
+    html += '<p style="font-size: 32px; margin: 0; color: #f57c00; font-weight: bold;">' + (Number(result.sumOfSubstationMDs || 0).toFixed(2)) + ' A</p>';
     html += '<p style="margin: 8px 0 0 0; color: #757575; font-size: 13px;">(If all substations peaked simultaneously)</p>';
     html += '</div>';
-    
+
     html += '<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
     html += '<p style="margin: 0 0 8px 0; color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;"><strong>System Diversity Factor:</strong></p>';
-    html += '<p style="font-size: 32px; margin: 0; color: #7b1fa2; font-weight: bold;">' + result.systemDiversityFactor.toFixed(3) + '</p>';
+    html += '<p style="font-size: 32px; margin: 0; color: #7b1fa2; font-weight: bold;">' + (Number(result.systemDiversityFactor || 1).toFixed(3)) + '</p>';
     html += '<p style="margin: 8px 0 0 0; color: #757575; font-size: 13px;">IEEE 141-1993 Table 3-5</p>';
     html += '</div>';
-    
+
     html += '</div>';
-    
+
     html += '<div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">';
     html += '<p style="margin: 0 0 10px 0; font-size: 16px; color: #424242;"><strong>📐 Formula:</strong></p>';
     html += '<p style="margin: 0; font-family: \'Courier New\', monospace; font-size: 18px; padding: 15px; background: #f5f5f5; border-radius: 5px; border-left: 4px solid #7b1fa2;">';
-    html += 'Total System MD = ' + result.sumOfSubstationMDs.toFixed(2) + ' A ÷ ' + result.systemDiversityFactor.toFixed(3);
-    html += ' = <span style="color: #d32f2f; font-weight: bold; font-size: 20px;">' + result.totalSystemMD.toFixed(2) + ' A</span>';
+    html += 'Total System MD = ' + (Number(result.sumOfSubstationMDs || 0).toFixed(2)) + ' A ÷ ' + (Number(result.systemDiversityFactor || 1).toFixed(3));
+    html += ' = <span style="color: #d32f2f; font-weight: bold; font-size: 20px;">' + (Number(result.totalSystemMD || 0).toFixed(2)) + ' A</span>';
     html += '</p>';
     html += '</div>';
     html += '</div>';
-    
+
     // Design Recommendations
     html += '<div style="background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%); padding: 25px; border-radius: 10px; margin-bottom: 25px; border-left: 6px solid #0288d1; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
     html += '<h3 style="margin-top: 0; color: #01579b; font-size: 22px;">🎯 Design Recommendations</h3>';
     html += '<ul style="line-height: 2; font-size: 15px; margin: 15px 0; padding-left: 25px; color: #263238;">';
-    // ✅ DYNAMIC: Get system voltage from result
-    const systemPrimaryVoltage = result.substations[0]?.primaryVoltage || 0;
-    html += '<li><strong>Main Utility Service:</strong> Size for <span style="color: #d32f2f; font-weight: bold;">' + result.totalSystemMD.toFixed(2) + ' A at ' + systemPrimaryVoltage + 'V</span> (not ' + result.sumOfSubstationMDs.toFixed(2) + ' A)</li>';
-    html += '<li><strong>Primary Switchgear:</strong> Minimum rating of ' + Math.ceil(result.totalSystemMD / 100) * 100 + ' A at ' + systemPrimaryVoltage + 'V</li>';
-    html += '<li><strong>Primary Switchgear:</strong> Minimum rating of ' + Math.ceil(result.totalSystemMD / 100) * 100 + ' A</li>';
-    html += '<li><strong>Utility Contract Capacity:</strong> Request <span style="color: #d32f2f; font-weight: bold;">' + result.totalSystemPowerKVA.toFixed(2) + ' kVA</span></li>';
+    const systemPrimaryVoltage = (Array.isArray(result.substations) && result.substations[0]) ? (result.substations[0].primaryVoltage || 0) : 0;
+    html += '<li><strong>Main Utility Service:</strong> Size for <span style="color: #d32f2f; font-weight: bold;">' + (Number(result.totalSystemMD || 0).toFixed(2)) + ' A at ' + systemPrimaryVoltage + 'V</span> (not ' + (Number(result.sumOfSubstationMDs || 0).toFixed(2)) + ' A)</li>';
+    html += '<li><strong>Primary Switchgear:</strong> Minimum rating of ' + (Math.ceil((result.totalSystemMD || 0) / 100) * 100) + ' A at ' + systemPrimaryVoltage + 'V</li>';
+    html += '<li><strong>Utility Contract Capacity:</strong> Request <span style="color: #d32f2f; font-weight: bold;">' + (Number(result.totalSystemPowerKVA || 0).toFixed(2)) + ' kVA</span></li>';
     html += '<li><strong>Individual Substations:</strong> Size transformers and equipment per Level 1 calculations above</li>';
-    html += '<li><strong>Estimated Monthly Savings:</strong> ~' + result.powerReductionKVA.toFixed(0) + ' kVA demand reduction = Lower utility demand charges</li>';
+    html += '<li><strong>Estimated Monthly Savings:</strong> ~' + (Number(result.powerReductionKVA || 0).toFixed(0)) + ' kVA demand reduction = Lower utility demand charges</li>';
     html += '<li><strong>Cost Benefit:</strong> Proper diversity application prevents oversizing, reducing capital and operational costs</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     // Calculation Steps
     html += '<div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
     html += '<h3 style="color: #2c3e50; margin-top: 0;">📖 Detailed Calculation Steps</h3>';
@@ -1208,22 +1242,22 @@ function displaySystemMaximumDemandResults(result) {
     html += (result.calculationSteps || 'No calculation steps available');
     html += '</pre>';
     html += '</div>';
-    
+
     // Standards Reference
     html += '<div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e0e0e0;">';
     html += '<h4 style="margin-top: 0; color: #424242; font-size: 18px;">📋 Standards & References</h4>';
     html += '<ul style="margin: 10px 0; padding-left: 25px; line-height: 1.8; color: #616161;">';
-    result.standards.forEach(std => {
+    (Array.isArray(result.standards) ? result.standards : []).forEach(std => {
         html += '<li>' + std + '</li>';
     });
     html += '</ul>';
     html += '<p style="margin: 15px 0 0 0; font-size: 12px; color: #757575; border-top: 1px solid #e0e0e0; padding-top: 10px;">';
-    html += '<strong>Calculation Performance:</strong> ' + result.calculationTimeMs + 'ms | ';
-    html += '<strong>Date:</strong> ' + result.calculationDate + ' | ';
+    html += '<strong>Calculation Performance:</strong> ' + (result.calculationTimeMs || 0) + 'ms | ';
+    html += '<strong>Date:</strong> ' + (result.calculationDate || '') + ' | ';
     html += '<strong>Engineer:</strong> ' + (document.getElementById('engineer')?.value || 'Unknown');
     html += '</p>';
     html += '</div>';
-    
+
     resultDiv.innerHTML = html;
     resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -1236,7 +1270,6 @@ function toggleCalculationSteps() {
     if (stepsElement) {
         if (stepsElement.style.display === 'none') {
             stepsElement.style.display = 'block';
-            // Scroll into view smoothly
             stepsElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } else {
             stepsElement.style.display = 'none';
