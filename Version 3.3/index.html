@@ -696,109 +696,141 @@
 <!-- Updated: 2025-11-01 09:42:15 UTC by bfforex -->
 <!-- Fixed: Correct variable names for diversity factors -->
 <!-- ═══════════════════════════════════════════════════════════ -->
+<!-- REPLACEMENT SCRIPT: Diagnostic that re-runs when project restoration completes
+     -------------------------------------------------------------------------
+     Find the existing diagnostic <script> block in Version 3.3/index.html that:
+       - logs "MODULE LOADING DIAGNOSTIC v2.1"
+       - is currently run on window.load (or immediately)
+     Replace the entire existing <script>...</script> diagnostic block with
+     the script below. This version:
+       - defines runDiagnostic()
+       - runs it on window.load
+       - re-runs it when window.dispatchEvent(new Event('project:restored')) is fired
+       - exposes window.runPwrSysDiagnostic() for manual invocation
+     -------------------------------------------------------------------------
+-->
 <script>
-window.addEventListener('load', function () {
-    console.log('\n' + '═'.repeat(80));
-    console.log('MODULE LOADING DIAGNOSTIC (deferred) v2.1');
-    console.log('═'.repeat(80));
+/**
+ * MODULE LOADING DIAGNOSTIC (deferred + re-run on project restore)
+ * Runs on window.load and again when the project:restored event fires.
+ */
+(function() {
+    function runDiagnostic() {
+        console.log('\n' + '═'.repeat(80));
+        console.log('MODULE LOADING DIAGNOSTIC (deferred) v2.1 — runDiagnostic()');
+        console.log('═'.repeat(80));
 
-    const requiredFunctions = {
-        // Short Circuit Functions
-        'calculateShortCircuit': typeof calculateShortCircuit !== 'undefined',
-        'calculateShortCircuitPointToPoint': typeof calculateShortCircuitPointToPoint !== 'undefined',
-        'calculateShortCircuitPerUnit': typeof calculateShortCircuitPerUnit !== 'undefined',
+        const requiredFunctions = {
+            // Short Circuit Functions
+            'calculateShortCircuit': typeof calculateShortCircuit !== 'undefined',
+            'calculateShortCircuitPointToPoint': typeof calculateShortCircuitPointToPoint !== 'undefined',
+            'calculateShortCircuitPerUnit': typeof calculateShortCircuitPerUnit !== 'undefined',
 
-        // Load Flow Functions
-        'calculateLoadFlow': typeof calculateLoadFlow !== 'undefined',
-        'calculateLoadFlowWithDemand': typeof calculateLoadFlowWithDemand !== 'undefined',
-        'applyDemandFactorsToLoadFlow': typeof applyDemandFactorsToLoadFlow !== 'undefined',
+            // Load Flow Functions
+            'calculateLoadFlow': typeof calculateLoadFlow !== 'undefined',
+            'calculateLoadFlowWithDemand': typeof calculateLoadFlowWithDemand !== 'undefined',
+            'applyDemandFactorsToLoadFlow': typeof applyDemandFactorsToLoadFlow !== 'undefined',
 
-        // Voltage Drop Functions
-        'calculateVoltageDrop': typeof calculateVoltageDrop !== 'undefined' || typeof calculateVoltageDropWrapped !== 'undefined',
+            // Voltage Drop Functions
+            'calculateVoltageDrop': typeof calculateVoltageDrop !== 'undefined' || typeof calculateVoltageDropWrapped !== 'undefined',
 
-        // Motor Contribution Functions
-        'calculateMotorContribution': typeof calculateMotorContribution !== 'undefined',
-        'calculateTotalMotorContribution': typeof calculateTotalMotorContribution !== 'undefined',
-        'combineSystemAndMotorFault': typeof combineSystemAndMotorFault !== 'undefined',
-        'combineMotorWithSystem': typeof combineMotorWithSystem !== 'undefined',
+            // Motor Contribution Functions
+            'calculateMotorContribution': typeof calculateMotorContribution !== 'undefined',
+            'calculateTotalMotorContribution': typeof calculateTotalMotorContribution !== 'undefined',
+            'combineSystemAndMotorFault': typeof combineSystemAndMotorFault !== 'undefined',
+            'combineMotorWithSystem': typeof combineMotorWithSystem !== 'undefined',
 
-        // Calculation Coordinator
-        'calculateBus': typeof calculateBus !== 'undefined',
-        'calculateAllBuses': typeof calculateAllBuses !== 'undefined',
+            // Calculation Coordinator
+            'calculateBus': typeof calculateBus !== 'undefined',
+            'calculateAllBuses': typeof calculateAllBuses !== 'undefined',
 
-        // Display Functions
-        'displayCalculationResults': typeof displayCalculationResults !== 'undefined',
+            // Display Functions
+            'displayCalculationResults': typeof displayCalculationResults !== 'undefined',
 
-        // Demand & Diversity Factors (CORRECTED)
-        'DIVERSITY_FACTORS': typeof window.DIVERSITY_FACTORS !== 'undefined',
-        'DEMAND_FACTORS': typeof window.DEMAND_FACTORS !== 'undefined',
-        'diversityToDemand': typeof window.diversityToDemand === 'function',
-        'getMotorDiversityFactor': typeof window.getMotorDiversityFactor === 'function',
-        'calculateDiversifiedLoad': typeof window.calculateDiversifiedLoad === 'function',
-        'getDiversityFactorForBus': typeof getDiversityFactorForBus !== 'undefined'
-    };
+            // Demand & Diversity Factors (CORRECTED)
+            'DIVERSITY_FACTORS': typeof window.DIVERSITY_FACTORS !== 'undefined',
+            'DEMAND_FACTORS': typeof window.DEMAND_FACTORS !== 'undefined',
+            'diversityToDemand': typeof window.diversityToDemand === 'function',
+            'getMotorDiversityFactor': typeof window.getMotorDiversityFactor === 'function',
+            'calculateDiversifiedLoad': typeof window.calculateDiversifiedLoad === 'function',
+            'getDiversityFactorForBus': typeof getDiversityFactorForBus !== 'undefined'
+        };
 
-    let allLoaded = true;
-    let criticalMissing = [];
+        let allLoaded = true;
+        let criticalMissing = [];
 
-    for (const [funcName, isLoaded] of Object.entries(requiredFunctions)) {
-        const status = isLoaded ? '✅' : '❌';
-        console.log(`${status} ${funcName}: ${isLoaded ? 'LOADED' : 'MISSING'}`);
+        for (const [funcName, isLoaded] of Object.entries(requiredFunctions)) {
+            const status = isLoaded ? '✅' : '❌';
+            console.log(`${status} ${funcName}: ${isLoaded ? 'LOADED' : 'MISSING'}`);
 
-        if (!isLoaded) {
-            allLoaded = false;
-            criticalMissing.push(funcName);
+            if (!isLoaded) {
+                allLoaded = false;
+                criticalMissing.push(funcName);
+            }
         }
-    }
 
-    console.log('═'.repeat(80));
+        console.log('═'.repeat(80));
 
-    if (allLoaded) {
-        console.log('✅ ALL MODULES LOADED SUCCESSFULLY');
-        console.log('✅ Feature #1: Motor Contribution - READY');
-        console.log('✅ Feature #4: Demand & Diversity Factors - READY');
-        console.log('✅ Issue #2: Voltage Drop Base Voltage - FIXED');
-        console.log('✅ System Status: OPERATIONAL');
-    } else {
-        console.error('❌ SOME MODULES FAILED TO LOAD');
-        console.error('   Missing functions:', criticalMissing.join(', '));
-        console.error('   Check script loading order in index.html');
-        console.error('   Check browser console for JavaScript errors');
-        console.error('   Verify all .js files are accessible');
-    }
-
-    console.log('═'.repeat(80) + '\n');
-
-    // Additional system checks
-    try {
-        console.log('SYSTEM HEALTH CHECK:');
-        console.log('  - buses array:', Array.isArray(buses) ? `✅ (${buses.length} buses)` : '❌ Not initialized');
-        console.log('  - components array:', Array.isArray(components) ? `✅ (${components.length} components)` : '❌ Not initialized');
-        console.log('  - SQRT3 constant:', typeof SQRT3 !== 'undefined' ? `✅ (${Number(SQRT3).toFixed(4)})` : '❌ Missing');
-        console.log('  - CABLE_IMPEDANCE_DATA:', typeof CABLE_IMPEDANCE_DATA !== 'undefined' ? '✅ Loaded' : '❌ Missing');
-
-        // Diversity Factors Check
-        if (typeof window.DIVERSITY_FACTORS !== 'undefined') {
-            console.log('  - DIVERSITY_FACTORS:', '✅ Loaded');
-            console.log('    - Motors:', typeof window.DIVERSITY_FACTORS.motors !== 'undefined' ? '✅' : '❌');
-            console.log('    - Welding:', typeof window.DIVERSITY_FACTORS.welding !== 'undefined' ? '✅' : '❌');
-            console.log('    - LNG Plant:', typeof window.DIVERSITY_FACTORS.lng_plant !== 'undefined' ? '✅' : '❌');
-            console.log('    - Fabrication Yard:', typeof window.DIVERSITY_FACTORS.fabrication_yard !== 'undefined' ? '✅' : '❌');
+        if (allLoaded) {
+            console.log('✅ ALL MODULES LOADED SUCCESSFULLY');
+            console.log('✅ Feature #1: Motor Contribution - READY');
+            console.log('✅ Feature #4: Demand & Diversity Factors - READY');
+            console.log('✅ Issue #2: Voltage Drop Base Voltage - FIXED');
+            console.log('✅ System Status: OPERATIONAL');
         } else {
-            console.log('  - DIVERSITY_FACTORS:', '❌ Not loaded');
+            console.error('❌ SOME MODULES FAILED TO LOAD');
+            console.error('   Missing functions:', criticalMissing.join(', '));
+            console.error('   Check script loading order in index.html');
+            console.error('   Check browser console for JavaScript errors');
+            console.error('   Verify all .js files are accessible');
         }
 
-        if (typeof window.DEMAND_FACTORS !== 'undefined') {
-            console.log('  - DEMAND_FACTORS:', '✅ Loaded');
-        } else {
-            console.log('  - DEMAND_FACTORS:', '❌ Not loaded');
+        console.log('═'.repeat(80) + '\n');
+
+        // Additional system checks
+        try {
+            console.log('SYSTEM HEALTH CHECK:');
+            console.log('  - buses array:', Array.isArray(buses) ? `✅ (${buses.length} buses)` : '❌ Not initialized');
+            console.log('  - components array:', Array.isArray(components) ? `✅ (${components.length} components)` : '❌ Not initialized');
+            console.log('  - SQRT3 constant:', typeof SQRT3 !== 'undefined' ? `✅ (${Number(SQRT3).toFixed(4)})` : '❌ Missing');
+            console.log('  - CABLE_IMPEDANCE_DATA:', typeof CABLE_IMPEDANCE_DATA !== 'undefined' ? '✅ Loaded' : '❌ Missing');
+
+            // Diversity Factors Check
+            if (typeof window.DIVERSITY_FACTORS !== 'undefined') {
+                console.log('  - DIVERSITY_FACTORS:', '✅ Loaded');
+                console.log('    - Motors:', typeof window.DIVERSITY_FACTORS.motors !== 'undefined' ? '✅' : '❌');
+                console.log('    - Welding:', typeof window.DIVERSITY_FACTORS.welding !== 'undefined' ? '✅' : '❌');
+                console.log('    - LNG Plant:', typeof window.DIVERSITY_FACTORS.lng_plant !== 'undefined' ? '✅' : '❌');
+                console.log('    - Fabrication Yard:', typeof window.DIVERSITY_FACTORS.fabrication_yard !== 'undefined' ? '✅' : '❌');
+            } else {
+                console.log('  - DIVERSITY_FACTORS:', '❌ Not loaded');
+            }
+
+            if (typeof window.DEMAND_FACTORS !== 'undefined') {
+                console.log('  - DEMAND_FACTORS:', '✅ Loaded');
+            } else {
+                console.log('  - DEMAND_FACTORS:', '❌ Not loaded');
+            }
+        } catch (e) {
+            console.warn('Diagnostic system checks encountered an error:', e);
         }
-    } catch (e) {
-        console.warn('Diagnostic system checks encountered an error:', e);
+
+        console.log('');
     }
 
-    console.log('');
-});
+    // Run on load
+    window.addEventListener('load', runDiagnostic);
+
+    // Also run when project restoration completes
+    window.addEventListener('project:restored', function () {
+        console.log('Received project:restored — re-running diagnostic to reflect restored state');
+        // Small delay to allow any final state mutations
+        setTimeout(runDiagnostic, 50);
+    });
+
+    // Expose for manual invocation in console if needed
+    window.runPwrSysDiagnostic = runDiagnostic;
+})();
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
