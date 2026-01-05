@@ -192,6 +192,100 @@
         </div>
     </details>
 </div>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- Regulatory Compliance Section -->
+<!-- Phase 1: PE Certification & PEC 2017 Compliance -->
+<!-- Added: 2026-01-05 by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="section section-compact">
+    <details class="collapsible-section">
+        <summary style="color: #667eea;">📜 Regulatory Compliance</summary>
+        <p style="font-size: 11px; color: #666; line-height: 1.4; margin: 5px 0 10px 0;">
+            Building Permit / Electrical Permit Submission
+        </p>
+        
+        <!-- PE Information -->
+        <div class="form-group">
+            <label for="peEngineerName" style="font-size: 12px;">Engineer Name:</label>
+            <input type="text" id="peEngineerName" placeholder="Licensed Electrical Engineer" 
+                   style="width: 100%; font-size: 11px;" aria-label="PE Engineer Name">
+        </div>
+        
+        <div class="form-group">
+            <label for="pePRCLicense" style="font-size: 12px;">PRC License No.:</label>
+            <input type="text" id="pePRCLicense" placeholder="PRC-EE-12345" 
+                   style="width: 100%; font-size: 11px;" aria-label="PRC License Number">
+        </div>
+        
+        <div class="form-group">
+            <label for="pePTRNumber" style="font-size: 12px;">PTR Number:</label>
+            <input type="text" id="pePTRNumber" placeholder="PTR-1234567" 
+                   style="width: 100%; font-size: 11px;" aria-label="PTR Number">
+        </div>
+        
+        <div class="form-group">
+            <label for="peTIN" style="font-size: 12px;">TIN:</label>
+            <input type="text" id="peTIN" placeholder="123-456-789-000" 
+                   style="width: 100%; font-size: 11px;" aria-label="TIN">
+        </div>
+        
+        <!-- Project Details -->
+        <details class="collapsible-section" style="margin-top: 10px;">
+            <summary style="font-size: 11px; color: #667eea;">🏢 Project Details</summary>
+            <div class="form-group">
+                <label for="projectAddress" style="font-size: 11px;">Address:</label>
+                <input type="text" id="projectAddress" placeholder="Project Location" 
+                       style="width: 100%; font-size: 10px;" aria-label="Project Address">
+            </div>
+            <div class="form-group">
+                <label for="buildingType" style="font-size: 11px;">Building Type:</label>
+                <select id="buildingType" style="width: 100%; font-size: 10px;" aria-label="Building Type">
+                    <option value="">Select Type</option>
+                    <option value="Commercial">Commercial</option>
+                    <option value="Industrial">Industrial</option>
+                    <option value="Residential">Residential</option>
+                    <option value="Institutional">Institutional</option>
+                </select>
+            </div>
+        </details>
+        
+        <!-- Utility Information -->
+        <details class="collapsible-section" style="margin-top: 10px;">
+            <summary style="font-size: 11px; color: #667eea;">⚡ Utility Info</summary>
+            <div class="form-group">
+                <label for="utilityProvider" style="font-size: 11px;">Provider:</label>
+                <input type="text" id="utilityProvider" placeholder="e.g., MERALCO" 
+                       style="width: 100%; font-size: 10px;" aria-label="Utility Provider">
+            </div>
+            <div class="form-group">
+                <label for="serviceVoltage" style="font-size: 11px;">Service Voltage:</label>
+                <input type="text" id="serviceVoltage" placeholder="e.g., 13.2 kV" 
+                       style="width: 100%; font-size: 10px;" aria-label="Service Voltage">
+            </div>
+        </details>
+        
+        <!-- Permit Information -->
+        <details class="collapsible-section" style="margin-top: 10px;">
+            <summary style="font-size: 11px; color: #667eea;">📋 Permit Info</summary>
+            <div class="form-group">
+                <label for="buildingPermitNo" style="font-size: 11px;">Building Permit No.:</label>
+                <input type="text" id="buildingPermitNo" placeholder="BP-2024-1234" 
+                       style="width: 100%; font-size: 10px;" aria-label="Building Permit Number">
+            </div>
+            <div class="form-group">
+                <label for="electricalPermitNo" style="font-size: 11px;">Electrical Permit No.:</label>
+                <input type="text" id="electricalPermitNo" placeholder="EP-2024-1234" 
+                       style="width: 100%; font-size: 10px;" aria-label="Electrical Permit Number">
+            </div>
+        </details>
+        
+        <button onclick="updateRegulatoryInfo()" 
+                class="btn btn-primary btn-full-width"
+                style="margin-top: 10px; font-size: 11px;">
+            💾 Save Regulatory Info
+        </button>
+    </details>
+</div>
 </div>
 <!-- End Sidebar -->
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -299,6 +393,25 @@
                                     </button>
 <button class="btn btn-secondary btn-large" onclick="loadProject()">
                                         📂 Load Project
+                                    </button>
+</div>
+</div>
+<!-- Regulatory Compliance Reports -->
+<div class="export-category">
+<h3>📜 Regulatory Compliance</h3>
+<p class="category-desc">Building permit and electrical permit submission documents</p>
+<div class="export-buttons-grid">
+<button class="btn btn-primary btn-large" onclick="exportPECertification()">
+                                        📄 PE Certification Page
+                                    </button>
+<button class="btn btn-info btn-large" onclick="exportFaultCurrentLabels(window.buses)">
+                                        🏷️ Fault Current Labels
+                                    </button>
+<button class="btn btn-warning btn-large" onclick="exportComplianceChecklist()">
+                                        ✅ Compliance Checklist
+                                    </button>
+<button class="btn btn-success btn-large" onclick="exportPermitSubmissionPackage()">
+                                        📦 Full Permit Package
                                     </button>
 </div>
 </div>
@@ -683,6 +796,16 @@
 <script src="js/voltageDropEngine.js"></script>
 <script src="js/arcFlashEngine.js"></script>
 <script src="js/scenarioManager.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 10.5: REGULATORY COMPLIANCE MODULES -->
+<!-- Phase 1: PE Certification & PEC 2017 Compliance -->
+<!-- Added: 2026-01-05 by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/regulatory/peCertification.js"></script>
+<script src="js/regulatory/pecReferences.js"></script>
+<script src="js/regulatory/projectInfo.js"></script>
+<script src="js/regulatory/faultCurrentLabels.js"></script>
+<script src="js/regulatory/regulatoryCompliance.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- LAYER 11: PROJECT MANAGEMENT -->
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -1311,6 +1434,120 @@ function toggleCalculationSteps() {
 
 // Log that handlers are loaded
 console.log('✅ System-Wide Maximum Demand UI handlers loaded');
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- REGULATORY COMPLIANCE INITIALIZATION & UI HANDLERS -->
+<!-- Added: 2026-01-05 by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+/**
+ * Initialize regulatory compliance when page loads
+ */
+window.addEventListener('load', function() {
+    // Initialize regulatory compliance system
+    if (typeof initRegulatoryCompliance === 'function') {
+        initRegulatoryCompliance();
+    }
+    
+    // Populate form fields from saved data
+    populateRegulatoryFormFields();
+});
+
+/**
+ * Populate regulatory form fields from saved data
+ */
+function populateRegulatoryFormFields() {
+    if (typeof getPEInformation === 'function') {
+        const peInfo = getPEInformation();
+        
+        const fields = {
+            'peEngineerName': peInfo.engineerName,
+            'pePRCLicense': peInfo.prcLicenseNo,
+            'pePTRNumber': peInfo.ptrNumber,
+            'peTIN': peInfo.tin
+        };
+        
+        for (const [id, value] of Object.entries(fields)) {
+            const element = document.getElementById(id);
+            if (element && value) {
+                element.value = value;
+            }
+        }
+    }
+    
+    if (typeof getProjectInfo === 'function') {
+        const projectInfo = getProjectInfo();
+        
+        const projectFields = {
+            'projectAddress': projectInfo.projectAddress?.street || '',
+            'buildingType': projectInfo.buildingType || '',
+            'utilityProvider': projectInfo.utility?.provider || '',
+            'serviceVoltage': projectInfo.utility?.serviceVoltage || '',
+            'buildingPermitNo': projectInfo.permits?.buildingPermitNo || '',
+            'electricalPermitNo': projectInfo.permits?.electricalPermitNo || ''
+        };
+        
+        for (const [id, value] of Object.entries(projectFields)) {
+            const element = document.getElementById(id);
+            if (element && value) {
+                element.value = value;
+            }
+        }
+    }
+}
+
+/**
+ * Update regulatory information from form fields
+ */
+function updateRegulatoryInfo() {
+    // Update PE Certification info
+    if (typeof updatePEInformation === 'function') {
+        const peUpdates = {
+            engineerName: document.getElementById('peEngineerName')?.value || '',
+            prcLicenseNo: document.getElementById('pePRCLicense')?.value || '',
+            ptrNumber: document.getElementById('pePTRNumber')?.value || '',
+            tin: document.getElementById('peTIN')?.value || '',
+            ptrDate: document.getElementById('pePTRDate')?.value || '',
+            ptrIssuedAt: document.getElementById('pePTRLocation')?.value || '',
+            prcValidityDate: document.getElementById('pePRCValidity')?.value || ''
+        };
+        
+        updatePEInformation(peUpdates);
+    }
+    
+    // Update Project Info
+    if (typeof updateProjectInfo === 'function') {
+        const projectUpdates = {
+            projectAddress: {
+                street: document.getElementById('projectAddress')?.value || ''
+            },
+            buildingType: document.getElementById('buildingType')?.value || '',
+            utility: {
+                provider: document.getElementById('utilityProvider')?.value || '',
+                serviceVoltage: document.getElementById('serviceVoltage')?.value || ''
+            },
+            permits: {
+                buildingPermitNo: document.getElementById('buildingPermitNo')?.value || '',
+                electricalPermitNo: document.getElementById('electricalPermitNo')?.value || ''
+            }
+        };
+        
+        updateProjectInfo(projectUpdates);
+    }
+    
+    // Show confirmation
+    alert('✅ Regulatory information saved successfully!');
+    
+    // Update compliance checklist
+    if (typeof updateComplianceChecklist === 'function') {
+        updateComplianceChecklist();
+    }
+    
+    console.log('✅ Regulatory information updated');
+}
+
+console.log('✅ Regulatory Compliance UI handlers loaded');
 </script>
 
 </body>

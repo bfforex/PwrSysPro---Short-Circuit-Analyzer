@@ -3123,11 +3123,270 @@ body.dark-theme .info-badge {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   REGULATORY COMPLIANCE STYLES
+   Phase 1: PE Certification & PEC 2017 Compliance
+   Added: 2026-01-05 by bfforex
+   ═══════════════════════════════════════════════════════════ */
+
+/* Regulatory Section Container */
+.regulatory-section {
+    background: var(--light-bg);
+    border-left: 4px solid var(--primary-bg);
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+}
+
+.regulatory-section h3 {
+    color: var(--primary-bg);
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+/* PE Certification Block */
+.pe-certification {
+    background: white;
+    border: 2px solid #333;
+    padding: 30px;
+    margin: 20px 0;
+    page-break-inside: avoid;
+}
+
+.pe-certification h2 {
+    text-align: center;
+    color: #1a1a1a;
+    border-bottom: 3px solid #333;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.pe-certification table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pe-certification td {
+    padding: 8px 0;
+    vertical-align: top;
+}
+
+/* Fault Current Label Styles */
+.fault-label {
+    display: inline-block;
+    page-break-inside: avoid;
+    background: #ffeb3b;
+    border: 3px solid #000;
+    color: #000;
+    font-weight: bold;
+    text-align: center;
+}
+
+.fault-label-detailed {
+    background: #ffeb3b;
+    border: 3px solid #000;
+    color: #000;
+    page-break-inside: avoid;
+}
+
+/* Print media queries for labels */
+@media print {
+    .fault-label,
+    .fault-label-detailed {
+        page-break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .pe-certification,
+    .affidavit-undertaking {
+        page-break-inside: avoid;
+    }
+    
+    .page-break {
+        page-break-before: always;
+    }
+}
+
+/* Compliance Checklist Styles */
+.compliance-checklist {
+    background: white;
+    padding: 30px;
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+.compliance-checklist h2,
+.compliance-checklist h3 {
+    color: var(--text-dark);
+}
+
+.compliance-checklist h3 {
+    border-bottom: 2px solid var(--primary-bg);
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+}
+
+/* Compliance Item Status */
+.compliance-item {
+    padding: 15px;
+    margin-bottom: 10px;
+    background: var(--light-bg);
+    border-radius: 4px;
+}
+
+.compliance-item.complete {
+    border-left: 4px solid var(--success);
+}
+
+.compliance-item.incomplete {
+    border-left: 4px solid var(--danger);
+}
+
+.compliance-item.review {
+    border-left: 4px solid var(--warning);
+}
+
+.compliance-item.ready {
+    border-left: 4px solid var(--info);
+}
+
+/* Progress Bar for Compliance */
+.compliance-progress {
+    background: #e9ecef;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.compliance-progress-bar {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+/* Project Cover Page */
+.project-cover-page {
+    background: white;
+    padding: 40px;
+    page-break-after: always;
+}
+
+.project-cover-page h1 {
+    text-align: center;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+}
+
+.project-cover-page h2 {
+    color: var(--primary-bg);
+    text-align: center;
+}
+
+/* Affidavit of Undertaking */
+.affidavit-undertaking {
+    background: white;
+    padding: 40px;
+    page-break-before: always;
+}
+
+.affidavit-undertaking h2 {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 30px;
+}
+
+.affidavit-undertaking ol {
+    padding-left: 30px;
+    line-height: 2;
+}
+
+.affidavit-undertaking li {
+    margin-bottom: 15px;
+}
+
+/* PEC Compliance Summary */
+.pec-compliance-summary {
+    background: var(--light-bg);
+    border-left: 4px solid var(--primary-bg);
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.pec-compliance-summary table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.pec-compliance-summary th {
+    background: var(--primary-bg);
+    color: white;
+    padding: 10px;
+    text-align: left;
+}
+
+.pec-compliance-summary td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Export Category for Regulatory */
+.export-category h3 {
+    color: var(--primary-bg);
+    margin-bottom: 10px;
+}
+
+.export-category .category-desc {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+/* Responsive styles for regulatory forms */
+@media (max-width: 768px) {
+    .regulatory-section {
+        padding: 15px;
+    }
+    
+    .pe-certification,
+    .project-cover-page,
+    .affidavit-undertaking {
+        padding: 20px;
+    }
+    
+    .compliance-checklist {
+        padding: 15px;
+    }
+}
+
+/* Dark theme adjustments for regulatory */
+[data-theme="dark"] .regulatory-section {
+    background: #2d3748;
+    border-left-color: #64b5f6;
+}
+
+[data-theme="dark"] .compliance-checklist {
+    background: #1a202c;
+}
+
+[data-theme="dark"] .pe-certification,
+[data-theme="dark"] .project-cover-page,
+[data-theme="dark"] .affidavit-undertaking {
+    background: #2d3748;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .pec-compliance-summary {
+    background: #2d3748;
+    border-left-color: #64b5f6;
+}
+
+/* ═══════════════════════════════════════════════════════════
    END OF STYLESHEET
-   Total Lines: ~2950+
-   File Size: ~75KB
-   Last Updated: 2025-12-02
+   Total Lines: ~3300+
+   File Size: ~85KB
+   Last Updated: 2026-01-05
    Author: Engr. B. P. Faraon (bfforex)
-   Version: 3.3.0
+   Version: 3.3.0 - Regulatory Compliance Phase 1
    ═══════════════════════════════════════════════════════════ */
    ═══════════════════════════════════════════════════════════ */
