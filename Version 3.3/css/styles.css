@@ -3382,11 +3382,210 @@ body.dark-theme .info-badge {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   PROFESSIONAL REPORT GENERATION STYLES
+   Phase 2: Report UI Components
+   Added: 2026-01-05
+   ═══════════════════════════════════════════════════════════ */
+
+/* Report Options Grid */
+.report-options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin: 15px 0;
+    padding: 15px;
+    background: var(--light-bg);
+    border-radius: 8px;
+}
+
+.report-options-grid label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.report-options-grid label:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.report-options-grid input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Report Preview Modal */
+.report-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.report-preview-container {
+    width: 90%;
+    height: 90%;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.report-preview-header {
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.report-preview-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.report-preview-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.report-preview-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.report-preview-iframe {
+    flex: 1;
+    border: none;
+}
+
+/* Print Styles for Schedules */
+@media print {
+    .schedule-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9pt;
+        page-break-inside: avoid;
+    }
+    
+    .schedule-table th {
+        background-color: #667eea !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 8px;
+        text-align: left;
+        font-weight: bold;
+        border: 1px solid #ddd;
+    }
+    
+    .schedule-table td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+    }
+    
+    .schedule-table tr:nth-child(even) {
+        background-color: #f8f9fa !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .schedule-notes {
+        font-size: 8pt;
+        font-style: italic;
+        margin-top: 10px;
+        color: #666;
+    }
+    
+    .page-break {
+        page-break-before: always;
+    }
+    
+    /* Hide non-essential elements when printing */
+    .sidebar,
+    .export-buttons-grid,
+    button,
+    .theme-toggle {
+        display: none !important;
+    }
+}
+
+/* Dark Theme Adjustments for Report Options */
+[data-theme="dark"] .report-options-grid {
+    background: #2d3748;
+}
+
+[data-theme="dark"] .report-options-grid label:hover {
+    background: rgba(102, 126, 234, 0.2);
+}
+
+[data-theme="dark"] .report-preview-container {
+    background: #1a202c;
+}
+
+/* Small Button Variant for Revision History */
+.btn-small {
+    padding: 8px 16px;
+    font-size: 0.85em;
+    margin-top: 10px;
+}
+
+/* Form group styling for document control */
+.export-category .form-group {
+    margin-bottom: 12px;
+}
+
+.export-category .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--text-dark);
+    font-size: 0.9em;
+}
+
+.export-category .form-group input[type="text"],
+.export-category .form-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 0.9em;
+    background: var(--card-bg);
+    color: var(--text-dark);
+    transition: border-color 0.2s;
+}
+
+.export-category .form-group input[type="text"]:focus,
+.export-category .form-group select:focus {
+    outline: none;
+    border-color: var(--primary-bg);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════
    END OF STYLESHEET
-   Total Lines: ~3300+
-   File Size: ~85KB
+   Total Lines: ~3550+
+   File Size: ~95KB
    Last Updated: 2026-01-05
    Author: Engr. B. P. Faraon (bfforex)
-   Version: 3.3.0 - Regulatory Compliance Phase 1
+   Version: 3.3.0 - Phase 2: Professional Reports
    ═══════════════════════════════════════════════════════════ */
    ═══════════════════════════════════════════════════════════ */

@@ -415,6 +415,57 @@
                                     </button>
 </div>
 </div>
+<!-- Professional Report Generation -->
+<div class="export-category">
+<h3>📄 Professional Reports</h3>
+<p class="category-desc">Generate regulatory-grade PDF reports for permit submission</p>
+<div class="export-buttons-grid">
+<button class="btn btn-primary btn-large" onclick="ReportOrchestrator.generateFullReport()">
+                                        📑 Generate Full Report (PDF)
+                                    </button>
+<button class="btn btn-info btn-large" onclick="ReportOrchestrator.generateSummaryReport()">
+                                        📋 Generate Summary Report
+                                    </button>
+<button class="btn btn-secondary btn-large" onclick="ReportOrchestrator.previewReport()">
+                                        👁️ Preview Report
+                                    </button>
+</div>
+</div>
+<!-- Report Options -->
+<div class="export-category">
+<h3>⚙️ Report Sections</h3>
+<p class="category-desc">Select sections to include in report</p>
+<div class="report-options-grid">
+<label><input type="checkbox" id="rptShortCircuit" checked> Short Circuit Analysis</label>
+<label><input type="checkbox" id="rptVoltageDrop" checked> Voltage Drop Analysis</label>
+<label><input type="checkbox" id="rptArcFlash" checked> Arc Flash Analysis</label>
+<label><input type="checkbox" id="rptProtection" checked> Protection Coordination</label>
+<label><input type="checkbox" id="rptSchedules" checked> Equipment Schedules</label>
+<label><input type="checkbox" id="rptAppendices" checked> Appendices</label>
+<label><input type="checkbox" id="rptPECert" checked> PE Certification Page</label>
+</div>
+</div>
+<!-- Document Information -->
+<div class="export-category">
+<h3>📋 Document Control</h3>
+<div class="form-group">
+<label for="docNumber">Document Number:</label>
+<input type="text" id="docNumber" placeholder="e.g., SCS-2026-0001" value="SCS-2026-0001">
+</div>
+<div class="form-group">
+<label for="docRevision">Revision:</label>
+<select id="docRevision">
+<option value="0">0 (Initial Issue)</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="A">A</option>
+<option value="B">B</option>
+</select>
+</div>
+<button class="btn btn-small btn-secondary" onclick="RevisionHistoryManager.showDialog()">
+                                    📝 Edit Revision History
+                                </button>
+</div>
 </div>
 <!-- Export Tips -->
 <div class="export-tips">
@@ -806,6 +857,21 @@
 <script src="js/regulatory/projectInfo.js"></script>
 <script src="js/regulatory/faultCurrentLabels.js"></script>
 <script src="js/regulatory/regulatoryCompliance.js"></script>
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LAYER 13: PROFESSIONAL REPORT GENERATION -->
+<!-- Phase 2: Professional Reports -->
+<!-- Added: 2026-01-05 by bfforex -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script src="js/reports/pdfGenerator.js"></script>
+<script src="js/reports/coverPage.js"></script>
+<script src="js/reports/tableOfContents.js"></script>
+<script src="js/reports/executiveSummary.js"></script>
+<script src="js/reports/equipmentSchedule.js"></script>
+<script src="js/reports/calculationSheets.js"></script>
+<script src="js/reports/revisionHistory.js"></script>
+<script src="js/reports/assumptionsPage.js"></script>
+<script src="js/reports/standardsReference.js"></script>
+<script src="js/reports/reportOrchestrator.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- LAYER 11: PROJECT MANAGEMENT -->
 <!-- ═══════════════════════════════════════════════════════════ -->
