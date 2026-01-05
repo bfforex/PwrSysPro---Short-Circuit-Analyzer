@@ -508,11 +508,12 @@ const EquipmentScheduleGenerator = {
      * Get equipment adequacy status
      */
     getEquipmentStatus(bus) {
+        const SAFETY_MARGIN_FACTOR = 0.8; // 80% of rating for safety margin
         const availableFault = parseFloat(bus.results?.fault3Phase) || 0;
         const rating = parseFloat(bus.aic) || 65;
         
         if (availableFault === 0) return 'N/A';
-        if (availableFault <= rating * 0.8) return 'OK';
+        if (availableFault <= rating * SAFETY_MARGIN_FACTOR) return 'OK';
         if (availableFault <= rating) return 'MARGINAL';
         return 'INADEQUATE';
     }
