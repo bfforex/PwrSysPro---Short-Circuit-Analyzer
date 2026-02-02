@@ -97,6 +97,52 @@ function calculateBus(busId) {
             console.log('⚠️ Motor Contribution module not loaded - using system contribution only');
         }
         
+        // ═══════════════════════════════════════════════════════════
+        // 1C. COMPLETE FAULT TYPE ANALYSIS (Phase 3 - Feature #2)
+        // ═══════════════════════════════════════════════════════════
+        console.log('⚡ Analyzing Complete Fault Types...');
+        
+        var faultTypesResult = null;
+        
+        // Check if fault type checkboxes are selected
+        const includeFaultTypes = 
+            document.getElementById('fault3ph')?.checked ||
+            document.getElementById('faultLL')?.checked ||
+            document.getElementById('faultLG')?.checked ||
+            document.getElementById('faultLLG')?.checked;
+        
+        if (includeFaultTypes && typeof FaultTypeCalculations !== 'undefined' && 
+            typeof FaultTypeCalculations.calculateAllFaultTypes === 'function') {
+            
+            console.log('✅ Fault Type Calculations module available');
+            
+            try {
+                faultTypesResult = FaultTypeCalculations.calculateAllFaultTypes(busId);
+                
+                console.log(`✅ Fault Type Analysis Complete:`);
+                console.log(`   3-Phase (L-L-L): ${faultTypesResult.faults.threePhaseLLL.currentKA.toFixed(3)} kA`);
+                console.log(`   Line-to-Line (L-L): ${faultTypesResult.faults.lineToLineLL.currentKA.toFixed(3)} kA`);
+                console.log(`   Line-to-Ground (L-G): ${faultTypesResult.faults.lineToGroundLG.currentKA.toFixed(3)} kA`);
+                console.log(`   Double Line-to-Ground (L-L-G): ${faultTypesResult.faults.doubleLineToGroundLLG.currentKA.toFixed(3)} kA`);
+                
+                if (faultTypesResult.faults.lineToGroundLG.exceedsThreePhase) {
+                    console.log(`   ⚠️ L-G fault exceeds 3-phase fault (solidly grounded system)`);
+                }
+                
+                // Store in short circuit results
+                shortCircuitResults.allFaultTypes = faultTypesResult;
+                
+            } catch (faultTypeError) {
+                console.error('❌ Error in fault type calculation:', faultTypeError);
+                console.warn('⚠️ Continuing without complete fault type analysis');
+                faultTypesResult = null;
+            }
+        } else if (!includeFaultTypes) {
+            console.log('ℹ️ Fault type calculations not selected');
+        } else {
+            console.log('⚠️ Fault Type Calculations module not loaded');
+        }
+        
         // ✅ DEFENSIVE: Check fault currents exist
         if (!shortCircuitResults?.faultCurrents?.threePhaseSym) {
             alert('❌ Error: Invalid short circuit results.\n\nCheck browser console for details.');

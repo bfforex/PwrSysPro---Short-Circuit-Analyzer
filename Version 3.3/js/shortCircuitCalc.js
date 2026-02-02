@@ -81,7 +81,12 @@ function calculateShortCircuit(busId, method = 'point-to-point') {
     
     let result;
     try {
-        if (method === 'per-unit') {
+        if (method === 'iec-60909') {
+            // Get IEC calculation type from UI
+            const iecCalcTypeElement = document.getElementById('iecCalcType');
+            const iecCalcType = iecCalcTypeElement?.value || 'max';
+            result = calculateShortCircuitIEC60909(path, iecCalcType);
+        } else if (method === 'per-unit') {
             result = calculateShortCircuitPerUnit(path);
         } else {
             result = calculateShortCircuitPointToPoint(path);
