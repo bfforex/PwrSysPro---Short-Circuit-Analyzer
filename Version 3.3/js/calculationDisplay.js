@@ -125,12 +125,19 @@ function generateShortCircuitDisplay(busId, results) {
     if (!results) return '<div class="alert alert-info">No short circuit data available.</div>';
     
     // ✅ Defensive check: Ensure faultCurrents exists
-    if (!results.faultCurrents) {
+    if (!results.faultCurrents && !results.initialSymmetricalCurrentKA) {
         console.error('❌ faultCurrents missing in results');
         return '<div class="alert alert-danger">Error: Fault current data missing</div>';
     }
     
+    // Check if IEC 60909 method
+    const isIEC = results.method === 'iec-60909';
     const isPerUnit = results.method === 'Per-Unit';
+    
+    // IEC 60909 specific display
+    if (isIEC) {
+        return generateIEC60909Display(busId, results);
+    }
     
     let html = `
         <div class="results-section">
@@ -163,6 +170,8 @@ function generateShortCircuitDisplay(busId, results) {
             </div>
             
             ${generateMotorContributionSection(results)}
+            
+            ${generateCompleteFaultTypesSection(results)}
             
             <h4>📋 Impedance Breakdown</h4>
             <div class="result-item">
@@ -1390,9 +1399,144 @@ window.showCalculationSteps = showCalculationSteps;
 window.copyToClipboard = copyToClipboard;
 window.displayDemandFactorAnalysis = displayDemandFactorAnalysis;
 
+// ═══════════════════════════════════════════════════════════════════════
+// PHASE 3 ADDITIONS: IEC 60909 and Complete Fault Types Display
+// Added: 2026-02-02
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate IEC 60909 display
+ */
+function generateIEC60909Display(busId, results) {
+    let html = `
+        <div class="results-section">
+            <h3>⚡ IEC 60909-0:2016 Fault Current Results</h3>
+            <div class="method-badge">
+                <span class="badge badge-success">IEC 60909 Method</span>
+                <span class="badge badge-warning">${results.calculationType === 'max' ? 'Maximum' : 'Minimum'} Calculation</span>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-value">${results.initialSymmetricalCurrentKA.toFixed(3)}</div>
+                    <div class="stat-label">I"k Initial (kA)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-value">${results.peakCurrentKA.toFixed(3)}</div>
+                    <div class="stat-label">ip Peak (kA)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔄</div>
+                    <div class="stat-value">${results.peakFactor.toFixed(3)}</div>
+                    <div class="stat-label">κ Peak Factor</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚙️</div>
+                    <div class="stat-value">${results.voltageFactor.toFixed(3)}</div>
+                    <div class="stat-label">c Voltage Factor</div>
+                </div>
+            </div>
+            
+            <h4>📋 IEC 60909 Currents</h4>
+            <div class="result-item">
+                <strong>Initial Symmetrical (I"k):</strong> ${results.initialSymmetricalCurrentKA.toFixed(3)} kA<br>
+                <strong>Peak Current (ip):</strong> ${results.peakCurrentKA.toFixed(3)} kA<br>
+                <strong>Breaking Current (Ib):</strong> ${results.breakingCurrentKA.toFixed(3)} kA<br>
+                <strong>Steady-State (Ik):</strong> ${results.steadyStateCurrentKA.toFixed(3)} kA<br>
+                <strong>Line-to-Ground (Ik1):</strong> ${results.lineToGroundCurrentKA.toFixed(3)} kA
+            </div>
+            
+            <h4>📋 Impedance (IEC Method)</h4>
+            <div class="result-item">
+                <strong>Resistance (R):</strong> ${(results.impedance.r * 1000).toFixed(3)} mΩ<br>
+                <strong>Reactance (X):</strong> ${(results.impedance.x * 1000).toFixed(3)} mΩ<br>
+                <strong>Magnitude (Z):</strong> ${(results.impedance.z * 1000).toFixed(3)} mΩ<br>
+                <strong>X/R Ratio:</strong> ${results.impedance.xrRatio.toFixed(2)}
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>Standard:</strong> ${results.standard}<br>
+                <strong>Calculation Purpose:</strong> ${results.calculationType === 'max' ? 'Equipment Rating and Selection' : 'Protection Coordination'}
+            </div>
+            
+            <div class="button-group">
+                <button class="btn btn-info" onclick="showCalculationSteps('shortcircuit')">
+                    📝 View Detailed Calculations
+                </button>
+                <button class="btn btn-success" onclick="exportBusReport('${busId}')">
+                    📄 Export Report
+                </button>
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+/**
+ * Generate complete fault types section
+ */
+function generateCompleteFaultTypesSection(results) {
+    if (!results.allFaultTypes) return '';
+    
+    const ft = results.allFaultTypes.faults;
+    
+    let html = `
+        <h4>⚡ Complete Fault Type Analysis</h4>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                <thead>
+                    <tr style="background: #f0f0f0;">
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Fault Type</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Current (kA)</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Ratio to 3φ</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Three-Phase (L-L-L)</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.threePhaseLLL.currentKA.toFixed(3)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">1.000</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">Balanced fault</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Line-to-Line (L-L)</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.lineToLineLL.currentKA.toFixed(3)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.lineToLineLL.ratio.toFixed(3)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${ft.lineToLineLL.typical ? '✓ Typical (0.866)' : ''}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Line-to-Ground (L-G)</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.lineToGroundLG.currentKA.toFixed(3)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.lineToGroundLG.ratio.toFixed(3)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${ft.lineToGroundLG.exceedsThreePhase ? '⚠️ Exceeds 3φ' : ''}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Double L-G (L-L-G)</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.doubleLineToGroundLLG.currentKA.toFixed(3)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.doubleLineToGroundLLG.ratio.toFixed(3)}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="alert alert-info" style="font-size: 12px; margin-top: 10px;">
+            <strong>Maximum Fault:</strong> ${results.allFaultTypes.maximumFaultCurrentKA.toFixed(3)} kA<br>
+            <strong>Sequence Network Analysis</strong> - Per IEEE 141-1993 Chapter 5
+        </div>
+    `;
+    
+    return html;
+}
+
 console.log('✅ Calculation Display Module v1.3.0 loaded');
 console.log('   - Demand factor display: ADDED');
 console.log('   - Voltage drop v2.0.0 compatibility: FIXED');
 console.log('   - Motor contribution display: WORKING');
 console.log('   - Arc Flash display: WORKING');
 console.log('   - Defensive checks: ENABLED');
+console.log('   - IEC 60909 display: ADDED (Phase 3)');
+console.log('   - Complete fault types display: ADDED (Phase 3)');

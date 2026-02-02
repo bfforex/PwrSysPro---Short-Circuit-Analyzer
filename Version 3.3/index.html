@@ -84,13 +84,53 @@
 </div>
 <div class="radio-group">
 <label for="method-ptp">
-<input checked="" id="method-ptp" name="method" type="radio" value="point-to-point"/>
-                                P-to-P
+<input checked="" id="method-ptp" name="method" type="radio" value="point-to-point" onchange="toggleIECOptions()"/>
+                                P-to-P (IEEE)
                             </label>
 <label for="method-pu">
-<input id="method-pu" name="method" type="radio" value="per-unit"/>
-                                Per-Unit
+<input id="method-pu" name="method" type="radio" value="per-unit" onchange="toggleIECOptions()"/>
+                                Per-Unit (IEEE)
                             </label>
+<label for="method-iec">
+<input id="method-iec" name="method" type="radio" value="iec-60909" onchange="toggleIECOptions()"/>
+                                IEC 60909
+                            </label>
+</div>
+<!-- IEC 60909 Options (shown when IEC selected) -->
+<div id="iecOptions" style="display: none; margin-top: 10px;">
+<div class="form-group">
+<label for="iecCalcType">IEC Calculation Type:</label>
+<select aria-label="IEC 60909 calculation type" id="iecCalcType" style="width: 100%;">
+<option value="max">Maximum (Equipment Rating)</option>
+<option value="min">Minimum (Protection Coordination)</option>
+</select>
+</div>
+</div>
+<!-- Method Comparison Button -->
+<button class="btn btn-info btn-full-width" onclick="showMethodComparison()" style="margin-top: 10px; font-size: 12px;" title="Compare IEEE and IEC methods side-by-side">
+                            📊 Compare All Methods
+                        </button>
+<!-- Fault Type Selection -->
+<div class="form-group" style="margin-top: 15px;">
+<label style="font-weight: bold;">Fault Types to Calculate:</label>
+<div style="display: flex; flex-direction: column; gap: 5px; margin-top: 5px;">
+<label style="font-size: 11px; font-weight: normal;">
+<input checked="" id="fault3ph" type="checkbox"/>
+                                    Three-Phase (L-L-L)
+                                </label>
+<label style="font-size: 11px; font-weight: normal;">
+<input checked="" id="faultLL" type="checkbox"/>
+                                    Line-to-Line (L-L)
+                                </label>
+<label style="font-size: 11px; font-weight: normal;">
+<input checked="" id="faultLG" type="checkbox"/>
+                                    Line-to-Ground (L-G)
+                                </label>
+<label style="font-size: 11px; font-weight: normal;">
+<input id="faultLLG" type="checkbox"/>
+                                    Double Line-to-Ground (L-L-G)
+                                </label>
+</div>
 </div>
 </details>
 </div>
@@ -139,6 +179,41 @@
 <button class="btn btn-secondary btn-full-width btn-top-margin" onclick="loadProject()">
                         📂 Load
                     </button>
+</div>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- ADVANCED ANALYSIS SECTION (Phase 3) -->
+<!-- Added: 2026-02-02 by Phase 3 Implementation -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="section section-compact">
+    <details class="collapsible-section">
+        <summary>🔬 Advanced Analysis</summary>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding: 10px 0;">
+            <button class="btn btn-info btn-full-width" onclick="analyzeMotorStartingUI()" style="font-size: 11px;">
+                🔄 Motor Starting Analysis
+            </button>
+            <button class="btn btn-info btn-full-width" onclick="verifyConductorSizingUI()" style="font-size: 11px;">
+                📏 Verify Conductor Sizing
+            </button>
+            <button class="btn btn-info btn-full-width" onclick="calculatePowerFactorCorrectionUI()" style="font-size: 11px;">
+                ⚡ PF Correction Sizing
+            </button>
+            <button class="btn btn-info btn-full-width" onclick="checkSelectiveCoordinationUI()" style="font-size: 11px;">
+                🔗 Coordination Check
+            </button>
+            <button class="btn btn-info btn-full-width" onclick="estimateHarmonicsUI()" style="font-size: 11px;">
+                〰️ Harmonic Analysis
+            </button>
+            <button class="btn btn-info btn-full-width" onclick="calculateTransformerInrushUI()" style="font-size: 11px;">
+                ⚡ Transformer Inrush
+            </button>
+            <button class="btn btn-info btn-full-width" onclick="calculateEmergencyPowerUI()" style="font-size: 11px;">
+                🔌 Emergency Power
+            </button>
+            <button class="btn btn-info btn-full-width" onclick="analyzeGroundingSystemUI()" style="font-size: 11px;">
+                ⏚ Grounding Analysis
+            </button>
+        </div>
+    </details>
 </div>
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- ✅ ADD MODIFICATION 1 HERE (AFTER ACTIONS SECTION) -->
@@ -805,6 +880,23 @@
     }, 100);
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- LAYER 7.5: ADVANCED CALCULATIONS (Phase 3) -->
+<!-- Added: 2026-02-02 - Phase 3 - Calculation Enhancements -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script src="js/calculations/iec60909.js"></script>
+<script src="js/calculations/completeFaultTypes.js"></script>
+<script src="js/calculations/transformerInrush.js"></script>
+<script src="js/calculations/cableAmpacity.js"></script>
+<script src="js/calculations/motorStarting.js"></script>
+<script src="js/calculations/conductorWithstand.js"></script>
+<script src="js/calculations/conductorSizing.js"></script>
+<script src="js/calculations/harmonicAnalysis.js"></script>
+<script src="js/calculations/powerFactorCorrection.js"></script>
+<script src="js/calculations/selectiveCoordination.js"></script>
+<script src="js/calculations/emergencyPower.js"></script>
+<script src="js/calculations/groundingAnalysis.js"></script>
 
 <script src="js/shortCircuitCalc.js"></script>
 <script src="js/loadFlowCalc.js"></script>
@@ -1614,6 +1706,202 @@ function updateRegulatoryInfo() {
 }
 
 console.log('✅ Regulatory Compliance UI handlers loaded');
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- PHASE 3: ADVANCED ANALYSIS UI HANDLERS -->
+<!-- Added: 2026-02-02 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+/**
+ * Toggle IEC 60909 options visibility
+ */
+function toggleIECOptions() {
+    const iecRadio = document.getElementById('method-iec');
+    const iecOptions = document.getElementById('iecOptions');
+    
+    if (iecRadio && iecOptions) {
+        iecOptions.style.display = iecRadio.checked ? 'block' : 'none';
+    }
+}
+
+/**
+ * Show method comparison (IEEE vs IEC)
+ */
+function showMethodComparison() {
+    // Get selected bus
+    const selectedBusId = getSelectedBusId();
+    if (!selectedBusId) {
+        alert('Please select a bus from the list first.');
+        return;
+    }
+    
+    try {
+        const comparison = compareAllMethods(selectedBusId);
+        
+        // Display comparison in output
+        const output = document.getElementById('output');
+        if (output) {
+            let html = '<h3>📊 Method Comparison</h3>';
+            html += '<table border="1" cellpadding="5" style="width:100%; border-collapse: collapse;">';
+            html += '<tr><th>Method</th><th>Symmetrical (kA)</th><th>Asymmetrical/Peak (kA)</th><th>Notes</th></tr>';
+            html += `<tr><td>Point-to-Point (IEEE)</td><td>${comparison.methods['point-to-point'].symmetrical.toFixed(3)}</td><td>${comparison.methods['point-to-point'].asymmetrical.toFixed(3)}</td><td>IEEE 141-1993</td></tr>`;
+            html += `<tr><td>Per-Unit (IEEE)</td><td>${comparison.methods['per-unit'].symmetrical.toFixed(3)}</td><td>${comparison.methods['per-unit'].asymmetrical.toFixed(3)}</td><td>IEEE 141-1993</td></tr>`;
+            html += `<tr><td>IEC 60909 (Max)</td><td>${comparison.methods['iec-60909-max'].initialSymmetrical.toFixed(3)}</td><td>${comparison.methods['iec-60909-max'].peak.toFixed(3)}</td><td>Equipment Rating</td></tr>`;
+            html += `<tr><td>IEC 60909 (Min)</td><td>${comparison.methods['iec-60909-min'].initialSymmetrical.toFixed(3)}</td><td>${comparison.methods['iec-60909-min'].peak.toFixed(3)}</td><td>Protection Coord.</td></tr>`;
+            html += '</table>';
+            output.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Method comparison error:', error);
+        alert('Error comparing methods: ' + error.message);
+    }
+}
+
+/**
+ * UI Handlers for Advanced Analysis Features
+ */
+
+function analyzeMotorStartingUI() {
+    const motor = {
+        hp: parseFloat(prompt('Enter motor horsepower:', '50')) || 50,
+        voltage: parseFloat(prompt('Enter motor voltage (V):', '480')) || 480,
+        efficiency: 0.90,
+        powerFactor: 0.85
+    };
+    
+    const startMethod = prompt('Enter starting method:\nacross-the-line, star-delta, soft-starter, vfd', 'across-the-line') || 'across-the-line';
+    const systemZ = parseFloat(prompt('Enter system impedance (Ω):', '0.01')) || 0.01;
+    
+    try {
+        const result = analyzeMotorStarting(motor, startMethod, systemZ);
+        displayAdvancedAnalysisResult('Motor Starting Analysis', result);
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function verifyConductorSizingUI() {
+    alert('Conductor sizing verification - feature available via console.\n\nExample:\nverifyConductorSizing(\n  {ampacity: 400, areaMM2: 120, lengthFeet: 100, rPerFoot: 0.0001},\n  {current: 350, continuous: true, circuitType: \'feeder\', breakerSize: 400},\n  {voltage: 480, faultCurrentKA: 42, clearingTimeSec: 0.05}\n);');
+}
+
+function calculatePowerFactorCorrectionUI() {
+    const loadKW = parseFloat(prompt('Enter load (kW):', '1000')) || 1000;
+    const currentPF = parseFloat(prompt('Enter current power factor (0.0-1.0):', '0.75')) || 0.75;
+    const targetPF = parseFloat(prompt('Enter target power factor (0.0-1.0):', '0.95')) || 0.95;
+    
+    try {
+        const result = calculateCapacitorSize(loadKW, currentPF, targetPF);
+        displayAdvancedAnalysisResult('Power Factor Correction', result);
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function checkSelectiveCoordinationUI() {
+    const upstream = {
+        type: prompt('Upstream device type (fuse, circuit-breaker, relay):', 'circuit-breaker') || 'circuit-breaker',
+        rating: parseFloat(prompt('Upstream device rating (A):', '600')) || 600
+    };
+    
+    const downstream = {
+        type: prompt('Downstream device type (fuse, circuit-breaker, relay):', 'fuse') || 'fuse',
+        rating: parseFloat(prompt('Downstream device rating (A):', '200')) || 200
+    };
+    
+    const maxFault = parseFloat(prompt('Maximum fault current (A):', '50000')) || 50000;
+    
+    try {
+        const result = analyzeSelectiveCoordination(upstream, downstream, maxFault);
+        displayAdvancedAnalysisResult('Selective Coordination', result);
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function estimateHarmonicsUI() {
+    alert('Harmonic analysis - feature available via console.\n\nExample:\nestimateHarmonics([\n  {type: \'vfd-6pulse\', current: 100},\n  {type: \'computers\', current: 50},\n  {type: \'led-lighting\', current: 30}\n], 480, 10);');
+}
+
+function calculateTransformerInrushUI() {
+    const transformer = {
+        rating: parseFloat(prompt('Transformer rating (kVA):', '1000')) || 1000,
+        primary: parseFloat(prompt('Primary voltage (V):', '13800')) || 13800,
+        secondary: parseFloat(prompt('Secondary voltage (V):', '480')) || 480
+    };
+    
+    try {
+        const result = calculateTransformerInrush(transformer);
+        displayAdvancedAnalysisResult('Transformer Inrush', result);
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function calculateEmergencyPowerUI() {
+    const loads = {
+        connectedLoad: parseFloat(prompt('Connected load (kW):', '500')) || 500,
+        demandFactor: 0.8,
+        largestMotorHP: parseFloat(prompt('Largest motor (HP):', '100')) || 100,
+        loadFactor: 0.8,
+        futureGrowth: 1.25,
+        runtimeHours: 48
+    };
+    
+    try {
+        const result = calculateGeneratorSizing(loads);
+        displayAdvancedAnalysisResult('Generator Sizing', result);
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function analyzeGroundingSystemUI() {
+    const system = {
+        breakerRating: parseFloat(prompt('Breaker rating (A):', '400')) || 400,
+        voltage: parseFloat(prompt('System voltage (V):', '480')) || 480,
+        electrode: {
+            type: 'Ground rod',
+            measuredResistance: parseFloat(prompt('Measured ground resistance (Ω):', '10')) || 10
+        },
+        zeroSequenceImpedance: 0.1
+    };
+    
+    try {
+        const result = analyzeGroundingSystem(system);
+        displayAdvancedAnalysisResult('Grounding System', result);
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+/**
+ * Helper function to display advanced analysis results
+ */
+function displayAdvancedAnalysisResult(title, result) {
+    const output = document.getElementById('output');
+    if (output) {
+        let html = `<h3>${title} Results</h3>`;
+        html += '<pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto;">';
+        html += JSON.stringify(result, null, 2);
+        html += '</pre>';
+        html += '<p style="font-size: 11px; color: #666;">Check browser console for detailed calculation steps.</p>';
+        output.innerHTML = html;
+    }
+}
+
+/**
+ * Helper function to get selected bus ID
+ */
+function getSelectedBusId() {
+    // Try to get from UI selection or return first bus
+    if (typeof buses !== 'undefined' && buses.length > 0) {
+        return buses[0].id;
+    }
+    return null;
+}
+
+console.log('✅ Phase 3 Advanced Analysis UI handlers loaded');
 </script>
 
 </body>
