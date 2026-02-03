@@ -4,23 +4,26 @@
  * 
  * @author bfforex
  * @date 2025-12-01
- * @version 1.3.1
+ * @version 1.3.2
  * @fixed Circular reference in JSON serialization
  * @fixed Auto-save circular reference with systemFault
  * @fixed ISSUE #10: Accept both numeric and string IDs for backward compatibility
+ * @fixed localStorage quota exceeded error when bus count reaches 94+
  * @enhancement ISSUE #8: Added comprehensive input validation and sanitization
  * @enhancement Added validateProjectData() for structure validation
  * @enhancement Added sanitizeProjectData() for safe data handling
  * @enhancement Added sanitizeString() and sanitizeNumber() helper functions
+ * @enhancement Auto-save now strips calculation results to reduce size
  */
 
-console.log('🔧 Loading Project Manager v1.3.1...');
+console.log('🔧 Loading Project Manager v1.3.2...');
 console.log('   ✅ Input validation enabled (Issue #8)');
 console.log('   ✅ Data sanitization enabled (Issue #8)');
 console.log('   ✅ ID type flexibility enabled (Issue #10)');
+console.log('   ✅ Auto-save optimization enabled (quota fix)');
 
 // ✅ CODE REVIEW: Define constants for consistency and maintainability
-const PROJECT_MANAGER_VERSION = '1.3.1';
+const PROJECT_MANAGER_VERSION = '1.3.2';
 const MAX_STRING_LENGTH = 1000; // Maximum allowed string length for security
 
 // ✅ CODE REVIEW: ID generation counter for uniqueness
@@ -741,8 +744,39 @@ function autoSaveToLocalStorage() {
         
         console.log('💾 Auto-saving to localStorage...');
         
-        // ✅ Use the same cleaning function as saveProject
-        const busesClean = cleanBusesForSerialization(buses);
+        // ═══════════════════════════════════════════════════════════
+        // 🔥 ENHANCED: Strip calculation results to save space
+        // Auto-save only essential data - results can be recalculated
+        // Added: 2026-02-03 to fix quota exceeded error (Issue: bus count 94+)
+        // ═══════════════════════════════════════════════════════════
+        const busesClean = buses.map(bus => {
+            if (!bus || typeof bus !== 'object') return null;
+            
+            const busClone = {
+                id: bus.id,
+                name: bus.name,
+                voltage: bus.voltage,
+                type: bus.type,
+                tag: bus.tag,
+                parent: bus.parent,
+                parentBus: bus.parentBus,
+                availableFaultCurrent: bus.availableFaultCurrent,
+                xrRatio: bus.xrRatio,
+                demandFactor: bus.demandFactor,
+                diversityFactor: bus.diversityFactor,
+                utilityFaultCurrent: bus.utilityFaultCurrent,
+                utilityFaultMVA: bus.utilityFaultMVA,
+                utilityXR: bus.utilityXR,
+                loadCurrent: bus.loadCurrent,
+                loadCurrentAutoCalculated: bus.loadCurrentAutoCalculated || false,
+            };
+            
+            // ✅ DO NOT save results in auto-save to reduce size
+            // Results can be recalculated after restore
+            // DO NOT include: bus.results, bus.systemFault, bus.pathComponents
+            
+            return busClone;
+        }).filter(bus => bus !== null);
         
         const projectData = {
             projectInfo: {
@@ -765,14 +799,41 @@ function autoSaveToLocalStorage() {
         };
         
         const json = JSON.stringify(projectData);
+        const sizeKB = (json.length / 1024).toFixed(2);
+        
+        // Check if data size is approaching localStorage limit (typically 5-10MB)
+        // Warn if > 4MB, which should never happen with stripped results
+        if (json.length > 4 * 1024 * 1024) {
+            console.warn(`   ⚠️ Auto-save data is large: ${sizeKB} KB`);
+            console.warn('   Consider reducing project complexity or using manual save');
+        }
+        
         localStorage.setItem('pwrsyspro_autosave', json);
         
         console.log('   ✅ Auto-saved successfully');
         console.log(`   Buses: ${busesClean.length}`);
         console.log(`   Components: ${components.length}`);
+        console.log(`   Size: ${sizeKB} KB`);
         
     } catch (error) {
-        console.error('   ⚠️ Auto-save failed:', error.message);
+        // Handle quota exceeded error gracefully
+        if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+            console.error('   ⚠️ Auto-save failed: Storage quota exceeded');
+            console.error('   Tip: Use manual save (💾 Save Project button) to download project file');
+            
+            // Show user-friendly message
+            const indicator = document.getElementById('autoSaveIndicator');
+            if (indicator) {
+                indicator.textContent = '⚠️ Auto-save disabled (project too large)';
+                indicator.style.opacity = '1';
+                indicator.style.backgroundColor = '#ff9800';
+                setTimeout(() => {
+                    indicator.style.opacity = '0';
+                }, 5000);
+            }
+        } else {
+            console.error('   ⚠️ Auto-save failed:', error.message);
+        }
         // Don't throw - auto-save failure shouldn't break the app
     }
 }
@@ -864,9 +925,9 @@ window.autoSaveToLocalStorage = autoSaveToLocalStorage;
 window.loadAutoSavedProject = loadAutoSavedProject;
 window.cleanBusesForSerialization = cleanBusesForSerialization;
 
-console.log('✅ Project Manager v1.3.1 loaded');
+console.log('✅ Project Manager v1.3.2 loaded');
 console.log('   - Circular reference fix: COMPLETE');
-console.log('   - Auto-save: FIXED');
+console.log('   - Auto-save: OPTIMIZED (results stripped to avoid quota errors)');
 console.log('   - systemFault circular ref: FIXED');
 console.log('   - ID type flexibility: ENABLED (numeric & string)');
 console.log('   - Backward compatibility: MAINTAINED');
