@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto-Save Test</title>
+</head>
+<body>
+    <h1>Testing Auto-Save with Large Data</h1>
+    <div id="result"></div>
+    <script>
+        // Test the auto-save functionality
+        console.log('Starting auto-save test...');
+        
+        // Create a large project with 94+ buses
+        const buses = [];
+        const components = [];
+        
+        // Generate 100 buses with results data (simulating calculations)
+        for (let i = 0; i < 100; i++) {
+            const bus = {
+                id: `bus-${i}`,
+                name: `Bus ${i}`,
+                voltage: 480,
+                type: i === 0 ? 'source' : 'load',
+                parent: i > 0 ? `bus-${i-1}` : null,
+                parentBus: i > 0 ? `bus-${i-1}` : null,
+                availableFaultCurrent: 25000,
+                xrRatio: 10,
+                loadCurrent: 100,
+                // Simulate large results object
+                results: {
+                    shortCircuit: {
+                        faultCurrentKA: 15.5 + Math.random() * 10,
+                        asymmetricalFaultCurrentKA: 25.5 + Math.random() * 15,
+                        path: Array(10).fill(null).map((_, j) => ({
+                            bus: {
+                                id: `bus-${j}`,
+                                name: `Bus ${j}`,
+                                voltage: 480,
+                                type: 'load'
+                            },
+                            component: {
+                                id: `comp-${j}`,
+                                type: 'cable',
+                                name: `Cable ${j}`
+                            },
+                            R: Math.random() * 0.1,
+                            X: Math.random() * 0.2,
+                            Z: Math.random() * 0.3
+                        }))
+                    },
+                    loadFlow: {
+                        totalCurrent: 100 + Math.random() * 50,
+                        pathTrace: Array(5).fill(null).map(() => ({
+                            depth: Math.floor(Math.random() * 3),
+                            bus: `Bus ${Math.floor(Math.random() * 100)}`,
+                            voltage: 480,
+                            loads: []
+                        }))
+                    },
+                    voltageDrop: {
+                        totalDropPercent: Math.random() * 5,
+                        components: Array(5).fill(null).map(() => ({
+                            type: 'cable',
+                            dropV: Math.random() * 10,
+                            dropPercent: Math.random() * 2
+                        }))
+                    }
+                }
+            };
+            buses.push(bus);
+            
+            if (i > 0) {
+                components.push({
+                    id: `comp-${i}`,
+                    type: 'cable',
+                    from: `bus-${i-1}`,
+                    to: `bus-${i}`,
+                    size: '500',
+                    material: 'Cu',
+                    length: 100
+                });
+            }
+        }
+        
+        const projectData = {
+            projectInfo: {
+                name: 'Large Test Project',
+                engineer: 'Test Engineer',
+                projectNumber: 'TEST-001',
+                savedDate: new Date().toISOString(),
+                version: '1.3.2'
+            },
+            buses: buses,
+            components: components,
+            settings: {
+                loadCurrent: 100,
+                powerFactor: 0.9,
+                voltageDropLimit: 3,
+                temperature: 75,
+                method: 'point-to-point'
+            }
+        };
+        
+        // Test 1: Save with results (old behavior - should be large)
+        const jsonWithResults = JSON.stringify(projectData);
+        const sizeWithResults = (jsonWithResults.length / 1024).toFixed(2);
+        console.log(`Test 1 - Size WITH results: ${sizeWithResults} KB`);
+        
+        // Test 2: Save without results (new behavior - should be much smaller)
+        const projectDataNoResults = JSON.parse(JSON.stringify(projectData));
+        projectDataNoResults.buses = projectDataNoResults.buses.map(bus => {
+            const busClone = { ...bus };
+            delete busClone.results;
+            delete busClone.pathComponents;
+            return busClone;
+        });
+        
+        const jsonWithoutResults = JSON.stringify(projectDataNoResults);
+        const sizeWithoutResults = (jsonWithoutResults.length / 1024).toFixed(2);
+        console.log(`Test 2 - Size WITHOUT results: ${sizeWithoutResults} KB`);
+        
+        const reduction = ((1 - sizeWithoutResults / sizeWithResults) * 100).toFixed(1);
+        console.log(`Size reduction: ${reduction}%`);
+        
+        // Test 3: Try to save to localStorage
+        try {
+            localStorage.setItem('test_with_results', jsonWithResults);
+            console.log('✅ Test 3a - Saved WITH results to localStorage');
+        } catch (error) {
+            console.error('❌ Test 3a - Failed to save WITH results:', error.name);
+        }
+        
+        try {
+            localStorage.setItem('test_without_results', jsonWithoutResults);
+            console.log('✅ Test 3b - Saved WITHOUT results to localStorage');
+        } catch (error) {
+            console.error('❌ Test 3b - Failed to save WITHOUT results:', error.name);
+        }
+        
+        // Display results
+        document.getElementById('result').innerHTML = `
+            <h2>Test Results:</h2>
+            <table border="1" style="border-collapse: collapse; padding: 10px;">
+                <tr><th>Metric</th><th>With Results</th><th>Without Results</th></tr>
+                <tr><td>Buses</td><td colspan="2">${buses.length}</td></tr>
+                <tr><td>Components</td><td colspan="2">${components.length}</td></tr>
+                <tr><td>Data Size</td><td>${sizeWithResults} KB</td><td>${sizeWithoutResults} KB</td></tr>
+                <tr><td>Size Reduction</td><td colspan="2">${reduction}%</td></tr>
+            </table>
+            <p><strong>Conclusion:</strong> Stripping results reduces data size by ${reduction}%, preventing localStorage quota errors.</p>
+        `;
+        
+        // Clean up
+        localStorage.removeItem('test_with_results');
+        localStorage.removeItem('test_without_results');
+    </script>
+</body>
+</html>
