@@ -288,6 +288,7 @@ function scheduleAutoSave() {
  * Auto-save to localStorage
  * Fixed: 2025-10-28 05:33:32 UTC by bfforex
  * Added: Defensive checks for undefined properties
+ * Enhanced: 2026-02-03 - Strip calculation results to reduce size and avoid quota errors
  */
 function autoSaveToLocalStorage() {
     try {
@@ -296,100 +297,17 @@ function autoSaveToLocalStorage() {
         console.log('💾 Auto-saving to localStorage...');
         
         // ═══════════════════════════════════════════════════════════
-        // 🔥 ENHANCED: Robust circular reference removal with null checks
-        // Fixed: 2025-10-28 05:33:32 UTC by bfforex
+        // 🔥 ENHANCED: Strip calculation results to save space
+        // Auto-save only essential data - results can be recalculated
+        // Added: 2026-02-03 to fix quota exceeded error
         // ═══════════════════════════════════════════════════════════
         const busesClean = buses.map(bus => {
             const busClone = { ...bus };
             
-            if (busClone.results) {
-                const resultsClean = { ...busClone.results };
-                
-                // Clean shortCircuit path
-                if (resultsClean.shortCircuit && resultsClean.shortCircuit.path) {
-                    resultsClean.shortCircuit.path = resultsClean.shortCircuit.path
-                        .filter(segment => segment && segment.bus)  // ✅ Filter out invalid segments
-                        .map(segment => ({
-                            bus: {
-                                id: segment.bus.id,
-                                name: segment.bus.name || 'Unknown',
-                                voltage: segment.bus.voltage || 0,
-                                type: segment.bus.type || 'unknown'
-                            },
-                            component: segment.component ? {
-                                id: segment.component.id,
-                                type: segment.component.type || 'unknown',
-                                name: segment.component.name || 'Unknown Component'
-                            } : null
-                        }));
-                }
-                
-                // Clean main path
-                if (resultsClean.path) {
-                    resultsClean.path = resultsClean.path
-                        .filter(segment => segment && segment.bus)  // ✅ Filter out invalid segments
-                        .map(segment => ({
-                            bus: {
-                                id: segment.bus.id,
-                                name: segment.bus.name || 'Unknown',
-                                voltage: segment.bus.voltage || 0,
-                                type: segment.bus.type || 'unknown'
-                            },
-                            component: segment.component ? {
-                                id: segment.component.id,
-                                type: segment.component.type || 'unknown',
-                                name: segment.component.name || 'Unknown Component'
-                            } : null
-                        }));
-                }
-                
-                // Clean loadFlow pathTrace
-                if (resultsClean.loadFlow && resultsClean.loadFlow.pathTrace) {
-                    resultsClean.loadFlow.pathTrace = resultsClean.loadFlow.pathTrace
-                        .filter(trace => trace && trace.bus)  // ✅ Filter out invalid traces
-                        .map(trace => ({
-                            depth: trace.depth || 0,
-                            bus: trace.bus || 'Unknown',
-                            voltage: trace.voltage || 0,
-                            loads: trace.loads || []
-                        }));
-                }
-                
-                // Clean voltageDrop components
-                if (resultsClean.voltageDrop && resultsClean.voltageDrop.components) {
-                    resultsClean.voltageDrop.components = resultsClean.voltageDrop.components
-                        .filter(comp => comp)  // ✅ Filter out null/undefined
-                        .map(comp => {
-                            const compClean = { ...comp };
-                            // Remove any circular references
-                            delete compClean.bus;
-                            delete compClean.component;
-                            return compClean;
-                        });
-                }
-                
-                busClone.results = resultsClean;
-            }
-            
-            // Clean pathComponents
-            if (busClone.pathComponents) {
-                busClone.pathComponents = busClone.pathComponents
-                    .filter(pc => pc && pc.bus)  // ✅ Filter out invalid components
-                    .map(pc => ({
-                        sequence: pc.sequence || 0,
-                        bus: {
-                            id: pc.bus.id,
-                            name: pc.bus.name || 'Unknown',
-                            voltage: pc.bus.voltage || 0,
-                            type: pc.bus.type || 'unknown'
-                        },
-                        component: pc.component ? {
-                            id: pc.component.id,
-                            type: pc.component.type || 'unknown',
-                            name: pc.component.name || 'Unknown Component'
-                        } : null
-                    }));
-            }
+            // Remove results entirely from auto-save to save space
+            // Results can be recalculated after restore
+            delete busClone.results;
+            delete busClone.pathComponents;
             
             return busClone;
         });
@@ -400,7 +318,7 @@ function autoSaveToLocalStorage() {
                 engineer: document.getElementById('engineer').value || '',
                 projectNumber: document.getElementById('projectNumber').value || '',
                 savedDate: new Date().toISOString(),
-                version: '1.1.0',
+                version: '1.1.1',
                 autoSave: true
             },
             buses: busesClean,
@@ -415,15 +333,42 @@ function autoSaveToLocalStorage() {
         };
         
         const json = JSON.stringify(projectData);
+        const sizeKB = (json.length / 1024).toFixed(2);
+        
+        // Check if data size is approaching localStorage limit (typically 5-10MB)
+        // Warn if > 4MB, which should never happen with stripped results
+        if (json.length > 4 * 1024 * 1024) {
+            console.warn(`⚠️ Auto-save data is large: ${sizeKB} KB`);
+            console.warn('   Consider reducing project complexity or using manual save');
+        }
+        
         localStorage.setItem('pwrsyspro_autosave', json);
         
         console.log('✅ Auto-saved to localStorage successfully');
         console.log(`   Buses: ${busesClean.length}`);
         console.log(`   Components: ${components.length}`);
+        console.log(`   Size: ${sizeKB} KB`);
         
     } catch (error) {
-        console.warn('⚠️ Auto-save failed:', error.message);
-        console.warn('Stack trace:', error.stack);
+        // Handle quota exceeded error gracefully
+        if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+            console.warn('⚠️ Auto-save failed: Storage quota exceeded');
+            console.warn('   Tip: Use manual save (💾 Save Project button) to download project file');
+            
+            // Show user-friendly message
+            const indicator = document.getElementById('autoSaveIndicator');
+            if (indicator) {
+                indicator.textContent = '⚠️ Auto-save disabled (project too large)';
+                indicator.style.opacity = '1';
+                indicator.style.backgroundColor = '#ff9800';
+                setTimeout(() => {
+                    indicator.style.opacity = '0';
+                }, 5000);
+            }
+        } else {
+            console.warn('⚠️ Auto-save failed:', error.message);
+            console.warn('Stack trace:', error.stack);
+        }
         // Don't throw error - auto-save failure shouldn't break the app
     }
 }
@@ -508,6 +453,6 @@ window.autoSaveToLocalStorage = autoSaveToLocalStorage;
 window.loadAutoSavedProject = loadAutoSavedProject;
 
 console.log('✅ Project Manager loaded');
-console.log('   - Version: 1.1.0');
-console.log('   - Circular reference fix: ENABLED');
-console.log('   - Auto-save: ENABLED');
+console.log('   - Version: 1.1.1');
+console.log('   - Auto-save optimization: ENABLED (results stripped)');
+console.log('   - Quota check: ENABLED');
