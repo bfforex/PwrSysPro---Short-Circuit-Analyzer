@@ -449,4 +449,4 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = RecommendationRules;
 }
 
-console.log('✅ RecommendationRules loaded successfully');
+logger.info('RecommendationRules loaded successfully');
