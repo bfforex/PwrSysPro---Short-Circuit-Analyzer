@@ -11,7 +11,6 @@
 
 console.log('🔧 Loading Motor Starting Analysis Module v1.0.0...');
 
-const SQRT3 = Math.sqrt(3);
 
 // Starting method characteristics
 const STARTING_METHODS = {

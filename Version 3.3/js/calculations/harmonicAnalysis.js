@@ -93,7 +93,7 @@ function estimateHarmonics(loads, systemVoltage = 480, scRatio = 10) {
     
     const compliant = estimatedTHDv <= limit.THDv;
     
-    console.log(`\nIEEE 519-2022 COMPLIANCE:');
+    console.log(`\nIEEE 519-2022 COMPLIANCE:`);
     console.log('─'.repeat(80));
     console.log(`Voltage Level: ${limit.voltage}`);
     console.log(`THDv Limit: ${limit.THDv}%`);

@@ -11,7 +11,6 @@
 
 console.log('🔧 Loading Transformer Inrush Current Module v1.0.0...');
 
-const SQRT3 = Math.sqrt(3);
 
 /**
  * Calculate transformer inrush current
