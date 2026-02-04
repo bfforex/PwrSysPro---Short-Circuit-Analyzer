@@ -20,11 +20,11 @@ function calculateLoadFlow(busId) {
         throw new Error(`Bus ${busId} not found`);
     }
     
-    console.log('\n' + '═'.repeat(80));
-    console.log('LOAD FLOW ANALYSIS');
-    console.log('═'.repeat(80));
-    console.log(`Bus: ${bus.name} (${bus.voltage}V)`);
-    console.log('═'.repeat(80) + '\n');
+    logger.info('\n' + '═'.repeat(80));
+    logger.info('LOAD FLOW ANALYSIS');
+    logger.info('═'.repeat(80));
+    logger.info(`Bus: ${bus.name} (${bus.voltage}V)`);
+    logger.info('═'.repeat(80) + '\n');
     
     const loadData = {
         busId: bus.id,
@@ -273,10 +273,10 @@ function calculateLoadFlow(busId) {
     
     loadData.calculationSteps = steps;
     
-    console.log('✅ Load Flow Analysis Complete');
-    console.log(`   Total Load: ${loadData.summary.totalCurrent.toFixed(2)} A`);
-    console.log(`   Total Power: ${loadData.summary.totalPowerKVA.toFixed(2)} kVA`);
-    console.log('');
+    logger.info('Load Flow Analysis Complete');
+    logger.info(`   Total Load: ${loadData.summary.totalCurrent.toFixed(2)} A`);
+    logger.info(`   Total Power: ${loadData.summary.totalPowerKVA.toFixed(2)} kVA`);
+    logger.debug('');
     
     return loadData;
 }
@@ -284,4 +284,4 @@ function calculateLoadFlow(busId) {
 // Export functions
 window.calculateLoadFlow = calculateLoadFlow;
 
-console.log('✅ Load Flow Calculation module loaded');
+logger.info('Load Flow Calculation module loaded');

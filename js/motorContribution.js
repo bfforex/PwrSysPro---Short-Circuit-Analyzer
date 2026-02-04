@@ -19,7 +19,7 @@ function calculateMotorContribution(busId) {
     const bus = buses.find(b => b.id === busId);
     if (!bus) return null;
     
-    console.log(`\n🔌 Calculating motor contribution for ${bus.name} (${bus.voltage}V)`);
+    logger.info(`Calculating motor contribution for ${bus.name} (${bus.voltage}V)`);
     
     const motorContribution = {
         busId: bus.id,
@@ -37,7 +37,7 @@ function calculateMotorContribution(busId) {
     const connectedMotors = findConnectedMotors(busId);
     
     if (connectedMotors.length === 0) {
-        console.log('  ℹ️ No motors connected to this bus');
+        logger.info('  No motors connected to this bus');
         return motorContribution;
     }
     
@@ -149,7 +149,7 @@ function calculateMotorContribution(busId) {
     
     motorContribution.calculationSteps = steps;
     
-    console.log(`  ✅ Motor contribution: ${(motorContribution.motorFaultCurrent/1000).toFixed(3)} kA`);
+    logger.info(`  Motor contribution: ${(motorContribution.motorFaultCurrent/1000).toFixed(3)} kA`);
     
     return motorContribution;
 }
@@ -234,7 +234,7 @@ window.calculateMotorContribution = calculateMotorContribution;
 window.findConnectedMotors = findConnectedMotors;
 window.combineMotorWithSystem = combineMotorWithSystem;
 
-console.log('✅ Motor Contribution module loaded');
-console.log('   - IEEE 141-1993 compliant');
-console.log('   - IEC 60909 compliant');
-console.log('   - NEC Article 430 compliant');
+logger.info('Motor Contribution module loaded');
+logger.info('   - IEEE 141-1993 compliant');
+logger.info('   - IEC 60909 compliant');
+logger.info('   - NEC Article 430 compliant');

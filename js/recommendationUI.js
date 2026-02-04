@@ -13,7 +13,7 @@ class RecommendationUI {
         this.currentSort = 'priority';
         this.expandedRecommendations = new Set();
         
-        console.log('✅ Recommendation UI initialized');
+        logger.info('Recommendation UI initialized');
     }
 
     /**
@@ -24,13 +24,13 @@ class RecommendationUI {
     displayBusRecommendations(busId, containerId = 'busRecommendations') {
         const container = document.getElementById(containerId);
         if (!container) {
-            console.error(`❌ Container ${containerId} not found in DOM`);
+            logger.error(`Container ${containerId} not found in DOM`);
             return;
         }
 
         const recommendations = recommendationEngine.filterByBus(busId);
         
-        console.log(`📊 Displaying ${recommendations.length} recommendations for bus ${busId}`);
+        logger.info(`Displaying ${recommendations.length} recommendations for bus ${busId}`);
         
         if (recommendations.length === 0) {
             container.innerHTML = `
@@ -55,7 +55,7 @@ class RecommendationUI {
     displaySystemRecommendations(systemReport, containerId = 'systemRecommendations') {
         const container = document.getElementById(containerId);
         if (!container) {
-            console.error(`❌ Container ${containerId} not found`);
+            logger.error(`Container ${containerId} not found`);
             return;
         }
 
@@ -555,7 +555,7 @@ class RecommendationUI {
 try {
     const recUI = new RecommendationUI();
     window.recUI = recUI;
-    console.log('✅ Recommendation UI ready');
+    logger.info('Recommendation UI ready');
 } catch (error) {
-    console.error('❌ Failed to initialize Recommendation UI:', error);
+    logger.error('Failed to initialize Recommendation UI:', error);
 }

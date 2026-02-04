@@ -48,14 +48,14 @@ function calculateDownstreamLoad(busId) {
                     // Typical efficiency: 0.9, PF: 0.85 for motors
                     const motorCurrent = (comp.hp * 746) / (toBus.voltage * 0.9 * 0.85 * Math.sqrt(3));
                     branchLoad += motorCurrent;
-                    console.log(`   Motor: ${comp.hp} HP = ${motorCurrent.toFixed(2)} A`);
+                    logger.debug(`   Motor: ${comp.hp} HP = ${motorCurrent.toFixed(2)} A`);
                     break;
                     
                 case 'cable':
                     // If cable has specified load current, use it
                     if (comp.loadCurrent && comp.loadCurrent > 0) {
                         branchLoad += comp.loadCurrent;
-                        console.log(`   Cable load: ${comp.loadCurrent.toFixed(2)} A`);
+                        logger.debug(`   Cable load: ${comp.loadCurrent.toFixed(2)} A`);
                     } else {
                         // Otherwise, traverse to downstream bus
                         const downstreamLoad = traverseDownstream(comp.toBus);
@@ -72,23 +72,23 @@ function calculateDownstreamLoad(busId) {
                                                              const primaryCurrent = transformerDownstream / turnsRatio;  
                        branchLoad += primaryCurrent;
         
-                                                             console.log(`   Transformer: ${comp.rating} kVA`);
-                       console.log(`     Secondary load: ${transformerDownstream.toFixed(2)} A @ ${comp.secondary}V`);
-                       console.log(`     Primary current: ${primaryCurrent.toFixed(2)} A @ ${comp.primary}V`);
-                       console.log(`     Turns ratio: ${turnsRatio.toFixed(4)}`);
+                                                             logger.debug(`   Transformer: ${comp.rating} kVA`);
+                       logger.debug(`     Secondary load: ${transformerDownstream.toFixed(2)} A @ ${comp.secondary}V`);
+                       logger.debug(`     Primary current: ${primaryCurrent.toFixed(2)} A @ ${comp.primary}V`);
+                       logger.debug(`     Turns ratio: ${turnsRatio.toFixed(4)}`);
 
                     } else if (comp.rating) {
                         // Use transformer rating as maximum load (80% loading)
                         const transformerCurrent = (comp.rating * 1000) / (Math.sqrt(3) * comp.primary);
                                                                 branchLoad += transformerCurrent * 0.8;
-                                                                console.log(`   Transformer: ${comp.rating} kVA @ 80% = ${(transformerCurrent * 0.8).toFixed(2)} A`);
+                                                                logger.debug(`   Transformer: ${comp.rating} kVA @ 80% = ${(transformerCurrent * 0.8).toFixed(2)} A`);
                     }
                     break;
                     
                 case 'generator':
                     // Generators typically don't add load, they supply it
                     // But we'll note their contribution
-                    console.log(`   Generator: ${comp.rating} kVA (source)`);
+                    logger.debug(`   Generator: ${comp.rating} kVA (source)`);
                     break;
                     
                 default:
@@ -102,7 +102,7 @@ function calculateDownstreamLoad(busId) {
     
     totalLoad = traverseDownstream(busId);
     
-    console.log(`📊 Total downstream load for ${bus.name}: ${totalLoad.toFixed(2)} A`);
+    logger.info(`Total downstream load for ${bus.name}: ${totalLoad.toFixed(2)} A`);
     return totalLoad;
 }
 
@@ -117,20 +117,20 @@ function getLoadCurrentForBus(bus) {
     const downstreamLoad = calculateDownstreamLoad(bus.id);
     
     if (downstreamLoad > 0) {
-        console.log(`✅ Using calculated downstream load: ${downstreamLoad.toFixed(2)} A`);
+        logger.info(`Using calculated downstream load: ${downstreamLoad.toFixed(2)} A`);
         return downstreamLoad;
     }
     
     // Fall back to manual input from UI
     const manualLoad = parseFloat(document.getElementById('loadCurrent')?.value || 0);
     if (manualLoad > 0) {
-        console.log(`⚠️ No downstream loads found, using manual input: ${manualLoad.toFixed(2)} A`);
+        logger.warn(`No downstream loads found, using manual input: ${manualLoad.toFixed(2)} A`);
         return manualLoad;
     }
     
     // Last resort: use a default based on bus voltage
     const defaultLoad = getDefaultLoadByVoltage(bus.voltage);
-    console.log(`⚠️ No load specified, using default: ${defaultLoad.toFixed(2)} A`);
+    logger.warn(`No load specified, using default: ${defaultLoad.toFixed(2)} A`);
     return defaultLoad;
 }
 
@@ -259,4 +259,4 @@ function displayLoadSummary(busId) {
     container.innerHTML = html;
 }
 
-console.log('✅ Load Calculations module loaded');
+logger.info('Load Calculations module loaded');

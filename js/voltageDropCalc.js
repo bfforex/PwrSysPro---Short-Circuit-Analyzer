@@ -25,11 +25,11 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
         throw new Error(`Bus ${busId} not found`);
     }
     
-    console.log('\n' + '═'.repeat(80));
-    console.log('VOLTAGE DROP ANALYSIS');
-    console.log('═'.repeat(80));
-    console.log(`Bus: ${bus.name} (${bus.voltage}V)`);
-    console.log('═'.repeat(80) + '\n');
+    logger.info('\n' + '═'.repeat(80));
+    logger.info('VOLTAGE DROP ANALYSIS');
+    logger.info('═'.repeat(80));
+    logger.info(`Bus: ${bus.name} (${bus.voltage}V)`);
+    logger.info('═'.repeat(80) + '\n');
     
     const powerFactor = parseFloat(document.getElementById('powerFactor').value) || 0.85;
     const temperature = parseFloat(document.getElementById('temperature').value) || 75;
@@ -100,9 +100,9 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
         steps += `   Source impedance is ONLY used for short circuit analysis.\n`;
         steps += `   Voltage drop starts from FIRST COMPONENT after source.\n\n`;
         
-        console.log('ℹ️  Source impedance detected and EXCLUDED from voltage drop');
-        console.log('   Per IEEE 141-1993 Section 3.2.1');
-        console.log('   Starting voltage drop from first distribution component');
+        logger.info('Source impedance detected and EXCLUDED from voltage drop');
+        logger.info('   Per IEEE 141-1993 Section 3.2.1');
+        logger.info('   Starting voltage drop from first distribution component');
     }
     // ═══════════════════════════════════════════════════════════
     
@@ -139,19 +139,19 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
             
             if (comp.loadCurrent && comp.loadCurrent > 0) {
                 loadCurrent = comp.loadCurrent;
-                console.log(`  ✅ Cable load (specified): ${loadCurrent.toFixed(2)}A`);
+                logger.debug(`  Cable load (specified): ${loadCurrent.toFixed(2)}A`);
             } else if (typeof calculateDownstreamLoad === 'function') {
                 const downstreamLoad = calculateDownstreamLoad(segment.bus.id);
                 if (downstreamLoad > 0) {
                     loadCurrent = downstreamLoad;
-                    console.log(`  ✅ Cable load (calculated): ${loadCurrent.toFixed(2)}A`);
+                    logger.debug(`  Cable load (calculated): ${loadCurrent.toFixed(2)}A`);
                 } else {
                     loadCurrent = getLoadCurrent(segment.bus, comp, 100);
-                    console.log(`  ⚠️ Cable load (default): ${loadCurrent.toFixed(2)}A`);
+                    logger.debug(`  Cable load (default): ${loadCurrent.toFixed(2)}A`);
                 }
             } else {
                 loadCurrent = getLoadCurrent(segment.bus, comp, 100);
-                console.log(`  ⚠️ Cable load (default): ${loadCurrent.toFixed(2)}A`);
+                logger.debug(`  Cable load (default): ${loadCurrent.toFixed(2)}A`);
             }
             
             const cableVD = calculateComponentVoltageDrop(
@@ -240,7 +240,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
             if (typeof calculateDownstreamLoad === 'function') {
                 secondaryCurrent = calculateDownstreamLoad(comp.toBus);
                 if (secondaryCurrent > 0) {
-                    console.log(`  ✅ Transformer secondary load (calculated): ${secondaryCurrent.toFixed(2)}A @ ${comp.secondary}V`);
+                    logger.debug(`  Transformer secondary load (calculated): ${secondaryCurrent.toFixed(2)}A @ ${comp.secondary}V`);
                 }
             }
             
@@ -251,7 +251,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
                 );
                 if (thisXfmr && thisXfmr.secondaryCurrent) {
                     secondaryCurrent = thisXfmr.secondaryCurrent;
-                    console.log(`  ✅ Transformer secondary load (load flow): ${secondaryCurrent.toFixed(2)}A`);
+                    logger.debug(`  Transformer secondary load (load flow): ${secondaryCurrent.toFixed(2)}A`);
                 }
             }
             
@@ -259,7 +259,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
             if (secondaryCurrent === 0) {
                 const secondaryBus = buses.find(b => b.id === comp.toBus);
                 secondaryCurrent = getLoadCurrent(secondaryBus, comp, 100);
-                console.log(`  ⚠️ Transformer secondary load (default): ${secondaryCurrent.toFixed(2)}A`);
+                logger.debug(`  Transformer secondary load (default): ${secondaryCurrent.toFixed(2)}A`);
             }
             
             // ═══════════════════════════════════════════════════
@@ -270,8 +270,8 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
             const turnsRatio = comp.primary / comp.secondary;
             const primaryCurrent = secondaryCurrent / turnsRatio;
             
-            console.log(`  Turns ratio: ${turnsRatio.toFixed(4)}`);
-            console.log(`  Primary current: ${primaryCurrent.toFixed(2)}A @ ${comp.primary}V`);
+            logger.debug(`  Turns ratio: ${turnsRatio.toFixed(4)}`);
+            logger.debug(`  Primary current: ${primaryCurrent.toFixed(2)}A @ ${comp.primary}V`);
             
             // ═══════════════════════════════════════════════════
             // ✅ VOLTAGE DROP CALCULATED ON SECONDARY SIDE
@@ -437,10 +437,10 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
     
     vdData.calculationSteps = steps;
     
-    console.log('✅ Voltage Drop Analysis Complete');
-    console.log(`   Total Drop: ${vdData.cumulativeDropPercent.toFixed(3)}%`);
-    console.log(`   Compliance: ${vdData.compliance.status}`);
-    console.log('');
+    logger.info('Voltage Drop Analysis Complete');
+    logger.info(`   Total Drop: ${vdData.cumulativeDropPercent.toFixed(3)}%`);
+    logger.info(`   Compliance: ${vdData.compliance.status}`);
+    logger.debug('');
     
     return vdData;
 }
@@ -448,8 +448,8 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
 // Export functions
 window.calculateVoltageDrop = calculateVoltageDrop;
 
-console.log('✅ Voltage Drop Calculation module loaded');
-console.log('   - Version: 1.2.0');
-console.log('   - CRITICAL FIX: Source impedance excluded per IEEE 141-1993');
-console.log('   - Transformer current bug: FIXED');
-console.log('   - Load flow integration: ENHANCED');
+logger.info('Voltage Drop Calculation module loaded');
+logger.info('   - Version: 1.2.0');
+logger.info('   - CRITICAL FIX: Source impedance excluded per IEEE 141-1993');
+logger.info('   - Transformer current bug: FIXED');
+logger.info('   - Load flow integration: ENHANCED');

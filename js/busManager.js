@@ -143,7 +143,7 @@ function saveBus() {
         const loadCurrent = parseFloat(loadField.value);
         if (loadCurrent && loadCurrent > 0) {
             bus.loadCurrent = loadCurrent;
-            console.log(`✅ Bus ${name}: Load current set to ${loadCurrent} A`);
+            logger.info(`Bus ${name}: Load current set to ${loadCurrent} A`);
         }
     }
     
@@ -382,10 +382,10 @@ function saveBusEdits() {
         const loadCurrent = parseFloat(editLoadField.value);
         if (loadCurrent && loadCurrent > 0) {
             bus.loadCurrent = loadCurrent;
-            console.log(`✅ Bus ${bus.name}: Load current updated to ${loadCurrent} A`);
+            logger.info(`Bus ${bus.name}: Load current updated to ${loadCurrent} A`);
         } else {
             delete bus.loadCurrent;
-            console.log(`🔄 Bus ${bus.name}: Load current cleared (will auto-calculate)`);
+            logger.info(`Bus ${bus.name}: Load current cleared (will auto-calculate)`);
         }
     }
     

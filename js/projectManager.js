@@ -19,7 +19,7 @@ function saveProject() {
         const engineer = document.getElementById('engineer').value || 'Unknown';
         const projectNumber = document.getElementById('projectNumber').value || '';
         
-        console.log('💾 Saving project...');
+        logger.info('Saving project...');
         
         // ═══════════════════════════════════════════════════════════
         // 🔥 FIX: Remove circular references from buses
@@ -145,16 +145,16 @@ function saveProject() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        console.log('✅ Project saved successfully');
-        console.log(`   File: ${a.download}`);
-        console.log(`   Buses: ${busesClean.length}`);
-        console.log(`   Components: ${components.length}`);
+        logger.info('Project saved successfully');
+        logger.info(`   File: ${a.download}`);
+        logger.info(`   Buses: ${busesClean.length}`);
+        logger.info(`   Components: ${components.length}`);
         
         alert(`✅ Project saved successfully!\n\nFile: ${a.download}\nBuses: ${busesClean.length}\nComponents: ${components.length}`);
         
     } catch (error) {
-        console.error('❌ Save failed:', error);
-        console.error('Stack trace:', error.stack);
+        logger.error('Save failed:', error);
+        logger.error('Stack trace:', error.stack);
         alert(`❌ Failed to save project:\n\n${error.message}\n\nCheck browser console for details.`);
     }
 }
@@ -169,7 +169,7 @@ function loadProject() {
         const file = event.target.files[0];
         if (!file) return;
         
-        console.log('📂 Loading project:', file.name);
+        logger.info('Loading project:', file.name);
         
         const reader = new FileReader();
         
@@ -177,10 +177,10 @@ function loadProject() {
             try {
                 const projectData = JSON.parse(e.target.result);
                 
-                console.log('📦 Project data loaded');
-                console.log('   Version:', projectData.projectInfo?.version || 'Unknown');
-                console.log('   Buses:', projectData.buses?.length || 0);
-                console.log('   Components:', projectData.components?.length || 0);
+                logger.info('Project data loaded');
+                logger.info('   Version:', projectData.projectInfo?.version || 'Unknown');
+                logger.info('   Buses:', projectData.buses?.length || 0);
+                logger.info('   Components:', projectData.components?.length || 0);
                 
                 // Validate data
                 if (!projectData.buses || !projectData.components) {
@@ -228,13 +228,13 @@ function loadProject() {
                 // Reset selected bus
                 selectedBusId = null;
                 
-                console.log('✅ Project loaded successfully');
+                logger.info('✅ Project loaded successfully');
                 
                 alert(`✅ Project loaded successfully!\n\nName: ${projectData.projectInfo?.name || 'Untitled'}\nBuses: ${buses.length}\nComponents: ${components.length}`);
                 
             } catch (error) {
-                console.error('❌ Load failed:', error);
-                console.error('Stack trace:', error.stack);
+                logger.error('❌ Load failed:', error);
+                logger.error('Stack trace:', error.stack);
                 alert(`❌ Failed to load project:\n\n${error.message}\n\nMake sure the file is a valid project file.`);
             }
             
@@ -294,7 +294,7 @@ function autoSaveToLocalStorage() {
     try {
         const projectName = document.getElementById('projectName').value || 'Untitled Project';
         
-        console.log('💾 Auto-saving to localStorage...');
+        logger.debug('Auto-saving to localStorage...');
         
         // ═══════════════════════════════════════════════════════════
         // 🔥 ENHANCED: Strip calculation results to save space
@@ -338,22 +338,22 @@ function autoSaveToLocalStorage() {
         // Check if data size is approaching localStorage limit (typically 5-10MB)
         // Warn if > 4MB, which should never happen with stripped results
         if (json.length > 4 * 1024 * 1024) {
-            console.warn(`⚠️ Auto-save data is large: ${sizeKB} KB`);
-            console.warn('   Consider reducing project complexity or using manual save');
+            logger.warn(`Auto-save data is large: ${sizeKB} KB`);
+            logger.warn('   Consider reducing project complexity or using manual save');
         }
         
         localStorage.setItem('pwrsyspro_autosave', json);
         
-        console.log('✅ Auto-saved to localStorage successfully');
-        console.log(`   Buses: ${busesClean.length}`);
-        console.log(`   Components: ${components.length}`);
-        console.log(`   Size: ${sizeKB} KB`);
+        logger.debug('Auto-saved to localStorage successfully');
+        logger.debug(`   Buses: ${busesClean.length}`);
+        logger.info(`   Components: ${components.length}`);
+        logger.debug(`   Size: ${sizeKB} KB`);
         
     } catch (error) {
         // Handle quota exceeded error gracefully
         if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
-            console.warn('⚠️ Auto-save failed: Storage quota exceeded');
-            console.warn('   Tip: Use manual save (💾 Save Project button) to download project file');
+            logger.warn('Auto-save failed: Storage quota exceeded');
+            logger.warn('   Tip: Use manual save (Save Project button) to download project file');
             
             // Show user-friendly message
             const indicator = document.getElementById('autoSaveIndicator');
@@ -366,8 +366,8 @@ function autoSaveToLocalStorage() {
                 }, 5000);
             }
         } else {
-            console.warn('⚠️ Auto-save failed:', error.message);
-            console.warn('Stack trace:', error.stack);
+            logger.warn('Auto-save failed:', error.message);
+            logger.warn('Stack trace:', error.stack);
         }
         // Don't throw error - auto-save failure shouldn't break the app
     }
@@ -395,9 +395,9 @@ function loadAutoSavedProject() {
             return false;
         }
         
-        console.log('📂 Auto-saved project found');
-        console.log('   Saved:', savedDate.toLocaleString());
-        console.log('   Hours ago:', hoursDiff.toFixed(1));
+        logger.info('Auto-saved project found');
+        logger.info('   Saved:', savedDate.toLocaleString());
+        logger.info('   Hours ago:', hoursDiff.toFixed(1));
         
         const restore = confirm(`Auto-saved project found!\n\nProject: ${projectData.projectInfo.name}\nSaved: ${savedDate.toLocaleString()}\n\nRestore this project?`);
         
@@ -432,7 +432,7 @@ function loadAutoSavedProject() {
             updateComponentsList();
             updateBusesContent();
             
-            console.log('✅ Auto-saved project restored');
+            logger.info('Auto-saved project restored');
             
             return true;
         }
@@ -440,7 +440,7 @@ function loadAutoSavedProject() {
         return false;
         
     } catch (error) {
-        console.error('❌ Failed to load auto-saved project:', error);
+        logger.error('Failed to load auto-saved project:', error);
         return false;
     }
 }
@@ -452,7 +452,7 @@ window.scheduleAutoSave = scheduleAutoSave;
 window.autoSaveToLocalStorage = autoSaveToLocalStorage;
 window.loadAutoSavedProject = loadAutoSavedProject;
 
-console.log('✅ Project Manager loaded');
-console.log('   - Version: 1.1.1');
-console.log('   - Auto-save optimization: ENABLED (results stripped)');
-console.log('   - Quota check: ENABLED');
+logger.info('Project Manager loaded');
+logger.info('   - Version: 1.1.1');
+logger.info('   - Auto-save optimization: ENABLED (results stripped)');
+logger.info('   - Quota check: ENABLED');

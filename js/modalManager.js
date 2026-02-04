@@ -17,7 +17,7 @@
 function openModal(modalId, callback = null) {
     const modal = document.getElementById(modalId);
     if (!modal) {
-        console.error(`Modal ${modalId} not found`);
+        logger.error(`Modal ${modalId} not found`);
         return;
     }
     
@@ -79,7 +79,7 @@ function openModal(modalId, callback = null) {
         callback();
     }
     
-    console.log(`✅ Modal opened: ${modalId} (accessible)`);
+    logger.info(`Modal opened: ${modalId} (accessible)`);
 }
 
 /**
@@ -91,7 +91,7 @@ function openModal(modalId, callback = null) {
 function closeModal(modalId, callback = null) {
     const modal = document.getElementById(modalId);
     if (!modal) {
-        console.error(`Modal ${modalId} not found`);
+        logger.error(`Modal ${modalId} not found`);
         return;
     }
     
@@ -123,7 +123,7 @@ function closeModal(modalId, callback = null) {
         callback();
     }
     
-    console.log(`✅ Modal closed: ${modalId}`);
+    logger.info(`Modal closed: ${modalId}`);
 }
 
 /**
@@ -154,7 +154,7 @@ function initializeModals() {
         });
     });
     
-    console.log(`✅ Initialized ${modals.length} modals with accessibility features`);
+    logger.info(`Initialized ${modals.length} modals with accessibility features`);
 }
 
 /**
@@ -248,8 +248,8 @@ window.hideModalLoading = hideModalLoading;
 window.showModalError = showModalError;
 window.clearModalErrors = clearModalErrors;
 
-console.log('✅ Modal Manager loaded with full accessibility support');
-console.log('   - WCAG 2.1 Level AA compliant');
-console.log('   - Focus trap: Enabled');
-console.log('   - Keyboard navigation: Enabled');
-console.log('   - Screen reader support: Enabled');
+logger.info('Modal Manager loaded with full accessibility support');
+logger.info('   - WCAG 2.1 Level AA compliant');
+logger.info('   - Focus trap: Enabled');
+logger.info('   - Keyboard navigation: Enabled');
+logger.info('   - Screen reader support: Enabled');

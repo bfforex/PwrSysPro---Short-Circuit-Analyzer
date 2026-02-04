@@ -22,12 +22,12 @@ function calculateShortCircuit(busId, method = 'point-to-point') {
         throw new Error(`Bus ${busId} not found`);
     }
     
-    console.log('\n' + '═'.repeat(80));
-    console.log('SHORT CIRCUIT ANALYSIS');
-    console.log('═'.repeat(80));
-    console.log(`Bus: ${bus.name} (${bus.voltage}V)`);
-    console.log(`Method: ${method}`);
-    console.log('═'.repeat(80) + '\n');
+    logger.info('\n' + '═'.repeat(80));
+    logger.info('SHORT CIRCUIT ANALYSIS');
+    logger.info('═'.repeat(80));
+    logger.info(`Bus: ${bus.name} (${bus.voltage}V)`);
+    logger.info(`Method: ${method}`);
+    logger.info('═'.repeat(80) + '\n');
     
     const path = traceBusPath(busId);
     if (!path) {
@@ -86,13 +86,13 @@ function calculateShortCircuit(busId, method = 'point-to-point') {
         arcFlash: null
     };
     
-    console.log('✅ Short Circuit Analysis Complete');
-    console.log(`   Fault Current: ${scResults.faultCurrents.threePhaseSym.toFixed(3)} kA`);
+    logger.info('Short Circuit Analysis Complete');
+    logger.info(`   Fault Current: ${scResults.faultCurrents.threePhaseSym.toFixed(3)} kA`);
     if (scResults.motorContribution) {
-        console.log(`   Motor Contribution: ${(scResults.motorContribution.motorFaultCurrent/1000).toFixed(3)} kA`);
+        logger.info(`   Motor Contribution: ${(scResults.motorContribution.motorFaultCurrent/1000).toFixed(3)} kA`);
     }
-    console.log(`   X/R Ratio: ${scResults.xrRatio.toFixed(2)}`);
-    console.log('');
+    logger.info(`   X/R Ratio: ${scResults.xrRatio.toFixed(2)}`);
+    logger.debug('');
     
     return scResults;
 }
@@ -742,11 +742,11 @@ window.calculateShortCircuit = calculateShortCircuit;
 window.calculateShortCircuitPointToPoint = calculateShortCircuitPointToPoint;
 window.calculateShortCircuitPerUnit = calculateShortCircuitPerUnit;
 
-console.log('✅ Short Circuit Calculation module loaded');
-console.log('   - Version: 1.1.0');
-console.log('   - Motor contribution: ENABLED');
-console.log('   - IEEE 141/IEC 60909 compliant');
-console.log('   - Exported functions:');
-console.log('     • calculateShortCircuit');
-console.log('     • calculateShortCircuitPointToPoint');
-console.log('     • calculateShortCircuitPerUnit');
+logger.info('Short Circuit Calculation module loaded');
+logger.info('   - Version: 1.1.0');
+logger.info('   - Motor contribution: ENABLED');
+logger.info('   - IEEE 141/IEC 60909 compliant');
+logger.info('   - Exported functions:');
+logger.info('     • calculateShortCircuit');
+logger.info('     • calculateShortCircuitPointToPoint');
+logger.info('     • calculateShortCircuitPerUnit');
