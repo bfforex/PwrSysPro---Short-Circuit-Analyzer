@@ -20,7 +20,7 @@ function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, 
     const resultsContainer = document.getElementById('resultsContainer');
     
     if (!resultsContainer) {
-        console.error('Results container not found');
+        logger.error('Results container not found');
         return;
     }
     
@@ -694,7 +694,7 @@ function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
         alert('✅ Copied to clipboard!');
     }).catch(err => {
-        console.error('Failed to copy:', err);
+        logger.error('Failed to copy:', err);
         alert('❌ Failed to copy to clipboard');
     });
 }
@@ -708,4 +708,4 @@ window.switchCalcTab = switchCalcTab;
 window.showCalculationSteps = showCalculationSteps;
 window.copyToClipboard = copyToClipboard;
 
-console.log('✅ Calculation Display module loaded');
+logger.info('Calculation Display module loaded');

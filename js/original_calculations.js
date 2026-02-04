@@ -73,7 +73,7 @@ function calculateBus(busId) {
         
         scheduleAutoSave();
     } catch (error) {
-        console.error('Error calculating bus:', error);
+        logger.error('Error calculating bus:', error);
         alert('Error calculating bus:\n\n' + error.message);
     }
 }

@@ -31,13 +31,13 @@ function displayBusResults(bus, result, timestamp, recommendations = null) {
     if (!recommendations && typeof recommendationEngine !== 'undefined') {
         try {
             recommendations = recommendationEngine.analyzeBus(bus);
-            console.log(`✅ Generated ${recommendations.length} recommendations for ${bus.name}`);
+            logger.info(`Generated ${recommendations.length} recommendations for ${bus.name}`);
         } catch (error) {
-            console.error('❌ Error generating recommendations:', error);
+            logger.error('Error generating recommendations:', error);
             recommendations = [];
         }
     } else if (!recommendations) {
-        console.warn('⚠️ Recommendation engine not available');
+        logger.warn('Recommendation engine not available');
         recommendations = [];
     }
     
@@ -163,17 +163,17 @@ function displayBusResults(bus, result, timestamp, recommendations = null) {
 
     // Render recommendations if available
     if (recommendations.length > 0) {
-        console.log('🔄 Rendering recommendations...');
+        logger.debug('Rendering recommendations...');
         setTimeout(() => {
             try {
                 if (typeof recUI !== 'undefined' && typeof recUI.displayBusRecommendations === 'function') {
                     recUI.displayBusRecommendations(bus.id, 'busRecommendations');
-                    console.log('✅ Recommendations rendered successfully');
+                    logger.debug('Recommendations rendered successfully');
                 } else {
                     throw new Error('recUI not available or displayBusRecommendations not a function');
                 }
             } catch (error) {
-                console.error('❌ Error rendering recommendations:', error);
+                logger.error('Error rendering recommendations:', error);
                 const recContainer = document.getElementById('busRecommendations');
                 if (recContainer) {
                     recContainer.innerHTML = `
@@ -205,14 +205,14 @@ function displayBusResults(bus, result, timestamp, recommendations = null) {
 function displaySystemRecommendations(systemReport) {
     const container = document.getElementById('recommendationsTabContent');
     if (!container) {
-        console.error('❌ Recommendations tab content not found');
+        logger.error('Recommendations tab content not found');
         return;
     }
     
     if (typeof recUI !== 'undefined' && typeof recUI.displaySystemRecommendations === 'function') {
         recUI.displaySystemRecommendations(systemReport, 'recommendationsTabContent');
     } else {
-        console.error('❌ recUI.displaySystemRecommendations not available');
+        logger.error('❌ recUI.displaySystemRecommendations not available');
         container.innerHTML = `
             <div class="alert alert-danger">
                 <strong>⚠️ Error</strong>
@@ -361,7 +361,7 @@ function runSystemAnalytics() {
     addRecommendationsTab();
     switchTab(null, 'recommendations');
     
-    console.log('📊 System Analytics Complete:', systemReport);
+    logger.info('System Analytics Complete:', systemReport);
 }
 
 /**

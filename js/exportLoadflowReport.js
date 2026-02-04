@@ -85,11 +85,11 @@ function exportLoadFlowReport(busId) {
     report += `Tracing downstream loads...\n\n`;
     
     // Trace path (call with logging enabled)
-    console.log('═'.repeat(80));
-    console.log('LOAD FLOW PATH TRACE:');
-    console.log('═'.repeat(80));
+    logger.debug('═'.repeat(80));
+    logger.debug('LOAD FLOW PATH TRACE:');
+    logger.debug('═'.repeat(80));
     calculateDownstreamLoad(busId);
-    console.log('═'.repeat(80));
+    logger.debug('═'.repeat(80));
     
     report += `See browser console for detailed path trace.\n\n`;
     
@@ -326,4 +326,4 @@ window.exportLoadFlowReport = exportLoadFlowReport;
 window.exportVoltageDropReport = exportVoltageDropReport;
 window.exportSystemLoadFlowReport = exportSystemLoadFlowReport;
 
-console.log('✅ Load Flow Report module loaded');
+logger.info('Load Flow Report module loaded');

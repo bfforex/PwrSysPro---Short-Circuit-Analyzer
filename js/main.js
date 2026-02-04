@@ -9,11 +9,11 @@
  * @enhanced Motor contribution support (IEEE 141/IEC 60909)
  */
 
-console.log('\n' + '═'.repeat(80));
-console.log('⚡ PwrSys Pro - Initializing...');
-console.log('Current Date/Time (UTC): 2025-10-28 05:38:11');
-console.log('User: bfforex');
-console.log('═'.repeat(80) + '\n');
+logger.info('\n' + '═'.repeat(80));
+logger.info('PwrSys Pro - Initializing...');
+logger.info('Current Date/Time (UTC): 2025-10-28 05:38:11');
+logger.info('User: bfforex');
+logger.info('═'.repeat(80) + '\n');
 
 /**
  * Initialize theme
@@ -27,7 +27,7 @@ function initTheme() {
     // Update theme button if it exists
     updateThemeButton(savedTheme);
     
-    console.log('🌓 Theme initialized:', savedTheme);
+    logger.info('Theme initialized:', savedTheme);
 }
 
 /**
@@ -40,7 +40,7 @@ function toggleTheme() {
     const currentTheme = html.getAttribute('data-theme') || 'light';
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     
-    console.log(`🌓 Toggling theme: ${currentTheme} → ${newTheme}`);
+    logger.debug(`🌓 Toggling theme: ${currentTheme} → ${newTheme}`);
     
     // Apply new theme
     html.setAttribute('data-theme', newTheme);
@@ -57,7 +57,7 @@ function toggleTheme() {
         html.classList.remove('theme-transitioning');
     }, 300);
     
-    console.log(`✅ Theme changed to: ${newTheme}`);
+    logger.info(`Theme changed to: ${newTheme}`);
     
     // Show feedback to user
     showThemeChangeFeedback(newTheme);
@@ -74,7 +74,7 @@ function updateThemeButton(theme) {
                      document.getElementById('themeToggle');
     
     if (!themeBtn) {
-        console.warn('⚠️ Theme toggle button not found in DOM');
+        logger.warn('Theme toggle button not found in DOM');
         return;
     }
     
@@ -124,7 +124,7 @@ function showThemeChangeFeedback(theme) {
  * File operations handled by projectManager.js
  */
 function initFileInputListener() {
-    console.log('✅ File input listener ready (handled by projectManager.js)');
+    logger.info('File input listener ready (handled by projectManager.js)');
 }
 
 /**
@@ -142,7 +142,7 @@ function initAutoSaveListeners() {
         });
     });
     
-    console.log('✅ Auto-save listeners initialized');
+    logger.info('Auto-save listeners initialized');
 }
 
 /**
@@ -166,7 +166,7 @@ function initModalClickOutside() {
         }
     });
     
-    console.log('✅ Modal click-outside handler initialized');
+    logger.info('Modal click-outside handler initialized');
 }
 
 /**
@@ -235,7 +235,7 @@ function initKeyboardShortcuts() {
             if (typeof saveProject === 'function') {
                 saveProject();
             } else {
-                console.warn('⚠️ saveProject function not available');
+                logger.warn('saveProject function not available');
             }
         }
         
@@ -245,14 +245,14 @@ function initKeyboardShortcuts() {
             if (typeof calculateAllBuses === 'function') {
                 calculateAllBuses();
             } else {
-                console.warn('⚠️ calculateAllBuses function not available');
+                logger.warn('calculateAllBuses function not available');
             }
         }
     });
     
-    console.log('✅ Keyboard shortcuts initialized');
-    console.log('   • Ctrl+S: Save project');
-    console.log('   • Ctrl+Enter: Calculate all buses');
+    logger.info('Keyboard shortcuts initialized');
+    logger.info('   • Ctrl+S: Save project');
+    logger.info('   • Ctrl+Enter: Calculate all buses');
 }
 
 /**
@@ -260,19 +260,19 @@ function initKeyboardShortcuts() {
  * Main entry point for application setup
  */
 function initApp() {
-    console.log(`╔════════════════════════════════════════════════════════════════════════════╗`);
-    console.log(`║  PwrSys Pro - Short Circuit Analyzer v${VERSION}                          ║`);
-    console.log(`║  Multi-Bus Power System Analysis - NEC/PEC Compliant                      ║`);
-    console.log(`╠════════════════════════════════════════════════════════════════════════════╣`);
-    console.log(`║  Author: ${AUTHOR}                                            ║`);
-    console.log(`║  Date/Time (UTC): 2025-10-28 05:38:11                                     ║`);
-    console.log(`║  ✓ Parallel Transformer Support                                           ║`);
-    console.log(`║  ✓ Point-to-Point Method                                                  ║`);
-    console.log(`║  ✓ Per-Unit Method                                                        ║`);
-    console.log(`║  ✓ Multi-Voltage Level Support                                            ║`);
-    console.log(`║  ✓ Temperature Correction                                                 ║`);
-    console.log(`║  ✓ Motor Contribution (IEEE 141/IEC 60909)                                ║`);
-    console.log(`╚════════════════════════════════════════════════════════════════════════════╝`);
+    logger.info(`╔════════════════════════════════════════════════════════════════════════════╗`);
+    logger.info(`║  PwrSys Pro - Short Circuit Analyzer v${VERSION}                          ║`);
+    logger.info(`║  Multi-Bus Power System Analysis - NEC/PEC Compliant                      ║`);
+    logger.info(`╠════════════════════════════════════════════════════════════════════════════╣`);
+    logger.info(`║  Author: ${AUTHOR}                                            ║`);
+    logger.info(`║  Date/Time (UTC): 2025-10-28 05:38:11                                     ║`);
+    logger.info(`║  ✓ Parallel Transformer Support                                           ║`);
+    logger.info(`║  ✓ Point-to-Point Method                                                  ║`);
+    logger.info(`║  ✓ Per-Unit Method                                                        ║`);
+    logger.info(`║  ✓ Multi-Voltage Level Support                                            ║`);
+    logger.info(`║  ✓ Temperature Correction                                                 ║`);
+    logger.info(`║  ✓ Motor Contribution (IEEE 141/IEC 60909)                                ║`);
+    logger.info(`╚════════════════════════════════════════════════════════════════════════════╝`);
     
     try {
         // Set author information
@@ -288,7 +288,7 @@ function initApp() {
         if (typeof initComponentTypeSelector === 'function') {
             initComponentTypeSelector();
         } else {
-            console.warn('⚠️ initComponentTypeSelector not available');
+            logger.warn('initComponentTypeSelector not available');
         }
         
         // Initialize file input listener
@@ -311,11 +311,11 @@ function initApp() {
                 if (typeof calculateAllBuses === 'function') {
                     calculateAllBuses();
                 } else {
-                    console.error('❌ calculateAllBuses not loaded');
+                    logger.error('calculateAllBuses not loaded');
                     alert('Error: Calculation module not loaded.\n\nPlease refresh the page and try again.');
                 }
             });
-            console.log('✅ Calculate button initialized');
+            logger.info('Calculate button initialized');
         }
         
         // Initialize keyboard shortcuts
@@ -326,15 +326,15 @@ function initApp() {
             setTimeout(function() {
                 loadAutoSavedProject();
             }, 500);
-            console.log('✅ Auto-save recovery scheduled');
+            logger.info('Auto-save recovery scheduled');
         }
         
-        console.log('\n✅ Application initialization complete!');
-        console.log('═'.repeat(80) + '\n');
+        logger.info('\n✅ Application initialization complete!');
+        logger.info('═'.repeat(80) + '\n');
         
     } catch (error) {
-        console.error('❌ Initialization error:', error);
-        console.error('Stack trace:', error.stack);
+        logger.error('❌ Initialization error:', error);
+        logger.error('Stack trace:', error.stack);
         alert('⚠️ Application initialization error.\n\nCheck browser console for details.\n\nSome features may not work correctly.');
     }
 }
@@ -352,7 +352,7 @@ function clearAll() {
         return;
     }
     
-    console.log('🗑️ Clearing all data...');
+    logger.info('Clearing all data...');
     
     // Clear all arrays
     buses = [];
@@ -414,7 +414,7 @@ function clearAll() {
     // Switch to buses tab
     switchTab(null, 'buses');
     
-    console.log('✅ All data cleared successfully');
+    logger.info('All data cleared successfully');
     alert('✅ All data has been cleared.\n\nThe application has been reset to its initial state.');
 }
 
@@ -427,7 +427,7 @@ function clearResults() {
         return;
     }
     
-    console.log('🧹 Clearing calculation results...');
+    logger.info('Clearing calculation results...');
     
     // Clear results from all buses
     buses.forEach(function(bus) {
@@ -468,7 +468,7 @@ function clearResults() {
         scheduleAutoSave();
     }
     
-    console.log('✅ Calculation results cleared');
+    logger.info('Calculation results cleared');
     alert('✅ Calculation results cleared.\n\nYour buses and components are still intact.');
 }
 
@@ -536,14 +536,14 @@ if (document.readyState === 'loading') {
 // MODULE LOAD CONFIRMATION
 // ═══════════════════════════════════════════════════════════
 
-console.log('✅ Main.js loaded successfully');
-console.log('   - Version: 1.3.0');
-console.log('   - Date: 2025-10-28 05:38:11 UTC');
-console.log('   - Author: bfforex');
-console.log('   - All helper functions: Available');
-console.log('   - clearAll: Available');
-console.log('   - clearResults: Available');
-console.log('   - Motor contribution: Enabled');
-console.log('   - IEEE 141/IEC 60909: Compliant');
-console.log('✅ Application ready');
-console.log('═'.repeat(80) + '\n');
+logger.info('Main.js loaded successfully');
+logger.info('   - Version: 1.3.0');
+logger.info('   - Date: 2025-10-28 05:38:11 UTC');
+logger.info('   - Author: bfforex');
+logger.info('   - All helper functions: Available');
+logger.info('   - clearAll: Available');
+logger.info('   - clearResults: Available');
+logger.info('   - Motor contribution: Enabled');
+logger.info('   - IEEE 141/IEC 60909: Compliant');
+logger.info('Application ready');
+logger.info('═'.repeat(80) + '\n');

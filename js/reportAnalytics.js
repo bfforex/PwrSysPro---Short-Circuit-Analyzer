@@ -27,21 +27,21 @@ class ReportAnalytics {
      */
     initialize(busArray) {
         if (!busArray || busArray.length === 0) {
-            console.warn('⚠️  ReportAnalytics: No bus data provided for initialization');
+            logger.warn('ReportAnalytics: No bus data provided for initialization');
             return;
         }
         
         this.buses = busArray;
         
-        console.log(`📊 ReportAnalytics: Initializing with ${busArray.length} buses`);
+        logger.info(`ReportAnalytics: Initializing with ${busArray.length} buses`);
         
         // Check if buses have calculation data
         const busesWithCalcs = busArray.filter(b => b.results);
-        console.log(`   ✓ ${busesWithCalcs.length} buses have calculation results`);
+        logger.info(`   ${busesWithCalcs.length} buses have calculation results`);
         
         // Check if buses have voltage drop data from calculations
         const busesWithVD = busArray.filter(b => b.results && b.results.voltageDrop);
-        console.log(`   ✓ ${busesWithVD.length} buses have integrated voltage drop data`);
+        logger.info(`   ${busesWithVD.length} buses have integrated voltage drop data`);
         
         this.aggregateMetrics();
         this.calculateStatistics();
@@ -49,7 +49,7 @@ class ReportAnalytics {
         this.processVoltageDrop();
         this.rankBuses();
         
-        console.log(`   ✓ Analytics initialization complete`);
+        logger.info(`   Analytics initialization complete`);
     }
 
     /**
@@ -198,9 +198,9 @@ class ReportAnalytics {
             }
         });
 
-        console.log(`   📊 Voltage Drop Data Source:`);
-        console.log(`      • Integrated (from calculations): ${busesWithIntegratedVD} buses`);
-        console.log(`      • Independently calculated: ${busesWithCalculatedVD} buses`);
+        logger.info(`   Voltage Drop Data Source:`);
+        logger.info(`      • Integrated (from calculations): ${busesWithIntegratedVD} buses`);
+        logger.info(`      • Independently calculated: ${busesWithCalculatedVD} buses`);
         
         this.voltageDropData.source = this.calculationSource;
 
@@ -734,4 +734,4 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 // Console helper for verification
-console.log('✅ ReportAnalytics v2.0 loaded - Aligned with calculations.js voltage drop integration');
+logger.info('ReportAnalytics v2.0 loaded - Aligned with calculations.js voltage drop integration');

@@ -194,9 +194,9 @@ function autoSave() {
             setTimeout(() => indicator.classList.remove('show'), 2000);
         }
         
-        console.log('✅ Auto-saved successfully at', new Date().toISOString());
+        logger.info('Auto-saved successfully at ' + new Date().toISOString());
     } catch (error) {
-        console.error('❌ Auto-save failed:', error);
+        logger.error('Auto-save failed:', error);
         // Don't alert user for auto-save failures
     }
 }
@@ -239,17 +239,17 @@ function traceBusPath(busId) {
  * Get load current for voltage drop calculation
  */
 function getLoadCurrent(bus, component = null, defaultCurrent = 100) {
-    console.log(`\n🔍 Load Current for: ${bus?.name || 'Unknown'}`);
+    logger.debug(`Load Current for: ${bus?.name || 'Unknown'}`);
     
     // Priority 1: Component-specific load current
     if (component && component.loadCurrent && component.loadCurrent > 0) {
-        console.log(`  ✅ Using component load: ${component.loadCurrent}A (manual)`);
+        logger.debug(`  Using component load: ${component.loadCurrent}A (manual)`);
         return parseFloat(component.loadCurrent);
     }
     
     // Priority 2: Bus-specific load current
     if (bus && bus.loadCurrent && bus.loadCurrent > 0) {
-        console.log(`  ✅ Using bus load: ${bus.loadCurrent}A`);
+        logger.debug(`  Using bus load: ${bus.loadCurrent}A`);
         return parseFloat(bus.loadCurrent);
     }
     
@@ -259,7 +259,7 @@ function getLoadCurrent(bus, component = null, defaultCurrent = 100) {
         const powerFactor = parseFloat(bus.load.powerFactor) || 0.85;
         const voltage = parseFloat(bus.voltage) / 1000;
         const calculated = (power / (Math.sqrt(3) * voltage * powerFactor)) * 1000;
-        console.log(`  ✅ Calculated from power: ${calculated.toFixed(2)}A`);
+        logger.debug(`  Calculated from power: ${calculated.toFixed(2)}A`);
         return calculated;
     }
     
@@ -267,13 +267,13 @@ function getLoadCurrent(bus, component = null, defaultCurrent = 100) {
     if (typeof calculateDownstreamLoad === 'function') {
         const downstreamLoad = calculateDownstreamLoad(bus.id);
         if (downstreamLoad > 0) {
-            console.log(`  ✅ Load flow analysis: ${downstreamLoad.toFixed(2)}A (calculated)`);
+            logger.debug(`  Load flow analysis: ${downstreamLoad.toFixed(2)}A (calculated)`);
             return downstreamLoad;
         }
     }
     
     // Priority 5: Default value
-    console.log(`  ⚠️ Using default: ${defaultCurrent}A`);
+    logger.debug(`  Using default: ${defaultCurrent}A`);
     return defaultCurrent;
 }
 
@@ -336,7 +336,7 @@ window.referCurrentAcrossTransformer = referCurrentAcrossTransformer;
 window.calculateTransformerCurrent = calculateTransformerCurrent;
 window.calculateMotorCurrent = calculateMotorCurrent;
 
-console.log('✅ Utils loaded');
-console.log('   - traceBusPath: Available');
-console.log('   - getLoadCurrent: Available');
-console.log('   - calculateComponentVoltageDrop: Available');
+logger.info('Utils loaded');
+logger.debug('   - traceBusPath: Available');
+logger.debug('   - getLoadCurrent: Available');
+logger.debug('   - calculateComponentVoltageDrop: Available');

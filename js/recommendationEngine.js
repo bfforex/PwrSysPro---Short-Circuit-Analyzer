@@ -13,9 +13,9 @@ class RecommendationEngine {
         this.standards = typeof IndustryStandards !== 'undefined' ? IndustryStandards : {};
         this.recommendations = [];
         
-        console.log('🔍 Recommendation Engine initializing...');
-        console.log('   - Rules loaded:', Object.keys(this.rules).length, 'categories');
-        console.log('   - Standards available:', Object.keys(this.standards).length > 0);
+        logger.info('Recommendation Engine initializing...');
+        logger.info('   - Rules loaded:', Object.keys(this.rules).length, 'categories');
+        logger.info('   - Standards available:', Object.keys(this.standards).length > 0);
     }
 
     /**
@@ -25,7 +25,7 @@ class RecommendationEngine {
      */
     analyzeBus(bus) {
         if (!bus.results) {
-            console.warn(`⚠️ Bus ${bus.name} has no calculation results`);
+            logger.warn(`Bus ${bus.name} has no calculation results`);
             return [];
         }
 
@@ -39,18 +39,18 @@ class RecommendationEngine {
             
             // Check for source impedance in voltage drop
             if (firstComp.type === 'source' && firstComp.dropPercent > 5) {
-                console.warn(`⚠️  Bus ${bus.name}: Source impedance detected in VD calc`);
-                console.warn(`   First component: ${firstComp.name} = ${firstComp.dropPercent.toFixed(2)}%`);
-                console.warn(`   This violates IEEE 141-1993 Section 3.2.1`);
-                console.warn(`   Voltage drop should start from first distribution component`);
-                console.warn(`   System may show false non-compliance!`);
+                logger.warn(`Bus ${bus.name}: Source impedance detected in VD calc`);
+                logger.warn(`   First component: ${firstComp.name} = ${firstComp.dropPercent.toFixed(2)}%`);
+                logger.warn(`   This violates IEEE 141-1993 Section 3.2.1`);
+                logger.warn(`   Voltage drop should start from first distribution component`);
+                logger.warn(`   System may show false non-compliance!`);
             }
             
             // Check for unrealistic total voltage drop
             if (bus.results.voltageDrop.cumulativeDropPercent > 10) {
-                console.warn(`⚠️  Bus ${bus.name}: Unrealistic voltage drop detected`);
-                console.warn(`   Total VD: ${bus.results.voltageDrop.cumulativeDropPercent.toFixed(2)}%`);
-                console.warn(`   This may indicate source impedance inclusion error`);
+                logger.warn(`Bus ${bus.name}: Unrealistic voltage drop detected`);
+                logger.warn(`   Total VD: ${bus.results.voltageDrop.cumulativeDropPercent.toFixed(2)}%`);
+                logger.warn(`   This may indicate source impedance inclusion error`);
             }
         }
         // ═══════════════════════════════════════════════════════════
@@ -75,7 +75,7 @@ class RecommendationEngine {
                         });
                     }
                 } catch (error) {
-                    console.error(`❌ Error evaluating rule ${rule.id}:`, error);
+                    logger.error(`Error evaluating rule ${rule.id}:`, error);
                 }
             });
         }
@@ -249,8 +249,8 @@ class RecommendationEngine {
 // Create global instance
 try {
     const recommendationEngine = new RecommendationEngine();
-    console.log('✅ Recommendation Engine initialized successfully');
-    console.log('   - Instance created:', recommendationEngine);
+    logger.info('Recommendation Engine initialized successfully');
+    logger.info('   - Instance created:', recommendationEngine);
     
     // Verify analyzeBus method exists
     if (typeof recommendationEngine.analyzeBus !== 'function') {
@@ -261,5 +261,5 @@ try {
     window.recommendationEngine = recommendationEngine;
     
 } catch (error) {
-    console.error('❌ Failed to initialize Recommendation Engine:', error);
+    logger.error('Failed to initialize Recommendation Engine:', error);
 }

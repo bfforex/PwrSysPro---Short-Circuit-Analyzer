@@ -244,7 +244,7 @@ function addComponent() {
         const parallelLabel = parallel > 1 ? ` (${parallel}×)` : '';
         component.name = `${size} ${material.toUpperCase()}${parallelLabel} - ${length}ft`;
         
-        console.log(`✅ Cable added: ${component.name} | Parallel: ${parallel} | Z÷${parallel}`);
+        logger.info(`✅ Cable added: ${component.name} | Parallel: ${parallel} | Z÷${parallel}`);
         
     } else if (componentType === 'transformer') {
         const rating = parseFloat(document.getElementById('transformerRating').value);
@@ -386,7 +386,7 @@ function editComponent(compId) {
     
     const comp = components.find(c => c.id == id);
     if (!comp) {
-        console.error('Component not found:', id, 'Available IDs:', components.map(c => c.id));
+        logger.error('Component not found:', id, 'Available IDs:', components.map(c => c.id));
         alert('Error: Component not found. Please refresh the page.');
         return;
     }
@@ -571,9 +571,9 @@ function saveComponentEdits() {
             comp.parallel = newParallel;
             
             if (newParallel !== oldParallel) {
-                console.log(`🔄 Cable parallel changed: ${oldParallel}× → ${newParallel}×`);
-                console.log(`   Impedance effect: Z ÷ ${newParallel}`);
-                console.log(`   Ampacity effect: Amp × ${newParallel}`);
+                logger.info(`🔄 Cable parallel changed: ${oldParallel}× → ${newParallel}×`);
+                logger.info(`   Impedance effect: Z ÷ ${newParallel}`);
+                logger.info(`   Ampacity effect: Amp × ${newParallel}`);
             }
         }
         // ═══════════════════════════════════════════════════════════
@@ -617,7 +617,7 @@ function saveComponentEdits() {
     closeEditComponentModal();
     scheduleAutoSave();
     
-    console.log(`✅ Component updated: ${comp.name}`);
+    logger.info(`✅ Component updated: ${comp.name}`);
 }
 
 /**
@@ -648,7 +648,7 @@ function deleteComponent(compId) {
     
     const comp = components.find(c => c.id == id); // Use == for loose comparison
     if (!comp) {
-        console.error('Component not found:', id, 'Available IDs:', components.map(c => c.id));
+        logger.error('Component not found:', id, 'Available IDs:', components.map(c => c.id));
         alert('Error: Component not found. Please refresh the page.');
         return;
     }
@@ -658,7 +658,7 @@ function deleteComponent(compId) {
         updateComponentsList();
         updateComponentDropdowns();
         scheduleAutoSave();
-        console.log(`🗑️ Component deleted: ${comp.name || comp.type}`);
+        logger.info(`🗑️ Component deleted: ${comp.name || comp.type}`);
     }
 }
 
@@ -692,20 +692,20 @@ function moveComponent(compId, direction) {
     const index = components.findIndex(c => c.id === compId);
     
     if (index === -1) {
-        console.error(`Component ${compId} not found`);
+        logger.error(`Component ${compId} not found`);
         return;
     }
     
     if (direction === 'up' && index > 0) {
         // Swap with previous component
         [components[index - 1], components[index]] = [components[index], components[index - 1]];
-        console.log(`📤 Moved component up: ${components[index].name}`);
+        logger.info(`📤 Moved component up: ${components[index].name}`);
     } else if (direction === 'down' && index < components.length - 1) {
         // Swap with next component
         [components[index], components[index + 1]] = [components[index + 1], components[index]];
-        console.log(`📥 Moved component down: ${components[index].name}`);
+        logger.info(`📥 Moved component down: ${components[index].name}`);
     } else {
-        console.warn(`Cannot move component ${direction} from position ${index}`);
+        logger.warn(`Cannot move component ${direction} from position ${index}`);
         return;
     }
     
@@ -721,19 +721,19 @@ function moveComponentToPosition(compId, newIndex) {
     const oldIndex = components.findIndex(c => c.id === compId);
     
     if (oldIndex === -1) {
-        console.error(`Component ${compId} not found`);
+        logger.error(`Component ${compId} not found`);
         return;
     }
     
     if (newIndex < 0 || newIndex >= components.length) {
-        console.error(`Invalid position ${newIndex}`);
+        logger.error(`Invalid position ${newIndex}`);
         return;
     }
     
     const [movedComponent] = components.splice(oldIndex, 1);
     components.splice(newIndex, 0, movedComponent);
     
-    console.log(`🔀 Moved component to position ${newIndex}: ${movedComponent.name}`);
+    logger.info(`🔀 Moved component to position ${newIndex}: ${movedComponent.name}`);
     
     updateComponentsList();
     scheduleAutoSave();
@@ -743,13 +743,13 @@ function moveComponentToPosition(compId, newIndex) {
  * Initialize component manager on DOM load
  */
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Initializing Component Manager...');
+    logger.info('🔧 Initializing Component Manager...');
     
     const componentTypeSelect = document.getElementById('componentType');
     if (componentTypeSelect) {
         componentTypeSelect.addEventListener('change', renderComponentInputs);
         renderComponentInputs(); // Initial render
-        console.log('✅ Component type selector initialized');
+        logger.info('✅ Component type selector initialized');
     }
 });
 
@@ -767,7 +767,7 @@ window.initComponentTypeSelector = initComponentTypeSelector;
 window.moveComponent = moveComponent;
 window.moveComponentToPosition = moveComponentToPosition;
 
-console.log('✅ Component Manager module loaded with parallel cables support');
-console.log('   - Functions exported: 11');
-console.log('   - Parallel cables: Enabled');
-console.log('   - Move/reorder: Enabled');
+logger.info('✅ Component Manager module loaded with parallel cables support');
+logger.info('   - Functions exported: 11');
+logger.info('   - Parallel cables: Enabled');
+logger.info('   - Move/reorder: Enabled');
