@@ -26,12 +26,16 @@ console.log('🔧 Loading Enhanced Diversity Factors Module v3.4.0...');
 
 const DIVERSITY_FACTORS_CONFIG = {
     // Motor group diversity factors per IEEE 141-1993 Table 3-5
+    // Values match demandFactors.js getDiversityFactor() for consistency
     MOTOR_DIVERSITY: {
-        1: 1.00,        // Single motor - no diversity
-        2: 1.10,        // 2-5 motors
-        6: 1.15,        // 6-10 motors
-        11: 1.20,       // 11-20 motors
-        21: 1.25        // >20 motors
+        1:  1.00,   // 1 motor  - no diversity
+        2:  1.05,   // 2 motors
+        3:  1.10,   // 3 motors
+        4:  1.15,   // 4 motors
+        5:  1.18,   // 5 motors
+        10: 1.25,   // 6-10 motors
+        15: 1.30,   // 11-15 motors
+        20: 1.35    // >15 motors
     },
     
     // Load type diversity factors
@@ -56,22 +60,20 @@ const DIVERSITY_FACTORS_CONFIG = {
 
 /**
  * Calculate diversity factor based on number of motors per IEEE 141 Table 3-5
+ * Values match demandFactors.js getDiversityFactor() for consistency.
  * 
  * @param {Number} motorCount - Number of motors in the group
  * @returns {Number} Diversity factor
  */
 function getMotorDiversityFactor(motorCount) {
-    if (motorCount <= 1) {
-        return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[1];  // 1.00
-    } else if (motorCount <= 5) {
-        return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[2];  // 1.10
-    } else if (motorCount <= 10) {
-        return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[6];  // 1.15
-    } else if (motorCount <= 20) {
-        return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[11]; // 1.20
-    } else {
-        return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[21]; // 1.25
-    }
+    if (motorCount <= 1)  return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[1];   // 1.00
+    if (motorCount === 2) return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[2];   // 1.05
+    if (motorCount <= 3)  return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[3];   // 1.10
+    if (motorCount <= 4)  return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[4];   // 1.15
+    if (motorCount <= 5)  return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[5];   // 1.18
+    if (motorCount <= 10) return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[10];  // 1.25
+    if (motorCount <= 15) return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[15];  // 1.30
+    return DIVERSITY_FACTORS_CONFIG.MOTOR_DIVERSITY[20];                        // 1.35
 }
 
 /**
