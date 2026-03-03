@@ -287,25 +287,34 @@ ${'='.repeat(100)}
     report += `${'-'.repeat(100)}\n`;
 
     const motorGroups = {
-        'Single Motor (1)': { df: 1.00, buses: [] },
-        'Small Group (2-5)': { df: 1.10, buses: [] },
-        'Medium Group (6-10)': { df: 1.15, buses: [] },
-        'Large Group (11-20)': { df: 1.20, buses: [] },
-        'Very Large (>20)': { df: 1.25, buses: [] }
+        'Single Motor (1)':    { df: 1.00, buses: [] },
+        '2 Motors':            { df: 1.05, buses: [] },
+        '3 Motors':            { df: 1.10, buses: [] },
+        '4 Motors':            { df: 1.15, buses: [] },
+        '5 Motors':            { df: 1.18, buses: [] },
+        'Group (6-10)':        { df: 1.25, buses: [] },
+        'Group (11-15)':       { df: 1.30, buses: [] },
+        'Large Group (>15)':   { df: 1.35, buses: [] }
     };
 
     busesWithDiversity.forEach(bus => {
         const motorCount = bus.results.loadFlow.diversitySummary.motorCount;
-        if (motorCount === 1) {
+        if (motorCount <= 1) {
             motorGroups['Single Motor (1)'].buses.push(bus);
-        } else if (motorCount <= 5) {
-            motorGroups['Small Group (2-5)'].buses.push(bus);
+        } else if (motorCount === 2) {
+            motorGroups['2 Motors'].buses.push(bus);
+        } else if (motorCount === 3) {
+            motorGroups['3 Motors'].buses.push(bus);
+        } else if (motorCount === 4) {
+            motorGroups['4 Motors'].buses.push(bus);
+        } else if (motorCount === 5) {
+            motorGroups['5 Motors'].buses.push(bus);
         } else if (motorCount <= 10) {
-            motorGroups['Medium Group (6-10)'].buses.push(bus);
-        } else if (motorCount <= 20) {
-            motorGroups['Large Group (11-20)'].buses.push(bus);
-        } else if (motorCount > 20) {
-            motorGroups['Very Large (>20)'].buses.push(bus);
+            motorGroups['Group (6-10)'].buses.push(bus);
+        } else if (motorCount <= 15) {
+            motorGroups['Group (11-15)'].buses.push(bus);
+        } else {
+            motorGroups['Large Group (>15)'].buses.push(bus);
         }
     });
 
@@ -355,11 +364,14 @@ ${'='.repeat(100)}
     report += `STANDARDS REFERENCE:\n`;
     report += `${'-'.repeat(100)}\n`;
     report += `IEEE 141-1993 (Red Book) Table 3-5:\n`;
-    report += `  • Single motor: DF = 1.00 (no diversity)\n`;
-    report += `  • 2-5 motors: DF = 1.10\n`;
-    report += `  • 6-10 motors: DF = 1.15\n`;
-    report += `  • 11-20 motors: DF = 1.20\n`;
-    report += `  • >20 motors: DF = 1.25\n`;
+    report += `  • Single motor (1): DF = 1.00 (no diversity)\n`;
+    report += `  • 2 motors: DF = 1.05\n`;
+    report += `  • 3 motors: DF = 1.10\n`;
+    report += `  • 4 motors: DF = 1.15\n`;
+    report += `  • 5 motors: DF = 1.18\n`;
+    report += `  • 6-10 motors: DF = 1.25\n`;
+    report += `  • 11-15 motors: DF = 1.30\n`;
+    report += `  • >15 motors: DF = 1.35\n`;
     report += `\n`;
     report += `Composite diversity weighted by kVA contribution:\n`;
     report += `  DF_composite = (DF_motor × Motor_kVA + DF_other × Other_kVA) / Total_kVA\n`;

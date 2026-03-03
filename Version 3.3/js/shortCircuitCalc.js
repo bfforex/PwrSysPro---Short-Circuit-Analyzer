@@ -243,7 +243,18 @@ function normalizeShortCircuitToSchema(bus, raw = {}, context = {}) {
     const Iasym = Number(raw?.asymFaultCurrentKA ?? 0);
     sc.faultCurrents.threePhaseSym = I3;
     sc.faultCurrents.threePhaseAsym = Iasym;
-    sc.faultCurrents.lineToGround = Number(raw?.lineToGroundKA ?? (I3 * 0.85));
+    // Estimate L-G fault current based on grounding type
+    // For precise results, use sequence impedance method: I_LG = 3 × V_LN / (Z1 + Z2 + Z0)
+    const groundingType = bus?.groundingType || context?.grounding ||
+        (typeof systemConfig !== 'undefined' ? systemConfig?.grounding : undefined) || 'solidly_grounded';
+    const lgFactors = {
+        'solidly_grounded': 1.0,
+        'low_resistance': 0.85,
+        'high_resistance': 0.25,
+        'ungrounded': 0.0
+    };
+    const lgFactor = lgFactors[groundingType] ?? 1.0;
+    sc.faultCurrents.lineToGround = Number(raw?.lineToGroundKA ?? (I3 * lgFactor));
     sc.faultCurrents.lineToLine = Number(raw?.lineToLineKA ?? (I3 * 0.866));
     sc.impedance.rTotal = Number(raw?.totalR ?? 0);
     sc.impedance.xTotal = Number(raw?.totalX ?? 0);
@@ -1014,6 +1025,13 @@ function calculateShortCircuitPointToPoint(path) {
             const materialDataFinal = materialData || cableDataFinal['copper'];
             
             const parallel = comp.parallel || 1;
+
+            // ── Installation method adjustments ──────────────────────────────
+            // Reactance correction and Z0 factor depend on installation method.
+            // Per NEC Ch 9 Table 9 Note 3 (steel conduit) and IEEE 242-2001 §9.3.
+            const installFactors = (typeof getCableInstallationFactors === 'function')
+                ? getCableInstallationFactors(comp.installationMethod || comp.conduit || 'conduit-pvc')
+                : { x_factor: 1.0, z0_factor: 3.0, label: 'Default (PVC Conduit)' };
             
             steps += `🔌 CABLE INFORMATION\n`;
             steps += '─'.repeat(80) + '\n';
@@ -1036,13 +1054,6 @@ function calculateShortCircuitPointToPoint(path) {
             
             let rBase20 = materialDataFinal.r;
             let rBaseTemp = temperatureCorrection(rBase20, temperature, comp.material);
-            
-            // ── Installation method adjustments ──────────────────────────────
-            // Reactance correction and Z0 factor depend on installation method.
-            // Per NEC Ch 9 Table 9 Note 3 (steel conduit) and IEEE 242-2001 §9.3.
-            const installFactors = (typeof getCableInstallationFactors === 'function')
-                ? getCableInstallationFactors(comp.installationMethod || comp.conduit || 'conduit-pvc')
-                : { x_factor: 1.0, z0_factor: 3.0, label: 'Default (PVC Conduit)' };
             
             const cableR = (rBaseTemp * comp.length) / parallel;
             const cableX = (materialDataFinal.x * comp.length * installFactors.x_factor) / parallel;
