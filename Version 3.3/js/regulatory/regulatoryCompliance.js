@@ -141,7 +141,7 @@ function updateComplianceChecklist() {
     
     // 6. Voltage Drop Compliance
     const vdCompliant = calculatedBuses.filter(b => {
-        const vd = b.results?.loadFlow?.voltageDrop?.designPercent;
+        const vd = b.results?.voltageDrop?.cumulativeDropPercent ?? b.results?.voltageDrop?.totalDropPercent;
         return vd !== undefined && vd <= 5.0; // PEC 2.15.2(A) limit
     });
     if (calculatedBuses.length > 0) {
@@ -441,7 +441,7 @@ function validateRegulatoryData() {
     
     // Check Voltage Drop Compliance
     const nonCompliantVD = calculatedBuses.filter(b => {
-        const vd = b.results?.loadFlow?.voltageDrop?.designPercent;
+        const vd = b.results?.voltageDrop?.cumulativeDropPercent ?? b.results?.voltageDrop?.totalDropPercent;
         return vd !== undefined && vd > 5.0;
     });
     if (nonCompliantVD.length > 0) {

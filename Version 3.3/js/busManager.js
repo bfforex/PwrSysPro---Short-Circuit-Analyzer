@@ -548,6 +548,12 @@ function saveBusEdits() {
     bus.name = document.getElementById('editBusName').value.trim();
     bus.voltage = parseFloat(document.getElementById('editBusVoltage').value);
 
+    // Propagate bus name change to all connected components (Issue #40)
+    components.forEach(comp => {
+        if (comp.fromBus === editingBusId) comp.fromBusName = bus.name;
+        if (comp.toBus === editingBusId) comp.toBusName = bus.name;
+    });
+
     // Apply parent bus change (Issue #40)
     const editParentField = document.getElementById('editBusParent');
     if (editParentField) {

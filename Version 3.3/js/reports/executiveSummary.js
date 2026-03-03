@@ -242,37 +242,37 @@ const ExecutiveSummaryGenerator = {
         buses.forEach(bus => {
             if (bus.results) {
                 // Short circuit
-                const fault3ph = parseFloat(bus.results.fault3Phase) || 0;
+                const fault3ph = parseFloat(bus.results.shortCircuit?.faultCurrents?.threePhaseSym) || 0;
                 if (fault3ph > maxFault3Phase) {
                     maxFault3Phase = fault3ph;
                     maxFault3PhaseLocation = bus.name || bus.id;
                 }
                 
-                const faultLG = parseFloat(bus.results.faultLG) || 0;
+                const faultLG = parseFloat(bus.results.shortCircuit?.faultCurrents?.lineToGround) || 0;
                 if (faultLG > maxFaultLG) {
                     maxFaultLG = faultLG;
                     maxFaultLGLocation = bus.name || bus.id;
                 }
                 
                 // Voltage drop
-                const vd = parseFloat(bus.results.voltageDrop) || 0;
+                const vd = parseFloat(bus.results.voltageDrop?.cumulativeDropPercent ?? bus.results.voltageDrop?.totalDropPercent) || 0;
                 if (vd > maxVoltageDropFeeder) {
                     maxVoltageDropFeeder = vd;
                 }
                 
                 // Arc flash
-                const ie = parseFloat(bus.results.incidentEnergy) || 0;
+                const ie = parseFloat(bus.results.arcFlash?.incidentEnergy) || 0;
                 if (ie > maxIncidentEnergy) {
                     maxIncidentEnergy = ie;
                     maxIncidentEnergyLocation = bus.name || bus.id;
                 }
                 
-                const ppe = parseInt(bus.results.ppeCategory) || 0;
+                const ppe = parseInt(bus.results.arcFlash?.ppeCategory) || 0;
                 if (ppe > maxPPECategory) {
                     maxPPECategory = ppe;
                 }
                 
-                const afb = parseFloat(bus.results.arcFlashBoundary) || 0;
+                const afb = parseFloat(bus.results.arcFlash?.arcFlashBoundary) || 0;
                 if (afb > maxAFB) {
                     maxAFB = afb;
                 }
@@ -281,7 +281,7 @@ const ExecutiveSummaryGenerator = {
         
         // Determine compliance
         const equipmentStatus = buses.every(bus => {
-            const fault = parseFloat(bus.results?.fault3Phase) || 0;
+            const fault = parseFloat(bus.results?.shortCircuit?.faultCurrents?.threePhaseSym) || 0;
             const rating = parseFloat(bus.aic) || 65;
             return fault <= rating;
         }) ? 'ADEQUATE' : 'REVIEW REQUIRED';
