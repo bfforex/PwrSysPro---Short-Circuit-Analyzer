@@ -1,26 +1,32 @@
 /**
  * Current Sources Module
  * Defines and separates current types for different calculations
- * 
+ *
  * @author bfforex
  * @date 2025-12-01
  * @version 1.0.0
- * 
+ *
  * Issue 5: MEDIUM - Current Source Separation
- * 
+ *
  * PURPOSE:
  * - Clear separation between current types
  * - Each calculation uses appropriate current source
  * - UI clearly labels current basis
  * - Transformer loading uses actual (not design) current
  * - Reports state current basis explicitly
- * 
- * CURRENT TYPES:
- * - CONNECTED_LOAD: 100% FLC - for sizing
- * - DEMAND_LOAD: Demand-adjusted
- * - DIVERSITY_LOAD: Demand + diversity
- * - OPERATING_LOAD: Actual load flow
- * - FAULT_CURRENT: Short circuit
+ *
+ * CURRENT TYPES AND STANDARDS BASIS:
+ * - CONNECTED_LOAD: 100% FLC — NEC conductor ampacity sizing (Art. 310.15)
+ * - DEMAND_LOAD: Demand-adjusted — NEC Article 220/430 demand factors
+ * - DIVERSITY_LOAD: Demand + diversity — IEEE 141-1993 Table 3-5
+ * - OPERATING_LOAD: Actual measured/estimated load flow
+ * - FAULT_CURRENT: Short-circuit — IEEE 141-1993 Ch. 5 (NEVER demand-factored)
+ *
+ * STANDARDS:
+ * - NEC 2017 Article 220 - Load calculations
+ * - NEC 2017 Article 430 - Motor demand factors
+ * - IEEE 141-1993 Table 3-5 - Diversity factors
+ * - IEEE 141-1993 §5.1 - Short-circuit calculations always at 100% FLC
  */
 
 console.log('🔧 Loading Current Sources Module v1.0.0...');
@@ -39,11 +45,29 @@ const CurrentSources = {
     },
     
     /**
-     * Get appropriate current for calculation type
-     * 
-     * @param {String} busId - Bus identifier
-     * @param {String} calculationType - Type of calculation
-     * @returns {Object} Current value and metadata
+     * Get the appropriate current value for a given calculation type
+     *
+     * Returns the correct current tier based on which type of analysis is being
+     * performed, ensuring calculations never misuse demand/diversity-factored
+     * currents for conservative sizing requirements.
+     *
+     * RULES (per IEEE 141-1993 and NEC 2017):
+     * - Short Circuit: ALWAYS connected load (100% FLC) — never demand-factored
+     * - Arc Flash:     ALWAYS connected load (100% FLC) — never demand-factored
+     * - Conductor sizing: Connected load (100% FLC) per NEC Article 310.15
+     * - Transformer loading: Diversity load (most realistic) per IEEE C57.12
+     * - Voltage drop compliance: Connected load (100% FLC) per NEC 210.19/215.2
+     * - Operating load flow: Diversity load for realistic operating analysis
+     *
+     * @param {string} busId           - Unique bus identifier
+     * @param {string} calculationType - Type of analysis requesting the current:
+     *   'shortCircuit' | 'arcFlash' | 'loadFlow' | 'voltageDropDesign' |
+     *   'voltageDropOperating' | 'transformerLoading' | 'cableSizing'
+     * @returns {{value: number, type: string, label: string, source: string}}
+     *   Current value in amperes and metadata about the current source
+     *
+     * @reference IEEE 141-1993 §5.1 "Short-circuit calculations"
+     * @reference NEC 2017 Articles 210.19, 215.2, 310.15
      */
     getCurrentFor: function(busId, calculationType) {
         const bus = typeof buses !== 'undefined' ? buses.find(b => b.id === busId) : null;

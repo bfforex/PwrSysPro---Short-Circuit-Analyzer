@@ -85,11 +85,18 @@ const VOLTAGE_DROP_CONFIG = {
 
 /**
  * Calculate load current from kVA rating
- * 
- * @param {Number} kva - Load in kVA
- * @param {Number} voltage - System voltage
- * @param {String} loadType - 'single-phase' or 'three-phase'
- * @returns {Number} Load current in amperes
+ *
+ * FORMULA (three-phase):  I = kVA × 1000 / (√3 × V)
+ * FORMULA (single-phase): I = kVA × 1000 / V
+ *
+ * STANDARD: IEEE 141-1993 Chapter 4 – Load current reference formulas
+ *
+ * @param {number} kva      - Apparent power in kVA
+ * @param {number} voltage  - Line-to-line voltage in volts
+ * @param {string} [loadType='three-phase'] - Phase configuration: 'three-phase' | 'single-phase'
+ * @returns {number} Load current in amperes
+ *
+ * @reference IEEE 141-1993 §4.2 "Load flow fundamentals"
  */
 function calculateLoadCurrentFromKVA(kva, voltage, loadType = 'three-phase') {
     const SQRT3 = Math.sqrt(3);
@@ -102,12 +109,19 @@ function calculateLoadCurrentFromKVA(kva, voltage, loadType = 'three-phase') {
 
 /**
  * Calculate load current from kW and power factor
- * 
- * @param {Number} kw - Load in kW
- * @param {Number} voltage - System voltage
- * @param {Number} powerFactor - Power factor
- * @param {String} loadType - 'single-phase' or 'three-phase'
- * @returns {Number} Load current in amperes
+ *
+ * FORMULA (three-phase):  I = kW × 1000 / (√3 × V × PF)
+ * FORMULA (single-phase): I = kW × 1000 / (V × PF)
+ *
+ * STANDARD: IEEE 141-1993 Chapter 4 – Active power to current conversion
+ *
+ * @param {number} kw          - Active power in kW
+ * @param {number} voltage     - Line-to-line voltage in volts
+ * @param {number} powerFactor - Displacement power factor (0 < PF ≤ 1)
+ * @param {string} [loadType='three-phase'] - Phase configuration: 'three-phase' | 'single-phase'
+ * @returns {number} Load current in amperes
+ *
+ * @reference IEEE 141-1993 §4.2 "Load flow fundamentals"
  */
 function calculateLoadCurrentFromKW(kw, voltage, powerFactor, loadType = 'three-phase') {
     const SQRT3 = Math.sqrt(3);
@@ -119,13 +133,27 @@ function calculateLoadCurrentFromKW(kw, voltage, powerFactor, loadType = 'three-
 }
 
 /**
- * Calculate load current from HP (motor loads)
- * 
- * @param {Number} hp - Horsepower
- * @param {Number} voltage - System voltage
- * @param {Number} efficiency - Motor efficiency (0-1)
- * @param {Number} powerFactor - Power factor
- * @returns {Number} Load current in amperes
+ * Calculate full-load current (FLC) from motor HP rating
+ *
+ * Converts horsepower to three-phase line current using the IEEE 141 formula.
+ * Default efficiency (90%) and power factor (85%) represent typical NEMA Design B
+ * induction motors per NEC Article 430.
+ *
+ * FORMULA: I_FLC = (HP × 746) / (√3 × V × η × PF)
+ *   where: 1 HP = 746 W (exact)
+ *
+ * STANDARDS:
+ * - NEC 2017 Article 430.6 - Motor FLC rating basis
+ * - IEEE 141-1993 §5.3 - Motor contribution subtransient reactance
+ *
+ * @param {number} hp                    - Motor rated horsepower
+ * @param {number} voltage               - Motor terminal voltage (V, line-to-line)
+ * @param {number} [efficiency=0.90]     - Motor efficiency (0 < η ≤ 1); default NEMA typical
+ * @param {number} [powerFactor=0.85]    - Motor power factor (0 < PF ≤ 1); default NEMA typical
+ * @returns {number} Full-load current (FLC) in amperes
+ *
+ * @reference NEC 2017 Article 430.6 "Ampacity and Motor Rating Determination"
+ * @reference IEEE 141-1993 §5.3 "Motor contribution to short-circuit currents"
  */
 function calculateMotorLoadCurrent(hp, voltage, efficiency = 0.90, powerFactor = 0.85) {
     const SQRT3 = Math.sqrt(3);
@@ -139,12 +167,45 @@ function calculateMotorLoadCurrent(hp, voltage, efficiency = 0.90, powerFactor =
 
 /**
  * Perform voltage drop analysis for a bus path
- * Returns detailed voltage drop calculations
  *
- * @param {String} busId           - Bus identifier
- * @param {Array}  path            - Path from source to target bus
- * @param {Object} loadFlowData    - Load flow results (optional)
- * @returns {Object} Voltage drop results with detailed breakdown
+ * Calculates cumulative voltage drop from source to target bus by summing
+ * the voltage drop across each series cable segment. Transformer voltage
+ * changes are tracked but do not contribute to percentage drop (they reset
+ * the baseline per IEEE 141-1993 §3.4).
+ *
+ * STANDARDS:
+ * - NEC 2017 Article 210.19(A) - Branch circuit maximum 5% VD (informational note)
+ * - NEC 2017 Article 215.2(A)(1) - Feeder maximum 3% VD (informational note)
+ * - IEEE 141-1993 §3.4 - "Voltage-drop calculations" (combined feeder+branch ≤ 7%)
+ * - IEEE 141-1993 Table 3-5 - Diversity factors for operating load estimation
+ *
+ * FORMULA (three-phase voltage drop, per cable segment):
+ *   VD_V   = √3 × I × (R×cosφ + X×sinφ)         [volts, line-to-line]
+ *   VD_%   = VD_V / V_base × 100                 [% of load-side bus voltage]
+ *
+ * FORMULA (temperature-corrected AC resistance):
+ *   R_T = R_75 × [1 + α × (T - 75)]
+ *   α_Cu = 0.00393 /°C (IEEE 141), α_Al = 0.00403 /°C (IEEE 141)
+ *
+ * COMPLIANCE BASIS (per IEEE 141-1993):
+ *   - NEC compliance: Design VD at 100% FLC (worst-case)
+ *   - Operating VD with demand/diversity factors is informational only
+ *
+ * THREE MODES (per voltageDropEngine.js v3.3):
+ *   'design'         → 100% FLC — NEC 210.19/215.2 compliance check
+ *   'oper_demand'    → Demand-factored load — IEEE 141 operating analysis
+ *   'oper_demand_df' → Demand + diversity load — IEEE 141 operating analysis
+ *
+ * @param {string} busId              - Unique bus identifier
+ * @param {Array}  path               - Path from traceBusPath() (source at index 0)
+ * @param {Object} [loadFlowData=null] - Load flow results with demand/diversity data
+ * @returns {Object} Voltage drop results with per-segment breakdown and compliance status
+ *
+ * @reference NEC 2017 Articles 210.19(A), 215.2(A)(1)
+ * @reference IEEE 141-1993 §3.4 "Voltage-drop calculations"
+ * @reference NEC 2017 Chapter 9, Table 9 "AC Resistance and Reactance for 600-V Cables"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function calculateVoltageDrop(busId, path, loadFlowData = null) {
   // ══════════════════════════════════════════════════════════════════════════════

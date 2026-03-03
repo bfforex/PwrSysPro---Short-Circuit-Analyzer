@@ -115,12 +115,55 @@ const ARC_FLASH_CONFIG = {
 // ════════════════════════════════════════════════════════════════════════════════
 
 /**
- * Calculate arc flash hazard for a bus
- * 
- * @param {String} busId - Bus identifier
- * @param {Object} shortCircuitData - Short circuit analysis results
- * @param {Object} options - Calculation options
- * @returns {Object} Arc flash analysis results
+ * Calculate arc flash hazard for a bus (IEEE 1584-2018 / NFPA 70E-2021)
+ *
+ * Computes incident energy at the specified working distance and the arc-flash
+ * protection boundary. PPE category is assigned per NFPA 70E-2021
+ * Table 130.7(C)(15) based on incident energy thresholds.
+ *
+ * STANDARDS:
+ * - IEEE 1584-2018 §4 - Arc-flash hazard calculation methodology
+ * - IEEE 1584-2018 §5 - Incident energy and arc-flash boundary equations
+ * - NFPA 70E-2021 Table 130.7(C)(15) - PPE categories by incident energy
+ * - NEC 2017 Article 110.16 - Arc-flash hazard warning labels
+ * - OSHA 29 CFR 1910.335 - Safeguards for personnel protection
+ *
+ * FORMULA (Lee Method, low voltage ≤ 600 V):
+ *   E = 4.184 × P_arc × t × (610^x) / (D^x × 10^6)   [cal/cm²]
+ *   where P_arc = V × I_arc / 1000 [kW], x = 2 (point source approximation)
+ *   D = working distance [mm], t = clearing time [s]
+ *
+ * FORMULA (Arcing current approximation):
+ *   I_arc = 0.85 × I_bolted   (conservative 85% factor per IEEE 1584-2018 §4.4)
+ *
+ * FORMULA (Arc-Flash Boundary):
+ *   D_B = [4.184 × P_arc × t / (E_limit × 10^6)]^(1/x) × 610   [mm]
+ *   E_limit = 1.2 cal/cm² (onset of second-degree burn, bare skin)
+ *
+ * PPE CATEGORIES (NFPA 70E-2021 Table 130.7(C)(15)):
+ *   Category 0: E < 1.2  cal/cm² — Untreated cotton
+ *   Category 1: E < 4    cal/cm² — 4 cal/cm² rated arc-flash PPE
+ *   Category 2: E < 8    cal/cm² — 8 cal/cm² rated arc-flash PPE
+ *   Category 3: E < 25   cal/cm² — 25 cal/cm² rated arc-flash PPE
+ *   Category 4: E < 40   cal/cm² — 40 cal/cm² rated arc-flash PPE
+ *   Dangerous:  E ≥ 40   cal/cm² — Do not perform energised work
+ *
+ * NOTE: Arc flash calculations always use 100% bolted fault current (never
+ * demand/diversity factors), per IEEE 1584-2018 §4.1 and IEEE 141-1993 §5.1.
+ *
+ * @param {string} busId                          - Unique bus identifier
+ * @param {Object} shortCircuitData               - Short-circuit analysis results
+ * @param {number} shortCircuitData.threePhaseFault.faultCurrent - 3-phase fault current (kA)
+ * @param {Object} [options={}]                   - Calculation options
+ * @param {string} [options.equipmentType='VCB']  - Equipment type (see IEEE 1584-2018 §B.2)
+ * @param {number} [options.workingDistance]      - Working distance in inches; default from voltage class
+ * @param {number} [options.clearingTimeCycles]   - Protective device clearing time in cycles (at 60 Hz)
+ * @returns {Object} Arc-flash results with incident energy, boundary, and PPE category
+ *
+ * @reference IEEE 1584-2018 "Guide for Performing Arc-Flash Hazard Calculations"
+ * @reference NFPA 70E-2021 "Standard for Electrical Safety in the Workplace"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function calculateArcFlash(busId, shortCircuitData, options = {}) {
     // ══════════════════════════════════════════════════════════════════════════════

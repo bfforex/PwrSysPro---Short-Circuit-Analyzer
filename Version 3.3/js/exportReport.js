@@ -320,10 +320,10 @@ function exportBusReport(busId) {
                 const vdPercent = vd.totalDropPercent || vd.cumulativeDropPercent || 0;
                 const vdVolts = vd.totalDropVolts || vd.cumulativeDropVolts || 0;
                 
-                report += `⚡ DESIGN VOLTAGE DROP ANALYSIS (FLC – Sizing Basis)\n`;
+                report += `⚡ DESIGN VOLTAGE DROP ANALYSIS (100% FLC – NEC/IEEE Compliance Basis)\n`;
                 report += `${'-'.repeat(100)}\n`;
-                report += `Method Used:             Full Load Current (FLC) - CONSERVATIVE\n`;
-                report += `Current Used:            ${ds.connectedCurrent.toFixed(2)} A (100% connected load)\n`;
+                report += `Method Used:             Connected Load (100% FLC) - NEC 210.19/215.2 compliance check\n`;
+                report += `Current Used:            ${ds.connectedCurrent.toFixed(2)} A (100% connected load – worst-case per NEC)\n`;
                 report += `Calculated Drop:         ${vdPercent.toFixed(3)}% (${vdVolts.toFixed(2)}V)\n`;
                 report += `\n`;
                 
@@ -356,9 +356,9 @@ function exportBusReport(busId) {
                 report += `Voltage Drop Reduction:  ${(vdPercent - diversityVD).toFixed(3)}% (${((1 - diversityVD / vdPercent) * 100).toFixed(1)}% improvement)\n`;
                 report += `\n`;
                 
-                report += `ℹ️  Voltage drop compliance per NEC 210.19, 215.2, and IEEE 141 is based on\n`;
-                report += `    Design VD using Full Load Current (FLC), NOT on Operating VD.\n`;
-                report += `    This ensures adequate conductor sizing for worst-case conditions.\n`;
+                report += `ℹ️  NEC/IEEE 141 requires voltage drop compliance based on 100% connected load (FLC),\n`;
+                report += `    NOT on operating load with demand/diversity factors applied.\n`;
+                report += `    Equipment sizing (conductors, breakers) uses the three-tier load shown above.\n`;
                 report += `\n`;
             }
             
@@ -375,7 +375,7 @@ function exportBusReport(busId) {
             report += `⚠️  DEMAND & DIVERSITY FACTORS:\n`;
             report += `${'-'.repeat(100)}\n`;
             report += `Status:                  NOT APPLIED\n`;
-            report += `Load Used:               Connected Load (100%) - CONSERVATIVE\n`;
+            report += `Load Basis:              Connected Load (100% FLC) - NEC compliance check only\n`;
             report += `\n`;
             report += `Reason: Demand factor modules not available or bus configuration\n`;
             report += `        does not support automatic demand factor application.\n`;
@@ -392,9 +392,9 @@ function exportBusReport(busId) {
                 const vdPercent = vd.totalDropPercent || vd.cumulativeDropPercent || 0;
                 const vdVolts = vd.totalDropVolts || vd.cumulativeDropVolts || 0;
                 
-                report += `⚡ DESIGN VOLTAGE DROP ANALYSIS (FLC – Sizing Basis):\n`;
+                report += `⚡ DESIGN VOLTAGE DROP ANALYSIS (100% FLC – NEC/IEEE Compliance Basis):\n`;
                 report += `${'-'.repeat(100)}\n`;
-                report += `Method:                  Full Load Current (FLC)\n`;
+                report += `Method:                  Connected Load (100% FLC) - NEC/IEEE 141 compliance basis\n`;
                 report += `Voltage Drop:            ${vdPercent.toFixed(3)}% (${vdVolts.toFixed(2)}V)\n`;
                 report += `IEEE 141 Compliance:     ${vdPercent <= 7 ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}\n`;
                 report += `\n`;
