@@ -355,11 +355,44 @@ function buildIECPathFromTrace(trace) {
 
 /**
  * Perform short circuit analysis for a bus
- * Returns detailed calculation steps and results
- * 
- * @param {String} busId - Bus identifier
- * @param {String} method - 'point-to-point' or 'per-unit'
- * @returns {Object} Short circuit results with detailed steps
+ *
+ * Dispatches to the appropriate calculation engine (point-to-point,
+ * per-unit, or IEC 60909-0) and normalises the result to the unified
+ * v3.3 results schema.
+ *
+ * STANDARDS:
+ * - IEEE 141-1993 §5.2 - Point-to-point (ohmic) short-circuit method
+ * - IEEE 141-1993 §5.3 - Per-unit system short-circuit method
+ * - IEC 60909-0:2016 §4 - Maximum/minimum short-circuit current calculation
+ * - ANSI C37.010 - Application guide for AC high-voltage circuit breakers
+ *
+ * FORMULA (point-to-point, three-phase):
+ *   I₃φ = V_LL / (√3 × Z₁)
+ *   where Z₁ = total positive-sequence impedance from source to fault point
+ *
+ * FORMULA (per-unit):
+ *   I₃φ_pu = V_pu / Z₁_pu  (on chosen MVA base, e.g. 10 MVA)
+ *   I₃φ_A  = I₃φ_pu × I_base
+ *
+ * FORMULA (IEC 60909-0, maximum):
+ *   I"k = c_max × Un / (√3 × |Z_k|)
+ *   i_p  = κ × √2 × I"k   (κ from IEEE C37.010 / IEC 60909 Table B.1)
+ *
+ * NOTE: Motor contribution and demand/diversity factors are applied by the
+ * calling function (calculateBus). This function returns system-only impedance.
+ *
+ * @param {string} busId - Unique bus identifier to fault at
+ * @param {string} [method='point-to-point'] - Calculation method:
+ *   'point-to-point' | 'per-unit' | 'iec-60909'
+ * @param {Object} [options={}] - Method-specific options
+ * @param {string} [options.iecCalcType='max'] - IEC calculation type: 'max' | 'min'
+ * @returns {Object} Normalised short-circuit results (unified schema v3.3)
+ *
+ * @reference IEEE 141-1993 Chapter 5 "Short-Circuit Calculations"
+ * @reference IEC 60909-0:2016 "Short-circuit currents in three-phase a.c. systems"
+ * @reference ANSI C37.010 "Application Guide for AC High-Voltage Circuit Breakers"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 
 function calculateShortCircuit(busId, method = 'point-to-point', options = {}) {
@@ -547,16 +580,40 @@ function calculateShortCircuit(busId, method = 'point-to-point', options = {}) {
 }
 
 /**
- * Point-to-Point Short Circuit Calculation - ENHANCED
- * Pure ohmic method with comprehensive step-by-step tracing
+ * Point-to-Point Short Circuit Calculation (Ohmic Method) - ENHANCED
  *
- * @param {Array} path - Bus path from traceBusPath()
- * @returns {Object} Short circuit calculation results
- * Short Circuit Calculation - ENHANCED
- * Pure ohmic method with comprehensive step-by-step tracing
- * 
- * @param {Array} path - Bus path from traceBusPath()
- * @returns {Object} Short circuit calculation results
+ * Calculates fault currents by summing series impedances from source to fault.
+ * Handles transformers (with turns-ratio referral), cables (with temperature
+ * correction), and sequence network components for unbalanced faults.
+ *
+ * STANDARDS:
+ * - IEEE 141-1993 §5.2 - "Point-to-point method"
+ * - IEEE 141-1993 §5.4 - "Motor contributions"
+ * - NEC Chapter 9, Table 9 - Cable impedance data (AC resistance at 75°C)
+ *
+ * FORMULA (three-phase symmetrical fault):
+ *   I₃φ = V_LL / (√3 × Z₁_total)
+ *   where Z₁_total = Σ(source + transformers + cables)  [all referred to fault-bus voltage]
+ *
+ * FORMULA (asymmetrical, DC offset per IEEE C37.010):
+ *   I_asym = I₃φ × K_f
+ *   K_f    = √(1 + 2e^(-2πft_c/X_R)) ≈ from X/R ratio at fault point
+ *
+ * FORMULA (line-to-ground, sequence network):
+ *   I_LG = 3 × V_LN / (Z₁ + Z₂ + Z₀)
+ *   Z₂ ≈ Z₁, Z₀ = f(grounding type, transformer vector group)
+ *
+ * FORMULA (temperature-corrected cable resistance):
+ *   R_T = R_75 × [1 + α × (T - 75)]
+ *   α_Cu = 0.00393 /°C, α_Al = 0.00403 /°C (IEEE 141-1993)
+ *
+ * @param {Array} path - Bus path array from traceBusPath(), source at index 0
+ * @returns {Object} Short-circuit results with fault currents, impedances, and steps
+ *
+ * @reference IEEE 141-1993 §5.2 "Point-to-point method"
+ * @reference NEC 2017 Chapter 9, Table 9 "AC Resistance and Reactance for 600-V Cables"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 
 function calculateShortCircuitPointToPoint(path) {
@@ -1367,12 +1424,34 @@ function calculateShortCircuitPointToPoint(path) {
 }
 
 /**
- * Per-Unit Short Circuit Calculation - FULLY ENHANCED v1.5.0
- * Uses per-unit system for multi-voltage level analysis
- * NOW WITH COMPLETE ENHANCEMENTS: Tags, Visual Hierarchy, Detailed Steps
- * 
- * @param {Array} path - Bus path from traceBusPath()
- * @returns {Object} Short circuit calculation results
+ * Per-Unit Short Circuit Calculation (Normalised System Method) - ENHANCED v1.5.0
+ *
+ * Calculates fault currents using the per-unit (p.u.) system, which automatically
+ * handles multi-voltage-level networks by normalising all quantities to a common
+ * MVA base. Impedances at each voltage level are converted using:
+ *   Z_pu_new = Z_pu_old × (MVA_base_new / MVA_base_old) × (V_base_old / V_base_new)²
+ *
+ * STANDARDS:
+ * - IEEE 141-1993 §5.3 - "Per-unit method"
+ * - IEEE 141-1993 §5.5 - "System base selection"
+ *
+ * FORMULA:
+ *   I_base = S_base / (√3 × V_base)
+ *   Z_base = V_base² / S_base
+ *   I₃φ_pu = 1.0 / Z₁_total_pu          (pre-fault voltage = 1.0 p.u.)
+ *   I₃φ_A  = I₃φ_pu × I_base
+ *
+ * TRANSFORMER IMPEDANCE CONVERSION:
+ *   Z_pu_system = Z_pu_nameplate × (S_base_system / S_nameplate)
+ *
+ * BASE KVA: 10,000 kVA (10 MVA) — standard system base for industrial networks
+ *
+ * @param {Array} path - Bus path array from traceBusPath(), source at index 0
+ * @returns {Object} Short-circuit results with fault currents, per-unit values, and steps
+ *
+ * @reference IEEE 141-1993 §5.3 "Per-unit method"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function calculateShortCircuitPerUnit(path) {
     // ══════════════════════════════════════════════════════════════════════════════

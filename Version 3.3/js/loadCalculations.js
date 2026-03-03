@@ -1,16 +1,38 @@
 /**
  * Load Calculations Module
  * Calculates dynamic load currents based on downstream equipment
- * 
+ *
  * @author bfforex
  * @date 2025-10-27 16:11:27 UTC
  * @version 1.0.0
+ *
+ * STANDARDS COMPLIANCE:
+ * - NEC 2017 Article 220 - Branch-circuit and feeder load calculations
+ * - NEC 2017 Article 430 - Motor load calculations
+ * - IEEE 141-1993 Chapter 3 - System planning and load analysis
  */
 
 /**
  * Calculate total downstream load current for a bus
- * @param {String} busId - Bus identifier
- * @returns {Number} Total load current in amperes
+ *
+ * Recursively traverses all downstream buses and sums load currents from
+ * motors, cables, and transformers. Manual (user-entered) loads take
+ * precedence; auto-calculated loads are skipped to avoid double-counting.
+ *
+ * STANDARDS:
+ * - NEC 2017 Article 220.14 - Other loads; all receptacle outlets
+ * - NEC 2017 Article 430.6 - Motor FLC determination basis
+ * - IEEE 141-1993 §3.2 - Load survey and load flow
+ *
+ * MOTOR FLC FORMULA (three-phase):
+ *   I_FLC = (HP × 746) / (V × η × PF × √3)
+ *   Default η = 0.90, PF = 0.85 (NEMA Design B typical)
+ *
+ * @param {string} busId - Unique identifier of the bus to start from
+ * @returns {number} Total downstream load current in amperes
+ *
+ * @reference NEC 2017 Article 220.14
+ * @reference NEC 2017 Article 430.6 "Ampacity and Motor Rating Determination"
  */
 function calculateDownstreamLoad(busId) {
     const bus = buses.find(b => b.id === busId);

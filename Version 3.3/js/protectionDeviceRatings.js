@@ -360,11 +360,37 @@ const COST_TIERS = {
 
 /**
  * Generate comprehensive protection device requirements and recommendations
- * 
- * @param {Object} scResults - Short circuit calculation results
- * @param {String} preferredManufacturer - Optional preferred manufacturer
- * @param {String} costPreference - 'budget', 'mid-range', or 'premium'
- * @returns {String} Formatted protection device requirements report
+ *
+ * Selects appropriate circuit breakers, fuses, and relay settings based on
+ * calculated fault currents, bus voltage, and preferred cost tier.
+ * Recommendations comply with NEC Article 110.9 (interrupting rating) and
+ * ANSI C37 circuit breaker standards.
+ *
+ * STANDARDS:
+ * - NEC 2017 Article 110.9 - Equipment interrupting ratings
+ * - NEC 2017 Article 110.10 - Circuit impedance and short-circuit ratings
+ * - NEC 2017 Article 110.24 - Available fault current marking
+ * - ANSI/IEEE C37.010 - Application guide for AC high-voltage circuit breakers
+ * - IEC 60947-2 - Low-voltage switchgear: circuit breakers
+ *
+ * DEVICE SELECTION CRITERIA:
+ * - Interrupting rating: Must exceed asymmetrical fault current (kA rms)
+ * - Frame rating: At least 125% of maximum load current (NEC 430.52)
+ * - Bus bracing: Must withstand asymmetrical peak current (kA peak)
+ *
+ * ASYMMETRICAL MULTIPLYING FACTOR (ANSI C37.010):
+ *   At X/R ≤ 4:  K_MF ≈ 1.0  (no correction needed for standard breakers)
+ *   At X/R > 4:  K_MF from ANSI C37.010 Table 1; applied to I_sym
+ *
+ * @param {Object} scResults                         - Short-circuit results from calculateShortCircuit()
+ * @param {string|null} [preferredManufacturer=null] - Preferred OEM; null = all manufacturers
+ * @param {string} [costPreference='mid-range']      - Cost tier: 'budget' | 'mid-range' | 'premium'
+ * @returns {string} Formatted protection device requirements report (plain text)
+ *
+ * @reference NEC 2017 Articles 110.9, 110.10, 110.24
+ * @reference ANSI C37.010 "Application Guide for AC High-Voltage Circuit Breakers"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function generateProtectionDeviceRequirements(scResults, preferredManufacturer = null, costPreference = 'mid-range') {
     // Extract key values

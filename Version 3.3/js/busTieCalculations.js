@@ -1,20 +1,21 @@
 /**
  * Bus Tie Calculation Module
  * Provides calculation wrappers for bus tie operating scenarios
- * 
+ *
  * @author bfforex
  * @date 2025-11-04
  * @version 1.0.0 - Bus Tie Feature
- * 
+ *
  * FEATURES:
  * - Short circuit comparison (tie open vs closed)
  * - Voltage drop analysis with tie scenarios
  * - Load flow with tie current calculation
  * - Arc flash comparison between scenarios
- * 
+ *
  * STANDARDS COMPLIANCE:
- * - IEEE 141-1993: Section 7.3 Bus Ties
- * - IEEE 242-2001: Protection coordination with ties
+ * - IEEE 141-1993 §7.3 - Bus ties and system interconnections
+ * - IEEE 242-2001 §6.4 - Protection coordination with bus ties
+ * - IEEE C37.010 - Interrupting ratings with tie configurations
  */
 
 console.log('🔌 Loading Bus Tie Calculation Module v1.0...');
@@ -25,10 +26,29 @@ console.log('🔌 Loading Bus Tie Calculation Module v1.0...');
 
 /**
  * Calculate short circuit for a bus considering bus tie states
- * Provides both tie-open and tie-closed scenarios
- * @param {string} busId - Bus ID to analyze
- * @param {string} method - Calculation method ('point-to-point' or 'per-unit')
- * @returns {Object} Results with both scenarios
+ *
+ * Computes fault currents for both tie-open and tie-closed scenarios.
+ * When a bus tie is closed, the parallel source impedance from the tie
+ * bus is included, typically increasing fault current magnitude.
+ *
+ * STANDARDS:
+ * - IEEE 141-1993 §7.3 - "Bus tie arrangements"
+ * - IEEE 242-2001 §6.4 - "Protection coordination with bus ties"
+ *
+ * IMPACT OF CLOSING A BUS TIE:
+ * - Fault current INCREASES (additional source in parallel)
+ * - Arc flash incident energy INCREASES (higher fault current)
+ * - Voltage drop DECREASES (lower source impedance)
+ * - Protection devices must be rated for tie-closed fault current
+ *
+ * @param {string} busId                        - Bus ID at which to compute fault current
+ * @param {string} [method='point-to-point']    - SC calculation method: 'point-to-point' | 'per-unit'
+ * @returns {Object} Results object with tieOpen, tieClosed scenarios and tieImpact delta
+ *
+ * @reference IEEE 141-1993 §7.3 "Bus Tie Arrangements"
+ * @reference IEEE 242-2001 §6.4 "Coordination with Bus Ties"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function calculateShortCircuitWithBusTie(busId, method = 'point-to-point') {
     console.log(`\n🔌 Bus Tie Short Circuit Analysis for bus: ${busId}`);

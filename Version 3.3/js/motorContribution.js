@@ -89,14 +89,48 @@ function classifyMotor(hp, motorType = 'induction') {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Calculate short circuit contribution from a single motor
- * Per IEEE 141-1993, IEC 60909, and NEC Article 430
- * 
- * @param {Object} motor - Motor object with hp, motorType, efficiency, powerFactor
- * @param {Number} busVoltage - Bus voltage in volts (where motor is connected)
- * @param {Number} faultVoltage - Fault point voltage (for impedance referral)
- * @param {String} contributionType - 'interrupting' or 'momentary'
- * @returns {Object|null} Motor contribution data or null if invalid
+ * Calculate short-circuit fault-current contribution from a single motor
+ *
+ * Motors act as voltage sources during fault conditions and contribute
+ * symmetrical fault current proportional to their subtransient reactance X".
+ * This function implements the IEEE 141-1993 motor contribution method.
+ *
+ * STANDARDS:
+ * - IEEE 141-1993 §5.3 - Motor contribution to short-circuit currents
+ * - IEEE 141-1993 Table 5-3 - Motor X" and X/R values by type and HP
+ * - ANSI C37.010 - DC offset multiplying factors (interrupting vs momentary)
+ * - NEC 2017 Article 430 - Motor circuit requirements
+ *
+ * FORMULA (motor subtransient impedance referred to system base):
+ *   I_FLC = (HP × 746) / (√3 × V_motor × η × PF)
+ *   Z_motor = V_motor / (√3 × I_FLC)   × X"_pu
+ *   I_motor_contribution = V_fault / Z_motor   (referred to fault bus)
+ *
+ * CONTRIBUTION FACTORS (multiplier × FLC, IEEE 141-1993 §5.3):
+ *   Interrupting duty (3-5 cycles): 4.0 × FLC
+ *   Momentary duty (½ cycle):       6.0 × FLC
+ *
+ * MOTOR X" VALUES (IEEE 141-1993 Table 5-3):
+ *   Induction < 50 HP:     X" = 20%
+ *   Induction 50-250 HP:   X" = 17%
+ *   Induction > 250 HP:    X" = 15%
+ *   Synchronous:           X" = 12%
+ *   Wound-rotor:           X" = 18%
+ *
+ * @param {Object} motor                          - Motor data object
+ * @param {number} motor.hp                       - Rated horsepower
+ * @param {string} [motor.motorType='induction']  - Motor type: 'induction'|'synchronous'|'wound_rotor'
+ * @param {number} [motor.efficiency=0.90]        - Motor efficiency (0–1)
+ * @param {number} [motor.powerFactor=0.85]       - Motor power factor (0–1)
+ * @param {number} busVoltage                     - Bus voltage where motor is connected (V)
+ * @param {number} [faultVoltage=null]            - Fault-point voltage for impedance referral (V)
+ * @param {string} [contributionType='interrupting'] - Duty type: 'interrupting' | 'momentary'
+ * @returns {Object|null} Motor contribution data object, or null for invalid inputs
+ *
+ * @reference IEEE 141-1993 §5.3 "Motor contribution to short-circuit currents"
+ * @reference IEEE 141-1993 Table 5-3 "Typical motor impedance data"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function calculateMotorContribution(motor, busVoltage, faultVoltage = null, contributionType = 'interrupting') {
     // ═══════════════════════════════════════════════════════════════════════
@@ -388,12 +422,23 @@ function findDownstreamMotors(busId) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Calculate total motor contribution to fault current at a given bus
- * Includes ALL motors downstream from fault point
- * 
- * @param {String} busId - Bus where fault is occurring
- * @param {String} contributionType - 'interrupting' or 'momentary'
- * @returns {Object|null} Total motor contribution data or null if no motors
+ * Calculate total motor fault-current contribution at a bus (all downstream motors)
+ *
+ * Aggregates individual motor contributions from all motors electrically between
+ * the fault point and the load, per IEEE 141-1993 §5.3.2.
+ * Results are combined symmetrically (RSS of individual motor contributions).
+ *
+ * STANDARDS:
+ * - IEEE 141-1993 §5.3.2 - "Motor contribution – multiple motors"
+ * - ANSI C37.010 §5.6 - Motor contribution for circuit breaker application
+ *
+ * @param {string} busId                            - Bus identifier where fault occurs
+ * @param {string} [contributionType='interrupting'] - Duty type: 'interrupting' | 'momentary'
+ * @returns {Object|null} Aggregated motor contribution, or null if no motors found
+ *
+ * @reference IEEE 141-1993 §5.3 "Motor contribution to short-circuit currents"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function calculateTotalMotorContribution(busId, contributionType = 'interrupting') {
     if (!busId || typeof busId !== 'string') {
@@ -511,11 +556,31 @@ function calculateTotalMotorContribution(busId, contributionType = 'interrupting
 
 /**
  * Combine system fault current with motor contribution
- * System and motors act as parallel sources
- * 
- * @param {Object} systemFaultResults - Complete short circuit results from calculateShortCircuit
- * @param {Object} motorContribution - Motor contribution data from calculateTotalMotorContribution
- * @returns {Object} Combined short circuit results with motor contribution
+ *
+ * System supply and all motors act as parallel voltage sources during a fault.
+ * The total fault current at the bus is the arithmetic sum of the system (utility)
+ * contribution and all motor contributions referred to the fault-bus voltage.
+ *
+ * STANDARDS:
+ * - IEEE 141-1993 §5.3.3 - "Combination of motor and system contributions"
+ * - ANSI C37.010 §5.5 - Total fault current for breaker interrupting rating
+ *
+ * COMBINATION METHOD (IEEE 141-1993 §5.3.3):
+ *   I_total_sym  = I_system_sym  + I_motor_sym
+ *   I_total_asym = I_system_asym + I_motor_asym
+ *   (Direct arithmetic addition; motors and system are in phase at t=0)
+ *
+ * NOTE: X/R ratio for the combined current is the weighted average used to
+ * compute the DC offset multiplier per ANSI C37.010.
+ *
+ * @param {Object} systemFaultResults    - System short-circuit results from calculateShortCircuit()
+ * @param {Object} motorContribution     - Motor contribution from calculateTotalMotorContribution()
+ * @returns {Object} Combined short-circuit results with updated fault currents
+ *
+ * @reference IEEE 141-1993 §5.3.3 "Combination of contributions"
+ * @reference ANSI C37.010 §5.5 "Total fault current"
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function combineSystemAndMotorFault(systemFaultResults, motorContribution) {
     // ✅ DEFENSIVE CHECK: Validate inputs

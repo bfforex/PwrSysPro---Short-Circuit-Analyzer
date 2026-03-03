@@ -6,11 +6,45 @@
  * Enhanced: Arc Flash Analysis Integration (IEEE 1584-2018 & NFPA 70E-2021)
  * FIXED: Demand factor application with comprehensive debugging
  * @version 1.3.4 - Demand Factor Integration Fix
+ *
+ * STANDARDS COMPLIANCE:
+ * - IEEE 141-1993 (Red Book) - Chapters 3, 4, 5 - System analysis methodology
+ * - IEC 60909-0:2016 - Short-circuit currents in three-phase AC systems
+ * - IEEE 1584-2018 - Guide for Performing Arc-Flash Hazard Calculations
+ * - NFPA 70E-2021 - Standard for Electrical Safety in the Workplace
+ * - NEC 2017 Article 430 - Motors, Motor Circuits, and Controllers
  */
 
 /**
  * Calculate all analyses for a bus
- * Runs Short Circuit (with Motor Contribution), Load Flow, Voltage Drop, and Arc Flash analyses
+ *
+ * Orchestrates short-circuit, motor contribution, load flow, voltage drop,
+ * and arc-flash analyses in the correct dependency order, then stores the
+ * unified results on `bus.results`.
+ *
+ * STANDARDS:
+ * - IEEE 141-1993 Chapter 5 - Short-circuit analysis methodology
+ * - IEEE 141-1993 Chapter 3 - Demand and diversity factor application
+ * - IEEE 141-1993 Chapter 4 - Voltage drop calculations
+ * - IEEE 1584-2018 - Arc-flash incident energy calculation
+ * - NEC 2017 Article 430 - Motor contribution per NEC demand factors
+ *
+ * CALCULATION ORDER (dependency chain):
+ * 1. Short Circuit (system) → base fault currents without motor contribution
+ * 2. Motor Contribution → downstream motor fault currents (IEEE 141-1993 §5.3)
+ * 3. Combined Fault → system + motor (ANSI C37.010 multiplying factors)
+ * 4. Load Flow → demand/diversity-adjusted downstream loads
+ * 5. Voltage Drop → design (100% FLC) and operating (demand/diversity) modes
+ * 6. Arc Flash → IEEE 1584-2018 incident energy using combined fault current
+ *
+ * NOTE: Short-circuit and arc-flash calculations always use 100% connected load
+ * (full fault current), never demand or diversity factors, per IEEE 141-1993 §5.1.
+ *
+ * @param {string} busId - Unique identifier of the target bus to analyse
+ * @returns {void} Results stored in `bus.results`; UI updated via displayResults()
+ *
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function calculateBus(busId) {
     selectedBusId = busId;
@@ -594,6 +628,20 @@ function calculateBus(busId) {
 
 /**
  * Calculate arc flash for a bus (standalone function)
+ *
+ * Runs the IEEE 1584-2018 arc-flash calculation using previously-stored
+ * short-circuit results. Must be called after calculateBus() has run.
+ *
+ * STANDARDS:
+ * - IEEE 1584-2018 §4 - Arc-flash hazard calculation procedure
+ * - NFPA 70E-2021 Table 130.7(C)(15) - PPE category determination
+ * - NEC Article 110.16 - Arc-flash hazard warning labels
+ *
+ * @param {string} busId - Unique identifier of the target bus
+ * @returns {Object|null} Arc-flash results object, or null on failure
+ *
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function performArcFlashAnalysis(busId) {
     try {
@@ -650,6 +698,15 @@ function performArcFlashAnalysis(busId) {
 
 /**
  * Calculate all buses in system
+ *
+ * Iterates over all non-source buses and calls calculateBus() on each.
+ * Results are stored on each bus.results object and displayed in aggregate.
+ * Source buses are excluded unless they have explicit utility fault data.
+ *
+ * @returns {void} Results stored on each bus object; UI refreshed
+ *
+ * @author Engr. B. P. Faraon
+ * @date 2025-12-05
  */
 function calculateAllBuses() {
     const calculatedBuses = buses.filter(b => b.type !== 'source' || b.utilityFaultCurrent);
