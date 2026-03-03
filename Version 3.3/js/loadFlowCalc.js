@@ -611,7 +611,7 @@ steps += `   • Percentages are of ACTUAL consumed load (${totalAtThisLevel.toF
         steps += `${singlePhaseMotors.length} single-phase motor(s) detected (${spCurrent.toFixed(2)} A total).\n`;
         steps += 'Single-phase loads connected to a 3-phase system create unbalanced phase\n';
         steps += 'currents. Neutral current may be significant. Ensure phase loading is\n';
-        steps += 'distributed to minimise imbalance per IEEE 141 Chapter 3.\n';
+        steps += 'distributed to minimize imbalance per IEEE 141 Chapter 3.\n';
         steps += '─'.repeat(80) + '\n';
     }
 
