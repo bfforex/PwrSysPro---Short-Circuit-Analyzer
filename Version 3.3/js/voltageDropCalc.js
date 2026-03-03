@@ -390,34 +390,67 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
       const cableR = (rBaseTemp * lengthFt) / parallel;
       const cableX = (xBase * lengthFt) / parallel;
 
-      // Get load current
+      // Get load current — priority order:
+      // 1. Demand-adjusted current from load flow results (most accurate — uses user-set DF/DivF)
+      // 2. calculateDownstreamLoadWithDiversity (live calc from component tree)
+      // 3. calculateDownstreamLoad (raw connected load)
+      // 4. getLoadCurrent fallback / 100 A default
       let loadCurrent = 0;
+      let loadCurrentSource = 'unknown';
       try {
         const targetBusId = comp?.toBus ?? segment?.bus?.id ?? null;
         
-        if (typeof calculateDownstreamLoadWithDiversity === 'function' && targetBusId) {
+        // Priority 1: Use diversityLoad from load flow demand summary if already calculated
+        if (targetBusId) {
+            const targetBusObj = (typeof buses !== 'undefined' ? buses : [])
+                .find(b => b.id === targetBusId);
+            const demandResult = targetBusObj?.results?.loadFlow;
+            if (demandResult) {
+                // Prefer diversityLoad (post demand+diversity factors) as the design current
+                const lf = demandResult.demandSummary || demandResult;
+                const lfCurrent = Number(lf.diversityCurrent || lf.diversityLoad
+                    || demandResult.diversityLoad || demandResult.demandLoad || 0);
+                if (lfCurrent > 0) {
+                    loadCurrent = lfCurrent;
+                    loadCurrentSource = `load-flow demand (DF=${(lf.demandFactor||1).toFixed(2)}, DivF=${(lf.diversityFactor||1).toFixed(2)})`;
+                    console.log(`  ✅ VD: Using load flow demand current: ${loadCurrent.toFixed(2)} A`);
+                }
+            }
+        }
+        
+        // Priority 2: Live diversity calc
+        if (!(loadCurrent > 0) && typeof calculateDownstreamLoadWithDiversity === 'function' && targetBusId) {
           const diversityResult = calculateDownstreamLoadWithDiversity(targetBusId, { applyDiversity: true });
           if (diversityResult && diversityResult.diversifiedLoad > 0) {
             loadCurrent = diversityResult.diversifiedLoad;
+            loadCurrentSource = 'downstream diversity calc';
             console.log(`  ${VOLTAGE_DROP_CONFIG.ICONS.pass} Using diversified load: ${loadCurrent.toFixed(2)} A`);
           }
         }
         
+        // Priority 3: Raw downstream load
         if (!(loadCurrent > 0) && typeof calculateDownstreamLoad === 'function' && targetBusId) {
           const downstreamLoad = Number(calculateDownstreamLoad(targetBusId));
-          if (downstreamLoad > 0) loadCurrent = downstreamLoad;
+          if (downstreamLoad > 0) {
+              loadCurrent = downstreamLoad;
+              loadCurrentSource = 'downstream connected load';
+          }
         }
       } catch (_) {}
 
+      // Priority 4: fallback
       if (!(loadCurrent > 0)) {
         try {
           if (typeof getLoadCurrent === 'function') {
             loadCurrent = Number(getLoadCurrent(segment && segment.bus ? segment.bus : null, comp, 100));
+            loadCurrentSource = 'getLoadCurrent helper';
           } else {
             loadCurrent = 100;
+            loadCurrentSource = 'default 100 A';
           }
         } catch (_) {
           loadCurrent = 100;
+          loadCurrentSource = 'default 100 A (exception)';
         }
       }
 
@@ -469,7 +502,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
 
       steps += `📊 VOLTAGE DROP CALCULATION\n`;
       steps += '─'.repeat(80) + '\n';
-      steps += `Load Current:        ${loadCurrent.toFixed(2)} A\n`;
+      steps += `Load Current:        ${loadCurrent.toFixed(2)} A  (source: ${loadCurrentSource || 'N/A'})\n`;
       steps += `Power Factor:        ${powerFactor.toFixed(2)} (cosθ=${cosTheta.toFixed(3)}, sinθ=${sinTheta.toFixed(3)})\n\n`;
       
       steps += `Formula: ΔV = √3 × I × (R×cosφ + X×sinφ)\n`;

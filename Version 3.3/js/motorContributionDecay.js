@@ -86,7 +86,11 @@ function calculateMotorFaultContribution(motor, faultBus, time_cycles) {
     const params = getMotorParameters(motor);
     
     // Calculate motor FLC
-    const motorVoltage = motor.voltage || faultBus?.voltage || 480;
+    
+    const motorTerminalBus = (typeof buses !== 'undefined' && Array.isArray(buses) && motor?.toBus) 
+    ? buses.find(b => b.id === motor.toBus) 
+    : null;
+    const motorVoltage = motorTerminalBus?.voltage || motor.voltage || faultBus?.voltage || 480;
     const motorHP = motor.hp || motor.power || 100;
     const motorKW = motorHP * 0.746; // Convert HP to kW
     const motorFLC = (motorKW * 1000) / (Math.sqrt(3) * motorVoltage * 0.85); // Assume 0.85 PF
@@ -141,6 +145,32 @@ function calculateMotorFaultContribution(motor, faultBus, time_cycles) {
         parameters: params
     };
 }
+
+
+function getSystemMotorDecaySummary(faultBus, cyclesList = [3, 5]) {
+  const out = {};
+  cyclesList.forEach(cyc => {
+    const sys = calculateSystemMotorContribution(faultBus, cyc);
+    out[cyc] = {
+      cycles: cyc,
+      // Convert A to kA for display
+      totalAC_kA: (sys.totalAC || 0) / 1000,
+      totalAsym_kA: (sys.totalAsymmetric || 0) / 1000,
+      motorCount: sys.motorCount || 0
+    };
+  });
+  return out;
+}
+
+// Export to global scope
+if (typeof window !== 'undefined') {
+  window.calculateMotorFaultContribution = calculateMotorFaultContribution;
+  window.calculateSystemMotorContribution = calculateSystemMotorContribution;
+  window.getSystemMotorDecaySummary = getSystemMotorDecaySummary;
+  window.generateMotorDecayReport = generateMotorDecayReport;
+  window.generateMotorDecayTable = generateMotorDecayTable;
+}
+
 
 /**
  * Get motor parameters based on motor type or use defaults

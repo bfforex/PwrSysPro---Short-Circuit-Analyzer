@@ -142,6 +142,128 @@ function updateComponentInputs() {
                         📖 Per IEEE 141 - Tap changers compensate for system voltage drop
                     </small>
                 </div>
+
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <!-- VECTOR GROUP — affects Z0 / ground-fault calculations      -->
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <div class="form-group">
+                    <label for="transformerVectorGroup">
+                        Vector Group:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">
+                                Determines zero-sequence (Z0) impedance behaviour and ground-fault current path.
+                                Dyn11 is the most common distribution transformer (delta primary, grounded-wye secondary).
+                                Per IEC 60076-1, IEEE 141-1993 §5.4, and IEC 60909-0 §3.3.
+                            </span>
+                        </span>
+                    </label>
+                    <select id="transformerVectorGroup" onchange="updateTransformerVectorNote()" required>
+                        <optgroup label="Most Common — Distribution">
+                            <option value="Dyn11" selected>Dyn11 — Delta / Grounded-Wye (most common LV dist.)</option>
+                            <option value="Dyn1">Dyn1 — Delta / Grounded-Wye (alt. phase)</option>
+                            <option value="Yyn0">Yyn0 — Ungrounded-Wye / Grounded-Wye</option>
+                        </optgroup>
+                        <optgroup label="Utility / Transmission">
+                            <option value="YNd11">YNd11 — Grounded-Wye / Delta</option>
+                            <option value="YNd1">YNd1 — Grounded-Wye / Delta (alt. phase)</option>
+                            <option value="YNyn0">YNyn0 — Grounded-Wye / Grounded-Wye</option>
+                        </optgroup>
+                        <optgroup label="Grounding / Special">
+                            <option value="Yzn11">Yzn11 — Wye / Zigzag-Grounded</option>
+                        </optgroup>
+                        <optgroup label="Ungrounded / Delta">
+                            <option value="Dd0">Dd0 — Delta / Delta (Z0 blocked)</option>
+                            <option value="Dy11">Dy11 — Delta / Ungrounded-Wye (Z0 blocked)</option>
+                            <option value="Yd11">Yd11 — Ungrounded-Wye / Delta (Z0 blocked)</option>
+                        </optgroup>
+                    </select>
+                    <small id="transformerVectorNote" style="color:#1565c0; font-size:0.82em; display:block; margin-top:4px; padding:4px 6px; background:rgba(21,101,192,0.06); border-radius:3px;">
+                        Dyn11: primary delta traps upstream Z0; grounded-wye secondary is the zero-seq source for LV faults.
+                    </small>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <!-- GROUNDING MODE — secondary neutral grounding                -->
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <div class="form-group">
+                    <label for="transformerGroundingMode">
+                        Secondary Neutral Grounding:
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">
+                                How the transformer secondary neutral is connected to ground.
+                                Affects L-G fault magnitude and protection coordination.
+                                Per IEEE 142 (Green Book) and NEC Article 250.
+                            </span>
+                        </span>
+                    </label>
+                    <select id="transformerGroundingMode" onchange="updateTransformerGroundingNote()">
+                        <option value="solidly-grounded" selected>Solidly Grounded (NEC 250.20(B))</option>
+                        <option value="low-resistance">Low-Resistance Grounded — LRG (200–600 A)</option>
+                        <option value="high-resistance">High-Resistance Grounded — HRG (&lt;10 A)</option>
+                        <option value="impedance-grounded">Impedance Grounded (Reactance)</option>
+                        <option value="ungrounded">Ungrounded / Isolated Neutral</option>
+                    </select>
+                    <small id="transformerGroundingNote" style="color:#1b5e20; font-size:0.82em; display:block; margin-top:4px; padding:4px 6px; background:rgba(27,94,32,0.06); border-radius:3px;">
+                        Solidly grounded: maximum L-G fault current; most common for ≤600 V systems.
+                    </small>
+                </div>
+
+                <!-- Neutral Resistor — shown only when LRG or HRG selected -->
+                <div class="form-group" id="transformerNeutralRGroup" style="display:none;">
+                    <label for="transformerNeutralR">
+                        Neutral Resistor Rn (Ω):
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">
+                                Neutral grounding resistor rating. Appears as 3×Rn in zero-sequence network.
+                                L-G fault current = V_LN / Rn (approximately, neglecting system impedance).
+                            </span>
+                        </span>
+                    </label>
+                    <input type="number" id="transformerNeutralR" placeholder="e.g., 12 (for 13.2kV/630A LRG)" step="0.01" min="0">
+                    <small style="color:#666; font-size:0.82em;">3×Rn added to zero-sequence network — IEEE 142-2007 §2.2</small>
+                </div>
+
+                <!-- COOLING CLASS -->
+                <div class="form-group">
+                    <label for="transformerCoolingClass">
+                        Cooling Class (ONAN/ONAF/…):
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">
+                                IEC 60076-2 / IEEE C57 cooling designation.
+                                Affects overload capacity and temperature-rise limits.
+                                Not used in impedance calculations but required for full equipment schedule.
+                            </span>
+                        </span>
+                    </label>
+                    <select id="transformerCoolingClass">
+                        <option value="ONAN" selected>ONAN — Oil Natural Air Natural (self-cooled)</option>
+                        <option value="ONAF">ONAF — Oil Natural Air Forced</option>
+                        <option value="OFAF">OFAF — Oil Forced Air Forced</option>
+                        <option value="OFWF">OFWF — Oil Forced Water Forced</option>
+                        <option value="KNAN">KNAN — Non-inflammable oil, natural</option>
+                        <option value="AN">AN — Dry-type, Air Natural (AA)</option>
+                        <option value="AF">AF — Dry-type, Air Forced (AFA)</option>
+                    </select>
+                </div>
+
+                <!-- LOSSES (optional — for energy studies and reports) -->
+                <details class="collapsible-section" style="margin-top:8px;">
+                    <summary style="font-size:11px; color:#667eea; cursor:pointer;">📊 No-Load / Load Losses (optional)</summary>
+                    <div style="padding:8px; border:1px solid #e0e0e0; border-radius:4px; margin-top:4px;">
+                        <div class="form-group">
+                            <label for="transformerNoLoadLoss" style="font-size:12px;">No-Load (Core/Iron) Loss P0 (kW):</label>
+                            <input type="number" id="transformerNoLoadLoss" placeholder="e.g., 1.8" step="0.01" min="0"
+                                   style="font-size:11px;">
+                            <small style="color:#666; font-size:0.8em;">IEC 60076-1 P0 test — constant loss regardless of load</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="transformerLoadLoss" style="font-size:12px;">Load (Copper/Winding) Loss Pk (kW) at rated:</label>
+                            <input type="number" id="transformerLoadLoss" placeholder="e.g., 8.5" step="0.01" min="0"
+                                   style="font-size:11px;">
+                            <small style="color:#666; font-size:0.8em;">IEC 60076-1 Pk test at rated current — varies with load²</small>
+                        </div>
+                    </div>
+                </details>
             </div>
             
             <!-- ✅ NEW: Manufacturer Information -->
@@ -248,13 +370,38 @@ function updateComponentInputs() {
                 <input type="number" id="cableLength" placeholder="e.g., 100" step="0.1" min="0" required>
             </div>
             <div class="form-group">
-                <label for="cableConduit">Conduit Type:</label>
-                <select id="cableConduit" required>
-                    <option value="PVC">PVC</option>
-                    <option value="Steel">Steel/EMT</option>
-                    <option value="Aluminum">Aluminum</option>
-                    <option value="NonMetallic">Non-Metallic</option>
+                <label for="cableInstallMethod">
+                    Installation Method:
+                    <span class="tooltip">ℹ️
+                        <span class="tooltiptext">
+                            Affects reactance (X), zero-sequence impedance (Z0), and ampacity derating.
+                            Per NEC 310.15, NEC Ch 9 Table 9, IEEE 141-1993 §4, and IEC 60364-5-52.
+                        </span>
+                    </span>
+                </label>
+                <select id="cableInstallMethod" required onchange="updateCableInstallNote()">
+                    <optgroup label="Conduit">
+                        <option value="conduit-pvc" selected>PVC / Non-Metallic Conduit</option>
+                        <option value="conduit-steel">Steel / EMT Conduit</option>
+                        <option value="conduit-aluminum">Aluminum Conduit</option>
+                    </optgroup>
+                    <optgroup label="Cable Tray">
+                        <option value="tray-trefoil">Cable Tray — Trefoil (triangular)</option>
+                        <option value="tray-flat-touching">Cable Tray — Flat, Touching</option>
+                        <option value="tray-flat-spaced">Cable Tray — Flat, Spaced (≥1Ø apart)</option>
+                    </optgroup>
+                    <optgroup label="Open / Air">
+                        <option value="free-air">In Free Air</option>
+                    </optgroup>
+                    <optgroup label="Underground">
+                        <option value="underground-direct">Underground — Direct Buried</option>
+                        <option value="underground-duct-pvc">Underground — PVC Duct Bank</option>
+                        <option value="underground-duct-concrete">Underground — Concrete-Encased Duct Bank</option>
+                    </optgroup>
                 </select>
+                <small id="cableInstallNote" style="color:#666; font-size:0.82em; display:block; margin-top:4px;">
+                    PVC conduit: base X per NEC Ch 9 Table 9; Z0 = 3.5×Z1
+                </small>
             </div>
             <div class="form-group">
                 <label for="cableParallel">Parallel Runs:</label>
@@ -642,7 +789,7 @@ function addComponent() {
         const size = document.getElementById('cableSize').value;
         const material = document.getElementById('cableMaterial').value;
         const length = parseFloat(document.getElementById('cableLength').value);
-        const conduit = document.getElementById('cableConduit').value;
+        const installationMethod = document.getElementById('cableInstallMethod')?.value || 'conduit-pvc';
         const parallel = parseInt(document.getElementById('cableParallel').value) || 1;
         
         if (! size || !material || !length) {
@@ -655,7 +802,12 @@ function addComponent() {
             size: size,
             material: material,
             length: length,
-            conduit: conduit,
+            installationMethod: installationMethod,
+            // Keep conduit for backward compatibility — derive from installationMethod
+            conduit: installationMethod.startsWith('conduit-steel') ? 'Steel'
+                   : installationMethod.startsWith('conduit-aluminum') ? 'Aluminum'
+                   : installationMethod.startsWith('conduit-') ? 'PVC'
+                   : 'NonMetallic',
             parallel: parallel,
             
             // ✅ Tagging and identification
@@ -724,6 +876,16 @@ function addComponent() {
             impedance: impedance,
             xr: xr,
             tapSetting: tapSetting,
+            
+            // ✅ Vector group — drives Z0 behaviour in fault calculations
+            vectorGroup:    document.getElementById('transformerVectorGroup')?.value || 'Dyn11',
+            groundingMode:  document.getElementById('transformerGroundingMode')?.value || 'solidly-grounded',
+            neutralR:       parseFloat(document.getElementById('transformerNeutralR')?.value) || 0,
+            coolingClass:   document.getElementById('transformerCoolingClass')?.value || 'ONAN',
+            
+            // ✅ Losses (optional)
+            noLoadLoss_kW:  parseFloat(document.getElementById('transformerNoLoadLoss')?.value) || null,
+            loadLoss_kW:    parseFloat(document.getElementById('transformerLoadLoss')?.value) || null,
             
             // ✅ Tagging and identification
             tag: tag,
@@ -2529,14 +2691,85 @@ window.deleteComponent = deleteComponent;
 window.closeEditComponentModal = closeEditComponentModal;
 window.toggleBusTieState = toggleBusTieState;
 
+// ════════════════════════════════════════════════════════════════════════════
+// UI HELPERS — Installation method and vector group note updaters
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Update the hint text when a cable installation method is changed.
+ * Reads from CABLE_INSTALLATION_FACTORS (constants.js).
+ */
+function updateCableInstallNote() {
+    const sel  = document.getElementById('cableInstallMethod');
+    const note = document.getElementById('cableInstallNote');
+    if (!sel || !note) return;
+
+    const factors = (typeof getCableInstallationFactors === 'function')
+        ? getCableInstallationFactors(sel.value)
+        : null;
+
+    if (factors) {
+        note.textContent =
+            `${factors.label} — X×${factors.x_factor.toFixed(2)}, Z0/Z1 = ${factors.z0_factor.toFixed(1)} | ${factors.standard}`;
+    } else {
+        note.textContent = sel.value;
+    }
+}
+
+/**
+ * Update the hint text when transformer vector group is changed.
+ * Reads from TRANSFORMER_VECTOR_GROUP_Z0 (constants.js).
+ */
+function updateTransformerVectorNote() {
+    const sel  = document.getElementById('transformerVectorGroup');
+    const note = document.getElementById('transformerVectorNote');
+    if (!sel || !note) return;
+
+    const info = (typeof getTransformerVectorGroupZ0 === 'function')
+        ? getTransformerVectorGroupZ0(sel.value)
+        : null;
+
+    if (info) {
+        note.textContent = info.note;
+        note.style.color = info.ground_path_on_lv ? '#1b5e20' : '#b71c1c';
+    }
+}
+
+/**
+ * Update grounding mode note and show/hide neutral resistor field.
+ */
+function updateTransformerGroundingNote() {
+    const sel    = document.getElementById('transformerGroundingMode');
+    const note   = document.getElementById('transformerGroundingNote');
+    const rGroup = document.getElementById('transformerNeutralRGroup');
+    if (!sel) return;
+
+    const modes = (typeof TRANSFORMER_GROUNDING_MODES !== 'undefined')
+        ? TRANSFORMER_GROUNDING_MODES : {};
+    const info = modes[sel.value];
+
+    if (note && info) {
+        note.textContent = info.note || '';
+    }
+
+    const needsRn = ['low-resistance','high-resistance','impedance-grounded'].includes(sel.value);
+    if (rGroup) rGroup.style.display = needsRn ? 'block' : 'none';
+}
+
+window.updateCableInstallNote       = updateCableInstallNote;
+window.updateTransformerVectorNote  = updateTransformerVectorNote;
+window.updateTransformerGroundingNote = updateTransformerGroundingNote;
+
 // Initialize on load
 document.addEventListener('DOMContentLoaded', function() {
     updateComponentInputs();
     displayComponents();
-    console.log('✅ Component Manager v2.2 initialized');
+    console.log('✅ Component Manager v2.3 initialized');
     console.log('   - Cable Tagging System: READY (Feature #7)');
     console.log('   - Motor Type Selection: READY (Feature #1)');
     console.log('   - Data Integrity: ENABLED (Issue #9)');
+    console.log('   - Cable Installation Methods: READY');
+    console.log('   - Transformer Vector Group / Grounding: READY');
 });
 
 console.log('✅ Component Manager v2.2 loaded - Enhanced Data Integrity');

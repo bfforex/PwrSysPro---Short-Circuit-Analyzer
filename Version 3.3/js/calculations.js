@@ -13,6 +13,7 @@
  * Runs Short Circuit (with Motor Contribution), Load Flow, Voltage Drop, and Arc Flash analyses
  */
 function calculateBus(busId) {
+    selectedBusId = busId;
     const calculationDateStamp = getCalculationTimestamp();
     
     try {
@@ -34,8 +35,15 @@ function calculateBus(busId) {
             alert('Cannot trace path to source. Ensure bus is connected to a source bus.');
             return;
         }
-        
+        console.log('calculateBus busId:', busId, 'selectedBusId:', selectedBusId);
         const method = document.querySelector('input[name="method"]:checked')?.value || 'point-to-point';
+
+    // IEC 60909 options
+    const isIEC = String(method).toLowerCase() === 'iec-60909';
+    const iecCalcTypeRaw = isIEC ? (document.getElementById('iecCalcType')?.value || 'max') : null;
+    // Normalize dropdown values like 'min', 'minimum', 'Minimum'
+    const iecCalcType = isIEC ? (String(iecCalcTypeRaw).toLowerCase().startsWith('min') ? 'min' : 'max') : null;
+
         
         // ═══════════════════════════════════════════════════════════
         // 1. SHORT CIRCUIT ANALYSIS (SYSTEM CONTRIBUTION ONLY)
@@ -55,7 +63,7 @@ function calculateBus(busId) {
             return;
         }
         
-        const systemFaultResults = calculateShortCircuit(busId, method);
+        const systemFaultResults = calculateShortCircuit(busId, method, { iecCalcType });
         
         // ═══════════════════════════════════════════════════════════
         // 1B. MOTOR CONTRIBUTION ANALYSIS (Feature #1)
@@ -80,7 +88,12 @@ function calculateBus(busId) {
                     console.log(`   Motor Contribution: ${motorContributionResults.totalAsymmetricalContribution.toFixed(3)} kA (asymmetrical)`);
                     
                     // Combine system fault with motor contribution
+                    if (!isIEC) {
                     shortCircuitResults = combineSystemAndMotorFault(systemFaultResults, motorContributionResults);
+                } else {
+                    console.log(`ℹ️ IEC ${iecCalcType?.toUpperCase() || ''}: motor contribution computed but NOT combined into IEC short-circuit result`);
+                    shortCircuitResults = systemFaultResults;
+                }
                     
                     console.log(`✅ Combined Fault Current: ${shortCircuitResults.faultCurrents.threePhaseSym.toFixed(3)} kA (symmetrical)`);
                     console.log(`✅ Combined Fault Current: ${shortCircuitResults.faultCurrents.threePhaseAsym.toFixed(3)} kA (asymmetrical)`);
@@ -150,9 +163,10 @@ function calculateBus(busId) {
         }
         
         // Store basic fault current data (backward compatibility)
-        bus.faultCurrent = shortCircuitResults.faultCurrents.threePhaseSym;
-        bus.asymFaultCurrent = shortCircuitResults.faultCurrents.threePhaseAsym;
-        bus.xrRatio = shortCircuitResults.xrRatio;
+        const scForBus = isIEC ? systemFaultResults : shortCircuitResults;
+    bus.faultCurrent = scForBus.faultCurrents.threePhaseSym;
+    bus.asymFaultCurrent = scForBus.faultCurrents.threePhaseAsym;
+    bus.xrRatio = scForBus.xrRatio;
         bus.totalZ = shortCircuitResults.totalImpedance?.magnitude || shortCircuitResults.totalZ;
         
         // ════════════════════════════════════════════════════════════════
@@ -502,12 +516,13 @@ function calculateBus(busId) {
             xrRatio: shortCircuitResults.xrRatio,
             path: path,
             method: method,
+        iecCalcType: iecCalcType,
             calculationDate: calculationDateStamp,
             
             analysisComplete: true,
             analysisTypes: ['shortCircuit', 'loadFlow', 'voltageDrop', 'arcFlash'],
             
-            includesMotorContribution: motorContributionResults?.motorCount > 0 || false,
+            includesMotorContribution: (!isIEC && (motorContributionResults?.motorCount > 0)) ? true : false,
             motorCount: motorContributionResults?.motorCount || 0,
             
             demandFactorsEnabled: demandFactorsApplied,

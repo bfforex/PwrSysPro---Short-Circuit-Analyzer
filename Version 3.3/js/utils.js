@@ -202,37 +202,52 @@ function autoSave() {
 }
 /**
  * Trace path from bus to source
+ * - Supports both {fromBus/toBus} and {fromBusId/toBusId}
+ * - Skips OPEN bus ties (if present)
  */
 function traceBusPath(busId) {
-    const path = [];
-    let currentBusId = busId;
-    const visited = new Set();
-    
-    while (currentBusId) {
-        if (visited.has(currentBusId)) {
-            throw new Error('Circular reference detected in bus hierarchy');
-        }
-        visited.add(currentBusId);
-        
-        const currentBus = buses.find(b => b.id === currentBusId);
-        if (!currentBus) return null;
-        
-        const feedingComponent = components.find(c => c.toBus === currentBusId);
-        
-        path.unshift({ bus: currentBus, component: feedingComponent || null });
-        
-        if (currentBus.type === 'source') {
-            return path;
-        }
-        
-        if (feedingComponent) {
-            currentBusId = feedingComponent.fromBus;
-        } else {
-            return null;
-        }
+  const path = [];
+  let currentBusId = busId;
+  const visited = new Set();
+
+  while (currentBusId) {
+    if (visited.has(currentBusId)) {
+      throw new Error('Circular reference detected in bus hierarchy');
     }
-    
-    return null;
+    visited.add(currentBusId);
+
+    const currentBus = buses.find(b => b.id === currentBusId);
+    if (!currentBus) return null;
+
+    const feedingComponent = components.find(c => {
+      if (!c) return false;
+
+      const to = c.toBus ?? c.toBusId;
+      if (to !== currentBusId) return false;
+
+      // Skip OPEN bus ties (if any exist)
+      if (c.type === 'bus-tie') {
+        const state = c.currentState || c.normalState || 'open';
+        return state !== 'open';
+      }
+
+      return true;
+    });
+
+    path.unshift({ bus: currentBus, component: feedingComponent || null });
+
+    if (currentBus.type === 'source') {
+      return path;
+    }
+
+    if (feedingComponent) {
+      currentBusId = feedingComponent.fromBus ?? feedingComponent.fromBusId;
+    } else {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 /**

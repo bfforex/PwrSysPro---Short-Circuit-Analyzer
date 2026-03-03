@@ -51,20 +51,31 @@ const CalculationState = {
      * @param {Object} data - Calculation results
      * @param {String} busId - Bus identifier
      */
-    store: function(type, data, busId) {
-        if (!this.results.hasOwnProperty(type)) {
-            console.warn(`[CalculationState] Unknown calculation type: ${type}`);
-            return;
-        }
-        
-        // Deep copy to prevent external modification
-        this.results[type] = JSON.parse(JSON.stringify(data));
-        
-        // Update metadata
+    
+      store: function(type, data, busId) {
+        if (!this.results.hasOwnProperty(type)) return;
+
+        const safeClone = (obj) => {
+          if (typeof structuredClone === 'function') {
+            return structuredClone(obj);
+          }
+          const seen = new WeakSet();
+          return JSON.parse(JSON.stringify(obj, (key, value) => {
+            if (typeof value === 'object' && value !== null) {
+              if (seen.has(value)) return undefined; // drop circular ref
+              seen.add(value);
+            }
+            return value;
+          }));
+        };
+
+        this.results[type] = safeClone(data);
+            
         this.metadata.lastCalculation = type;
         this.metadata.timestamp = new Date().toISOString();
         this.metadata.busId = busId;
         this.metadata.hash = this.generateHash(data);
+
         
         console.log(`[CalculationState] Stored ${type} results for bus ${busId}`);
         console.log(`   Hash: ${this.metadata.hash}`);

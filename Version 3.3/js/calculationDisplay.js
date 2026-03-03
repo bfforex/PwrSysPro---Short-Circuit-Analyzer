@@ -71,28 +71,47 @@ function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, 
             
             <!-- Short Circuit Tab Content -->
             <div id="shortcircuit-content" class="calc-tab-content active">
-                ${generateShortCircuitDisplay(busId, shortCircuitResults)}
+                ${generateShortCircuitDisplay(busId, (bus.results?.shortCircuit || shortCircuitResults))}
             </div>
             
             <!-- Load Flow Tab Content -->
             <div id="loadflow-content" class="calc-tab-content">
-                ${generateLoadFlowDisplay(busId, loadFlowResults)}
+                ${generateLoadFlowDisplay(busId, (bus.results?.loadFlow || loadFlowResults))}
             </div>
             
             <!-- Voltage Drop Tab Content -->
             <div id="voltagedrop-content" class="calc-tab-content">
-                ${generateVoltageDropDisplay(busId, voltageDropResults)}
+                ${generateVoltageDropDisplay(busId, (bus.results?.voltageDrop || voltageDropResults))}
             </div>
             
             ${hasArcFlash ? `
                 <!-- Arc Flash Tab Content -->
                 <div id="arcflash-content" class="calc-tab-content">
-                    ${generateArcFlashDisplay(busId, arcFlashResults)}
+                    ${generateArcFlashDisplay(busId, (bus.results?.arcFlash || arcFlashResults))}
                 </div>
             ` : ''}
         `;
         
         resultsContainer.innerHTML = html;
+
+        // Delegated actions for results buttons (avoids inline onclick/CSP issues)
+        if (!resultsContainer._actionsAttached) {
+            resultsContainer.addEventListener('click', (e) => {
+                const btn = e.target?.closest?.('[data-action]');
+                if (!btn) return;
+                const action = btn.getAttribute('data-action');
+                if (action === 'view-steps') {
+                    const calc = btn.getAttribute('data-calc');
+                    if (typeof window.showCalculationSteps === 'function') {
+                        window.showCalculationSteps(calc);
+                    } else {
+                        console.error('❌ showCalculationSteps not available');
+                        alert('Detailed steps viewer is not available (showCalculationSteps missing).');
+                    }
+                }
+            });
+            resultsContainer._actionsAttached = true;
+        }
         
         console.log('✅ Results displayed successfully');
         console.log(`   Arc Flash: ${hasArcFlash ? 'Available' : 'Not calculated'}`);
@@ -120,91 +139,171 @@ function displayCalculationResults(busId, shortCircuitResults, loadFlowResults, 
  * Generate short circuit display HTML
  * Updated: 2025-10-29 16:49:40 UTC by bfforex
  * Fixed: Motor contribution defensive checks
+ * Enhanced: IEC 60909 uses SAME card/tile appearance as IEEE methods
  */
 function generateShortCircuitDisplay(busId, results) {
-    if (!results) return '<div class="alert alert-info">No short circuit data available.</div>';
-    
-    // ✅ Defensive check: Ensure faultCurrents exists
-    if (!results.faultCurrents && !results.initialSymmetricalCurrentKA) {
-        console.error('❌ faultCurrents missing in results');
-        return '<div class="alert alert-danger">Error: Fault current data missing</div>';
-    }
-    
-    // Check if IEC 60909 method
-    const isIEC = results.method === 'iec-60909';
-    const isPerUnit = results.method === 'Per-Unit';
-    
-    // IEC 60909 specific display
-    if (isIEC) {
-        return generateIEC60909Display(busId, results);
-    }
-    
-    let html = `
-        <div class="results-section">
-            <h3>⚡ Fault Current Results</h3>
-            <div class="method-badge">
-                <span class="badge ${isPerUnit ? 'badge-info' : 'badge-primary'}">${results.method || 'Point-to-Point'} Method</span>
-            </div>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">⚡</div>
-                    <div class="stat-value">${results.faultCurrents.threePhaseSym.toFixed(2)}</div>
-                    <div class="stat-label">3-Phase Sym (kA)</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">📈</div>
-                    <div class="stat-value">${results.faultCurrents.threePhaseAsym.toFixed(2)}</div>
-                    <div class="stat-label">3-Phase Asym (kA)</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🔄</div>
-                    <div class="stat-value">${results.xrRatio.toFixed(2)}</div>
-                    <div class="stat-label">X/R Ratio</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">⚙️</div>
-                    <div class="stat-value">${(results.totalImpedance.magnitude * 1000).toFixed(1)}</div>
-                    <div class="stat-label">Total Z (mΩ)</div>
-                </div>
-            </div>
-            
-            ${generateMotorContributionSection(results)}
-            
-            ${generateCompleteFaultTypesSection(results)}
-            
-            <h4>📋 Impedance Breakdown</h4>
-            <div class="result-item">
-                <strong>Resistance (R):</strong> ${(results.totalImpedance.resistance * 1000).toFixed(3)} mΩ<br>
-                <strong>Reactance (X):</strong> ${(results.totalImpedance.reactance * 1000).toFixed(3)} mΩ<br>
-                <strong>Magnitude (Z):</strong> ${(results.totalImpedance.magnitude * 1000).toFixed(3)} mΩ<br>
-                <strong>Angle:</strong> ${results.totalImpedance.angle.toFixed(2)}°
-            </div>
-            
-            ${generatePerUnitSection(results, isPerUnit)}
-            
-            <h4>📊 Other Fault Types</h4>
-            <div class="result-item">
-                <strong>Line-to-Ground:</strong> ${results.faultCurrents.lineToGround.toFixed(2)} kA (≈85% of 3-phase)<br>
-                <strong>Line-to-Line:</strong> ${results.faultCurrents.lineToLine.toFixed(2)} kA (≈86.6% of 3-phase)
-            </div>
-            
-            ${generateMotorDetailsTable(results)}
-            
-            <div class="button-group">
-                <button class="btn btn-info" onclick="showCalculationSteps('shortcircuit')">
-                    📝 View Detailed Calculations
-                </button>
-                <button class="btn btn-success" onclick="exportBusReport('${busId}')">
-                    📄 Export Report
-                </button>
-            </div>
-        </div>
-    `;
-    
-    return html;
-}
+  if (!results) return '<div class="alert alert-info">No short circuit data available.</div>';
 
+  // ✅ Defensive check: Ensure faultCurrents exists OR IEC has initial current
+  if (!results.faultCurrents && results.initialSymmetricalCurrentKA == null) {
+    console.error('❌ faultCurrents missing in results');
+    return '<div class="alert alert-danger">Error: Fault current data missing</div>';
+  }
+
+  // Local safe number helper (do not rely on global `n()` presence)
+  const num = (v, fb = 0) => {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : fb;
+  };
+
+  // Detect method
+  const rawMethod = String(results.method || '').toLowerCase();
+  const isIEC = rawMethod === 'iec-60909';
+
+  // Per-unit detector (your codebase sometimes uses 'Per-Unit' or 'per-unit')
+  const isPerUnit = rawMethod === 'per-unit' || results.method === 'Per-Unit';
+
+  // ✅ If IEC, map to the SAME structure used by the standard display (cards/tile)
+  // so it renders exactly like point-to-point/per-unit.
+  if (isIEC) {
+    const calcType = String(results.calculationType || results._iecFactors?.calculationType || results._iecCalcType || results._iec60909Raw?.calculationType || 'max').toLowerCase().startsWith('min') ? 'min' : 'max';
+
+    // IEC currents
+    const ik = num(results.initialSymmetricalCurrentKA, num(results.faultCurrents?.threePhaseSym, 0)); // I″k
+    const ip = num(results.peakCurrentKA, num(results.faultCurrents?.threePhaseAsym, 0));              // ip (peak)
+
+    // IEC impedance (ohms)
+    const r = num(results.impedance?.r, 0);
+    const x = num(results.impedance?.x, 0);
+    const z = num(results.impedance?.z, 0);
+
+    // IEC X/R
+    const xr = num(results.impedance?.xrRatio, (r !== 0 ? (x / r) : 0));
+
+    // Build display-compatible object
+    results = {
+      ...results,
+
+      // IMPORTANT: change method label so we do NOT re-enter IEC branch elsewhere
+      // and so the badge shows IEC nicely.
+      method: `IEC 60909 (${calcType === 'max' ? 'MAX' : 'MIN'})`,
+
+      // Standard tiles use these fields
+      faultCurrents: {
+        threePhaseSym: ik,
+        // Use IEC peak as the "asym" tile value (closest equivalent)
+        threePhaseAsym: ip,
+        lineToGround: num(results.lineToGroundCurrentKA, ik * 0.85),
+        lineToLine: num(results.lineToLineCurrentKA, ik * 0.866)
+      },
+
+      xrRatio: xr,
+
+      totalImpedance: {
+        resistance: r,
+        reactance: x,
+        magnitude: z,
+        angle: Math.atan2(x, r) * (180 / Math.PI)
+      },
+
+      // Keep IEC-specific fields for later sections
+      _iecFactors: {
+        peakFactor: num(results.peakFactor, 0),
+        voltageFactor: num(results.voltageFactor, 0),
+        breakingCurrentKA: num(results.breakingCurrentKA, ik),
+        steadyStateCurrentKA: num(results.steadyStateCurrentKA, ik),
+        lineToGroundCurrentKA: num(results.lineToGroundCurrentKA, ik * 0.85),
+        standard: results.standard || 'IEC 60909-0:2016',
+        calculationType: calcType
+      }
+    };
+  }
+
+  // From here on, ALL methods (IEC included via mapping) use the same template
+  let html = `
+    <div class="results-section">
+      <h3>⚡ Fault Current Results</h3>
+      <div class="method-badge">
+        <span class="badge ${isPerUnit ? 'badge-info' : 'badge-primary'}">${results.method || 'Point-to-Point'} Method</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-value">${num(results.faultCurrents?.threePhaseSym).toFixed(2)}</div>
+          <div class="stat-label">3-Phase Sym (kA)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📈</div>
+          <div class="stat-value">${num(results.faultCurrents?.threePhaseAsym).toFixed(2)}</div>
+          <div class="stat-label">3-Phase Asym (kA)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔄</div>
+          <div class="stat-value">${num(results.xrRatio).toFixed(2)}</div>
+          <div class="stat-label">X/R Ratio</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⚙️</div>
+          <div class="stat-value">${(num(results.totalImpedance?.magnitude) * 1000).toFixed(1)}</div>
+          <div class="stat-label">Total Z (mΩ)</div>
+        </div>
+      </div>
+
+      ${generateMotorContributionSection(results)}
+
+      ${generateCompleteFaultTypesSection(results)}
+
+      <h4>📋 Impedance Breakdown</h4>
+      <div class="result-item">
+        <strong>Resistance (R):</strong> ${(num(results.totalImpedance?.resistance) * 1000).toFixed(3)} mΩ<br>
+        <strong>Reactance (X):</strong> ${(num(results.totalImpedance?.reactance) * 1000).toFixed(3)} mΩ<br>
+        <strong>Magnitude (Z):</strong> ${(num(results.totalImpedance?.magnitude) * 1000).toFixed(3)} mΩ<br>
+        <strong>Angle:</strong> ${num(results.totalImpedance?.angle).toFixed(2)}°
+      </div>
+
+      ${generatePerUnitSection(results, isPerUnit)}
+  `;
+
+  // ✅ Append IEC-only details in a matching style (optional but recommended)
+  if (results._iecFactors) {
+    const f = results._iecFactors;
+    html += `
+      <h4>📋 IEC 60909 Details</h4>
+      <div class="result-item">
+        <strong>Calculation Type:</strong> ${f.calculationType === 'max' ? 'Maximum (Equipment Rating)' : 'Minimum (Protection Coordination)'}<br>
+        <strong>κ Peak Factor:</strong> ${num(f.peakFactor).toFixed(3)}<br>
+        <strong>c Voltage Factor:</strong> ${num(f.voltageFactor).toFixed(3)}<br>
+        <strong>Breaking Current (Ib):</strong> ${num(f.breakingCurrentKA).toFixed(3)} kA<br>
+        <strong>Steady-State (Ik):</strong> ${num(f.steadyStateCurrentKA).toFixed(3)} kA<br>
+        <strong>Line-to-Ground (Ik1):</strong> ${num(f.lineToGroundCurrentKA).toFixed(3)} kA<br>
+        <strong>Standard:</strong> ${f.standard}
+      </div>
+    `;
+  }
+
+  html += `
+      <h4>📊 Other Fault Types</h4>
+      <div class="result-item">
+        <strong>Line-to-Ground:</strong> ${num(results.faultCurrents?.lineToGround).toFixed(2)} kA (≈85% of 3-phase)<br>
+        <strong>Line-to-Line:</strong> ${num(results.faultCurrents?.lineToLine).toFixed(2)} kA (≈86.6% of 3-phase)
+      </div>
+
+      ${generateMotorDetailsTable(results)}
+
+      <div class="button-group">
+        <button class="btn btn-info" data-action="view-steps" data-calc="shortcircuit">
+          📝 View Detailed Calculations
+        </button>
+        <button class="btn btn-success" onclick="exportBusReport('${busId}')">
+          📄 Export Report
+        </button>
+      </div>
+    </div>
+  `;
+
+  return html;
+}
 /**
  * Generate motor contribution section
  * ✅ NEW: Separated for cleaner code with defensive checks
@@ -213,22 +312,21 @@ function generateShortCircuitDisplay(busId, results) {
  * @returns {String} HTML for motor contribution section
  */
 function generateMotorContributionSection(results) {
-    // ✅ Defensive checks for motor contribution
-    if (!results.motorContribution) return '';
-    
-    const mc = results.motorContribution;
-    
-    // Check if motors array exists and has items
-    if (!mc.motors || !Array.isArray(mc.motors) || mc.motors.length === 0) return '';
-    
-    // ✅ Safe access to motor contribution properties
-    const motorCount = mc.motorCount || mc.motors.length || 0;
-    const totalSym = mc.totalSymmetricalContribution || (mc.motorFaultCurrent ? mc.motorFaultCurrent / 1000 : 0);
-    const totalAsym = mc.totalAsymmetricalContribution || 0;
-    const motorZ = mc.totalMotorZ || 0;
-    const increase = results.faultCurrentIncrease || 0;
-    
-    return `
+  // Defensive checks for motor contribution (supports normalized schema via _motorDetails)
+  const mc = results?._motorDetails || results?.motorContribution;
+  if (!mc) return '';
+
+  // Motors list can exist on full detail object; if missing, hide section
+  const motorsArr = mc.motors || mc.individualMotors || [];
+  if (!Array.isArray(motorsArr) || motorsArr.length === 0) return '';
+
+  const motorCount = mc.motorCount || mc.motors?.length || (Array.isArray(mc.motors) ? mc.motors.length : (Array.isArray(mc.individualMotors) ? mc.individualMotors.length : 0));
+  const totalSym = mc.totalSymmetricalContribution || mc.totalCurrent || (mc.motorFaultCurrent ? mc.motorFaultCurrent / 1000 : 0);
+  const totalAsym = mc.totalAsymmetricalContribution || 0;
+  const motorZ = mc.totalMotorZ || 0;
+  const increase = results.faultCurrentIncrease || 0;
+
+return `
         <div class="alert alert-success">
             <h4>⚡ Motor Contribution Included</h4>
             <div class="motor-contribution-details">
@@ -640,7 +738,7 @@ function generateLoadFlowDisplay(busId, results) {
             <div id="demand-factor-container-${busId}"></div>
             
             <div class="button-group">
-                <button class="btn btn-info" onclick="showCalculationSteps('loadflow')">
+                <button class="btn btn-info" data-action="view-steps" data-calc="loadflow">
                     📝 View Detailed Calculations
                 </button>
                 <button class="btn btn-success" onclick="exportLoadFlowReport('${busId}')">
@@ -821,7 +919,7 @@ function generateVoltageDropDisplay(busId, results) {
             ${generateVoltageDropTable(results, totalDropPercent)}
             
             <div class="button-group">
-                <button class="btn btn-info" onclick="showCalculationSteps('voltagedrop')">
+                <button class="btn btn-info" data-action="view-steps" data-calc="voltagedrop">
                     📝 View Detailed Calculations
                 </button>
                 <button class="btn btn-success" onclick="exportVoltageDropReport('${busId}')">
@@ -1022,7 +1120,7 @@ function generateArcFlashDisplay(busId, results) {
             ${generateEquipmentLabelSection(results)}
             
             <div class="button-group">
-                <button class="btn btn-info" onclick="showCalculationSteps('arcflash')">
+                <button class="btn btn-info" data-action="view-steps" data-calc="arcflash">
                     📝 View Detailed Calculations
                 </button>
                 <button class="btn btn-success" onclick="exportArcFlashReport('${busId}')">
@@ -1325,56 +1423,92 @@ function switchCalcTab(calcType) {
  * Show detailed calculation steps in modal
  */
 function showCalculationSteps(calcType) {
-    const bus = buses.find(b => b.id === selectedBusId);
-    if (!bus || !bus.results) {
-        alert('No calculation data available');
-        return;
-    }
-    
-    let steps = '';
-    let title = '';
-    
-    switch(calcType) {
-        case 'shortcircuit':
-            steps = bus.results.shortCircuit?.calculationSteps || 'No steps available';
-            title = 'Short Circuit Calculation Steps';
-            break;
-        case 'loadflow':
-            steps = bus.results.loadFlow?.calculationSteps || 'No steps available';
-            title = 'Load Flow Calculation Steps';
-            break;
-        case 'voltagedrop':
-            steps = bus.results.voltageDrop?.calculationSteps || 'No steps available';
-            title = 'Voltage Drop Calculation Steps';
-            break;
-                      case 'arcflash':
-                                steps = bus.results.arcFlash?.calculationSteps || 'No steps available';
-                                title = 'Arc Flash Analysis Steps';
-                                break;
-    }
-    
-    // Create modal
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3>${title}</h3>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <pre class="calculation-steps">${steps}</pre>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
-                <button class="btn btn-primary" onclick="copyToClipboard(this.closest('.modal-content').querySelector('.calculation-steps').textContent)">
-                    📋 Copy to Clipboard
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
+  const bus = buses.find(b => b.id === selectedBusId);
+  if (!bus || !bus.results) {
+    alert('No calculation data available');
+    return;
+  }
+
+  let steps = '';
+  let title = '';
+
+  switch (calcType) {
+    case 'shortcircuit':
+      steps = bus.results.shortCircuit?.calculationSteps || 'No steps available';
+      title = 'Short Circuit Calculation Steps';
+      break;
+    case 'loadflow':
+      steps = bus.results.loadFlow?.calculationSteps || 'No steps available';
+      title = 'Load Flow Calculation Steps';
+      break;
+    case 'voltagedrop':
+      steps = bus.results.voltageDrop?.calculationSteps || 'No steps available';
+      title = 'Voltage Drop Calculation Steps';
+      break;
+    case 'arcflash':
+      steps = bus.results.arcFlash?.calculationSteps || 'No steps available';
+      title = 'Arc Flash Analysis Steps';
+      break;
+    default:
+      steps = 'No steps available';
+      title = 'Calculation Steps';
+  }
+
+  // Ensure steps is a string
+  if (typeof steps !== 'string') {
+    try { steps = JSON.stringify(steps, null, 2); } catch (e) { steps = String(steps); }
+  }
+
+  // Escape HTML to preserve formatting safely
+  const escapeHtml = (s) => String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Remove any existing overlay
+  document.getElementById('calcStepsOverlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'calcStepsOverlay';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.background = 'rgba(0,0,0,0.55)';
+  overlay.style.zIndex = '99999';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.style.padding = '20px';
+
+  overlay.innerHTML = `
+    <div style="width:min(980px,100%); max-height:90vh; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.35);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#f6f7f9;">
+        <h3 style="margin:0;font-size:16px;">${title}</h3>
+        <button id="calcStepsClose" title="Close" style="border:none;background:transparent;font-size:18px;cursor:pointer;">✕</button>
+      </div>
+      <div style="padding:12px 16px; overflow:auto; max-height: calc(90vh - 110px);">
+        <pre style="white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12.5px; line-height: 1.35; margin: 0;">${escapeHtml(steps)}</pre>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;padding:10px 16px;background:#f6f7f9;">
+        <button id="calcStepsCopy" class="btn btn-primary">📋 Copy to Clipboard</button>
+        <button id="calcStepsClose2" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const close = () => { try { overlay.remove(); } catch (_) {} };
+  overlay.querySelector('#calcStepsClose')?.addEventListener('click', close);
+  overlay.querySelector('#calcStepsClose2')?.addEventListener('click', close);
+
+  // Close on backdrop click
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) close();
+  });
+
+  overlay.querySelector('#calcStepsCopy')?.addEventListener('click', () => {
+    copyToClipboard(steps);
+  });
 }
 
 /**
@@ -1408,130 +1542,155 @@ window.displayDemandFactorAnalysis = displayDemandFactorAnalysis;
  * Generate IEC 60909 display
  */
 function generateIEC60909Display(busId, results) {
-    let html = `
-        <div class="results-section">
-            <h3>⚡ IEC 60909-0:2016 Fault Current Results</h3>
-            <div class="method-badge">
-                <span class="badge badge-success">IEC 60909 Method</span>
-                <span class="badge badge-warning">${results.calculationType === 'max' ? 'Maximum' : 'Minimum'} Calculation</span>
-            </div>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">⚡</div>
-                    <div class="stat-value">${results.initialSymmetricalCurrentKA.toFixed(3)}</div>
-                    <div class="stat-label">I"k Initial (kA)</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">📈</div>
-                    <div class="stat-value">${results.peakCurrentKA.toFixed(3)}</div>
-                    <div class="stat-label">ip Peak (kA)</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🔄</div>
-                    <div class="stat-value">${results.peakFactor.toFixed(3)}</div>
-                    <div class="stat-label">κ Peak Factor</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">⚙️</div>
-                    <div class="stat-value">${results.voltageFactor.toFixed(3)}</div>
-                    <div class="stat-label">c Voltage Factor</div>
-                </div>
-            </div>
-            
-            <h4>📋 IEC 60909 Currents</h4>
-            <div class="result-item">
-                <strong>Initial Symmetrical (I"k):</strong> ${results.initialSymmetricalCurrentKA.toFixed(3)} kA<br>
-                <strong>Peak Current (ip):</strong> ${results.peakCurrentKA.toFixed(3)} kA<br>
-                <strong>Breaking Current (Ib):</strong> ${results.breakingCurrentKA.toFixed(3)} kA<br>
-                <strong>Steady-State (Ik):</strong> ${results.steadyStateCurrentKA.toFixed(3)} kA<br>
-                <strong>Line-to-Ground (Ik1):</strong> ${results.lineToGroundCurrentKA.toFixed(3)} kA
-            </div>
-            
-            <h4>📋 Impedance (IEC Method)</h4>
-            <div class="result-item">
-                <strong>Resistance (R):</strong> ${(results.impedance.r * 1000).toFixed(3)} mΩ<br>
-                <strong>Reactance (X):</strong> ${(results.impedance.x * 1000).toFixed(3)} mΩ<br>
-                <strong>Magnitude (Z):</strong> ${(results.impedance.z * 1000).toFixed(3)} mΩ<br>
-                <strong>X/R Ratio:</strong> ${results.impedance.xrRatio.toFixed(2)}
-            </div>
-            
-            <div class="alert alert-info">
-                <strong>Standard:</strong> ${results.standard}<br>
-                <strong>Calculation Purpose:</strong> ${results.calculationType === 'max' ? 'Equipment Rating and Selection' : 'Protection Coordination'}
-            </div>
-            
-            <div class="button-group">
-                <button class="btn btn-info" onclick="showCalculationSteps('shortcircuit')">
-                    📝 View Detailed Calculations
-                </button>
-                <button class="btn btn-success" onclick="exportBusReport('${busId}')">
-                    📄 Export Report
-                </button>
-            </div>
-        </div>
-    `;
-    
-    return html;
+  const calcType = (results?.calculationType || 'max');
+
+  const fc = results?.faultCurrents || {};
+  const imp = results?.impedance || {};
+  const totImp = results?.totalImpedance || {};
+
+  const ik = n(results?.initialSymmetricalCurrentKA, n(fc?.threePhaseSym, 0));
+  const ip = n(results?.peakCurrentKA, n(fc?.threePhaseAsym, 0));
+  const ib = n(results?.breakingCurrentKA, ik);
+  const iss = n(results?.steadyStateCurrentKA, ik);
+  const ilg = n(results?.lineToGroundCurrentKA, n(fc?.lineToGround, 0));
+
+  const kappa = n(results?.peakFactor, 0);
+  const cFactor = n(results?.voltageFactor, 0);
+
+  const r = n(imp.r, n(totImp.resistance, 0));
+  const x = n(imp.x, n(totImp.reactance, 0));
+  const z = n(imp.z, n(totImp.magnitude, 0));
+  const xr = n(imp.xrRatio, (r !== 0 ? (x / r) : n(results?.xrRatio, 0)));
+
+  const methodLabel = `IEC 60909 (${calcType === 'max' ? 'MAX' : 'MIN'})`;
+
+  return `
+#### ⚡ Fault Current Results
+
+${methodLabel} Method
+
+⚡
+${ik.toFixed(3)}
+3-Phase Sym (kA)
+
+📈
+${ip.toFixed(3)}
+3-Phase Asym/Peak (kA)
+
+🔄
+${xr.toFixed(2)}
+X/R Ratio
+
+⚙️
+${(z * 1000).toFixed(1)}
+Total Z (mΩ)
+
+##### 📋 IEC 60909 Currents
+
+Initial Symmetrical (I"k): ${ik.toFixed(3)} kA  
+Peak Current (ip): ${ip.toFixed(3)} kA  
+Breaking Current (Ib): ${ib.toFixed(3)} kA  
+Steady-State (Ik): ${iss.toFixed(3)} kA  
+Line-to-Ground (Ik1): ${ilg.toFixed(3)} kA  
+
+##### 📋 IEC Factors
+
+κ Peak Factor: ${kappa.toFixed(3)}  
+c Voltage Factor: ${cFactor.toFixed(3)}  
+
+##### 📋 Impedance Breakdown
+
+Resistance (R): ${(r * 1000).toFixed(3)} mΩ  
+Reactance (X): ${(x * 1000).toFixed(3)} mΩ  
+Magnitude (Z): ${(z * 1000).toFixed(3)} mΩ  
+Angle: ${(Math.atan2(x, r) * (180 / Math.PI)).toFixed(2)}°  
+
+Standard: ${results?.standard || 'IEC 60909-0:2016'}  
+Calculation Purpose: ${calcType === 'max' ? 'Equipment Rating and Selection' : 'Protection Coordination'}  
+<div class="calc-actions" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+  <button class="btn btn-secondary" data-action="view-steps" data-calc="shortcircuit">📝 View Detailed Calculations</button>
+  <button class="btn btn-secondary" data-action="export-report" data-calc="shortcircuit" disabled title="Export coming soon">📄 Export Report</button>
+</div>
+`;
+}
+
+function n(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
 }
 
 /**
  * Generate complete fault types section
  */
 function generateCompleteFaultTypesSection(results) {
-    if (!results.allFaultTypes) return '';
-    
-    const ft = results.allFaultTypes.faults;
-    
-    let html = `
-        <h4>⚡ Complete Fault Type Analysis</h4>
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
-                <thead>
-                    <tr style="background: #f0f0f0;">
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Fault Type</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Current (kA)</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Ratio to 3φ</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Three-Phase (L-L-L)</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.threePhaseLLL.currentKA.toFixed(3)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">1.000</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">Balanced fault</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Line-to-Line (L-L)</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.lineToLineLL.currentKA.toFixed(3)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.lineToLineLL.ratio.toFixed(3)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${ft.lineToLineLL.typical ? '✓ Typical (0.866)' : ''}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Line-to-Ground (L-G)</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.lineToGroundLG.currentKA.toFixed(3)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.lineToGroundLG.ratio.toFixed(3)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${ft.lineToGroundLG.exceedsThreePhase ? '⚠️ Exceeds 3φ' : ''}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Double L-G (L-L-G)</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.doubleLineToGroundLLG.currentKA.toFixed(3)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ft.doubleLineToGroundLLG.ratio.toFixed(3)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;"></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="alert alert-info" style="font-size: 12px; margin-top: 10px;">
-            <strong>Maximum Fault:</strong> ${results.allFaultTypes.maximumFaultCurrentKA.toFixed(3)} kA<br>
-            <strong>Sequence Network Analysis</strong> - Per IEEE 141-1993 Chapter 5
-        </div>
-    `;
-    
-    return html;
-}
+  if (!results.allFaultTypes) return '';
 
+  const ft = results.allFaultTypes.faults;
+  // Authoritative currents from results.faultCurrents (fallback to ft if missing)
+  const fc  = results?.faultCurrents || {};
+  const I3  = typeof fc.threePhaseSym === 'number' ? fc.threePhaseSym : (ft?.threePhaseLLL?.currentKA ?? 0);
+  const ILL = typeof fc.lineToLine    === 'number' ? fc.lineToLine    : (ft?.lineToLineLL?.currentKA ?? 0);
+  const ILG = typeof fc.lineToGround  === 'number' ? fc.lineToGround  : (ft?.lineToGroundLG?.currentKA ?? 0);
+  const RLL = I3 > 0 ? (ILL / I3) : (ft?.lineToLineLL?.ratio ?? null);
+  const RLG = I3 > 0 ? (ILG / I3) : (ft?.lineToGroundLG?.ratio ?? null);
+  const ILLG = (typeof fc.doubleLineToGround === 'number') ? fc.doubleLineToGround : (typeof ft?.doubleLineToGroundLLG?.currentKA === 'number' ? ft.doubleLineToGroundLLG.currentKA : null);
+  const RLLG = (ILLG != null && I3 > 0) ? (ILLG / I3) : (ft?.doubleLineToGroundLLG?.ratio ?? null);
+
+  const maxKA = Math.max(
+    Number.isFinite(I3) ? I3 : 0,
+    Number.isFinite(ILL) ? ILL : 0,
+    Number.isFinite(ILG) ? ILG : 0,
+    Number.isFinite(ILLG) ? ILLG : 0
+  );
+
+  let html = `
+    <h4>⚡ Complete Fault Type Analysis</h4>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+        <thead>
+          <tr style="background: #f0f0f0;">
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Fault Type</th>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Current (kA)</th>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Ratio to 3φ</th>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Three-Phase (L-L-L)</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${(I3 ?? 0).toFixed(3)}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">1.000</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">Balanced fault</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Line-to-Line (L-L)</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${(ILL ?? 0).toFixed(3)}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${RLL != null ? RLL.toFixed(3) : '—'}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${(RLL != null && Math.abs(RLL - 0.866) < 0.05) ? '✓ Typical (0.866)' : ''}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Line-to-Ground (L-G)</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${(ILG ?? 0).toFixed(3)}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${RLG != null ? RLG.toFixed(3) : '—'}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${(RLG != null && RLG > 1.0) ? '⚠️ Exceeds 3φ' : ''}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Double L-G (L-L-G)</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${ILLG != null ? ILLG.toFixed(3) : '—'}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${RLLG != null ? RLLG.toFixed(3) : '—'}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alert alert-info" style="font-size: 12px; margin-top: 10px;">
+      <strong>Maximum Fault:</strong> ${maxKA.toFixed(3)} kA<br>
+      <strong>Sequence Network Analysis</strong> - Per IEEE 141-1993 Chapter 5
+    </div>
+  `;
+
+  return html;
+}
 console.log('✅ Calculation Display Module v1.3.0 loaded');
 console.log('   - Demand factor display: ADDED');
 console.log('   - Voltage drop v2.0.0 compatibility: FIXED');

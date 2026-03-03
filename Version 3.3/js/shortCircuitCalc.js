@@ -50,6 +50,309 @@ console.log('   ✅ Enhanced formatting with visual hierarchy');
 console.log('   ✅ Detailed calculation steps with formulas');
 console.log('   ✅ From/To bus information included');
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SHORT CIRCUIT RESULT NORMALIZATION (Unified Schema v3.3)
+// ─────────────────────────────────────────────────────────────────────────────
+function normalizeShortCircuitToSchema(bus, raw = {}, context = {}) {
+
+  // IEC steps array -> IEEE-like detailed text (for "Short Circuit Calculation Steps" modal)
+  function formatIECStepsArray(arr, raw, bus, context) {
+    if (!Array.isArray(arr) || arr.length === 0) return '';
+
+    const calcType = String(raw?.calculationType ?? context?.iecCalcType ?? 'max').toLowerCase();
+    const std = raw?.standard ?? 'IEC 60909-0:2016';
+    const engineerName = (document.getElementById('engineer')?.value || 'Unknown Engineer');
+    const ts = (typeof getCalculationTimestamp === 'function')
+      ? getCalculationTimestamp()
+      : new Date().toISOString();
+
+    const Un = Number(raw?.voltage ?? bus?.voltage ?? 0);
+
+    // IEC factors (may be missing depending on engine)
+    const c = Number(raw?.voltageFactor ?? 0);
+    const kappa = Number(raw?.peakFactor ?? 0);
+
+    // Total impedance at fault (Ω)
+    const zr = Number(raw?.impedance?.r ?? 0);
+    const zx = Number(raw?.impedance?.x ?? 0);
+    const zz = Number(raw?.impedance?.z ?? Math.sqrt(zr * zr + zx * zx));
+    const xr = zr ? (zx / zr) : 0;
+
+    // IEC currents (kA)
+    const ik = Number(raw?.initialSymmetricalCurrentKA ?? 0);
+    const ip = Number(raw?.peakCurrentKA ?? 0);
+    const ib = Number(raw?.breakingCurrentKA ?? ik);
+    const iss = Number(raw?.steadyStateCurrentKA ?? ik);
+    const ilg = Number(raw?.lineToGroundCurrentKA ?? 0);
+
+    let out = '';
+    out += '═'.repeat(80) + '\n';
+    out += 'SHORT CIRCUIT CALCULATION - IEC 60909\n';
+    out += '═'.repeat(80) + '\n\n';
+
+    out += '📋 CALCULATION INFORMATION\n';
+    out += '─'.repeat(80) + '\n';
+    out += `Date/Time: ${ts}\n`;
+    out += `Engineer: ${engineerName}\n`;
+    out += `Standard: ${std}\n`;
+    out += `Calculation Type: ${calcType.toUpperCase()} (${calcType === 'max' ? 'Equipment Rating' : 'Protection Coordination'})\n`;
+    out += `Fault Bus: ${bus?.name ?? raw?.busName ?? 'N/A'}\n`;
+    out += `Nominal Voltage (Un): ${Un} V\n`;
+    if (c) out += `Voltage Factor (c): ${c.toFixed(3)}\n`;
+    if (kappa) out += `Peak Factor (κ): ${kappa.toFixed(4)}\n`;
+    out += '\n';
+
+    out += '📊 TOTAL THEVENIN IMPEDANCE AT FAULT LOCATION\n';
+    out += '─'.repeat(80) + '\n';
+    out += `R_total = ${zr.toFixed(6)} Ω\n`;
+    out += `X_total = ${zx.toFixed(6)} Ω\n`;
+    out += `Z_total = ${zz.toFixed(6)} Ω\n`;
+    out += `X/R Ratio = ${xr.toFixed(3)}\n\n`;
+
+    out += '📐 FORMULAS (IEC 60909-0:2016)\n';
+    out += '─'.repeat(80) + '\n';
+    out += 'Initial Symmetrical Short-Circuit Current:\n';
+    out += '  I"k = (c × Un) / (√3 × Zk)\n';
+    out += 'Peak Short-Circuit Current:\n';
+    out += '  ip = κ × √2 × I"k\n';
+    out += 'Breaking Current (simplified):\n';
+    out += '  Ib ≈ I"k (far-from-generator assumption)\n';
+    out += '\n';
+
+    out += '✅ RESULTS\n';
+    out += '─'.repeat(80) + '\n';
+    out += `I"k (Initial Sym): ${ik.toFixed(3)} kA\n`;
+    out += `ip (Peak):          ${ip.toFixed(3)} kA\n`;
+    out += `Ib (Breaking):      ${ib.toFixed(3)} kA\n`;
+    out += `Ik (Steady-state):  ${iss.toFixed(3)} kA\n`;
+    out += `Ik1 (L-G, est.):    ${ilg.toFixed(3)} kA\n\n`;
+
+    out += '🔎 COMPONENT-BY-COMPONENT IMPEDANCE BUILD-UP (Ω)\n';
+    out += '─'.repeat(80) + '\n';
+    out += 'Step | Component        | Description                          | R (Ω)      | X (Ω)      | ΣR (Ω)     | ΣX (Ω)\n';
+    out += '-----+------------------+--------------------------------------+------------+------------+------------+------------\n';
+
+    for (let i = 0; i < arr.length; i++) {
+      const st = arr[i] || {};
+      const comp = String(st.component ?? '').padEnd(16).slice(0, 16);
+      const desc = String(st.description ?? '').padEnd(36).slice(0, 36);
+      const r = Number(st.r ?? 0);
+      const x = Number(st.x ?? 0);
+      const cr = Number(st.cumulativeR ?? 0);
+      const cx = Number(st.cumulativeX ?? 0);
+      const step = String(i + 1).padStart(4);
+      out += `${step} | ${comp} | ${desc} | ${r.toFixed(6).padStart(10)} | ${x.toFixed(6).padStart(10)} | ${cr.toFixed(6).padStart(10)} | ${cx.toFixed(6).padStart(10)}\n`;
+    }
+
+    out += '\n';
+    out += '📝 NOTES\n';
+    out += '─'.repeat(80) + '\n';
+    out += '• This IEC summary uses the impedance build-up available from the IEC engine steps array.\n';
+    out += '• For full IEC correction factors (e.g., KT, generator/motor decay), extend the IEC engine to store intermediates in raw fields.\n';
+    out += '\n';
+
+    out += '═'.repeat(80) + '\n';
+    out += 'END OF IEC 60909 SHORT CIRCUIT CALCULATION\n';
+    out += '═'.repeat(80) + '\n';
+
+    return out;
+  }
+
+  // Create schema default if available, else minimal safe object
+  const sc = (typeof createShortCircuitResults === 'function')
+    ? createShortCircuitResults()
+    : {
+      faultCurrents: { threePhaseSym: 0, threePhaseAsym: 0, lineToLine: 0, lineToGround: 0 },
+      impedance: { rTotal: 0, xTotal: 0, zTotal: 0, xrRatio: 0 },
+      motorContribution: { totalCurrent: 0, motorCount: 0, decayFactor: 0 },
+      arcFlash: {},
+      calculationMethod: '',
+      calculationSteps: '',
+      calculationDate: ''
+    };
+
+  // Always keep these stable
+  sc.calculationDate = raw?.calculationDate ?? raw?.calculationTimestamp ?? new Date().toISOString();
+  sc.calculationMethod = context?.method || raw?.method || 'point-to-point';
+
+  // Steps: prefer explicit string; else use raw.steps string; else format IEC steps array
+  sc.calculationSteps =
+    raw?.calculationSteps ??
+    (Array.isArray(raw?.steps) ? formatIECStepsArray(raw.steps, raw, bus, context) : (raw?.steps ?? ''));
+
+  // ── IEEE-style (already unified) ────────────────────────────────────────────
+  if (raw?.faultCurrents) {
+    sc.faultCurrents.threePhaseSym  = Number(raw.faultCurrents.threePhaseSym  || 0);
+    sc.faultCurrents.threePhaseAsym = Number(raw.faultCurrents.threePhaseAsym || 0);
+    sc.faultCurrents.lineToLine     = Number(raw.faultCurrents.lineToLine     || 0);
+    sc.faultCurrents.lineToGround   = Number(raw.faultCurrents.lineToGround   || 0);
+
+    const z = raw.totalImpedance || raw.impedance || {};
+    sc.impedance.rTotal  = Number(z.resistance ?? z.r ?? raw.totalR ?? 0);
+    sc.impedance.xTotal  = Number(z.reactance  ?? z.x ?? raw.totalX ?? 0);
+    sc.impedance.zTotal  = Number(z.magnitude  ?? z.z ?? raw.totalZ ?? 0);
+    sc.impedance.xrRatio = Number(raw.xrRatio ?? z.xrRatio ?? (sc.impedance.rTotal ? (sc.impedance.xTotal / sc.impedance.rTotal) : 0));
+  }
+
+  // ── IEC 60909 mapping (raw IEC outputs) ─────────────────────────────────────
+  const isIEC = (raw?.method === 'iec-60909') || (context?.method === 'iec-60909') || (sc.calculationMethod === 'iec-60909');
+
+  if (isIEC) {
+    // Unified currents from IEC-native fields (kA)
+    sc.faultCurrents.threePhaseSym  = Number(raw?.initialSymmetricalCurrentKA ?? sc.faultCurrents.threePhaseSym ?? 0);
+    sc.faultCurrents.threePhaseAsym = Number(raw?.peakCurrentKA ?? sc.faultCurrents.threePhaseAsym ?? 0);
+    sc.faultCurrents.lineToGround   = Number(raw?.lineToGroundCurrentKA ?? sc.faultCurrents.lineToGround ?? 0);
+    sc.faultCurrents.lineToLine     = Number(raw?.lineToLineCurrentKA ?? (sc.faultCurrents.threePhaseSym * 0.866));
+
+    const z = raw?.impedance || {};
+    sc.impedance.rTotal  = Number(z.r ?? sc.impedance.rTotal ?? 0);
+    sc.impedance.xTotal  = Number(z.x ?? sc.impedance.xTotal ?? 0);
+    sc.impedance.zTotal  = Number(z.z ?? sc.impedance.zTotal ?? 0);
+    sc.impedance.xrRatio = Number(z.xrRatio ?? (sc.impedance.rTotal ? (sc.impedance.xTotal / sc.impedance.rTotal) : 0));
+
+    // Preserve IEC-native fields for IEC display/reporting
+    sc.method = 'iec-60909';
+    sc.calculationType = raw?.calculationType ?? context?.iecCalcType ?? 'max';
+    sc.standard = raw?.standard ?? 'IEC 60909-0:2016';
+
+    sc.initialSymmetricalCurrentKA = Number(raw?.initialSymmetricalCurrentKA ?? sc.faultCurrents.threePhaseSym ?? 0);
+    sc.peakCurrentKA = Number(raw?.peakCurrentKA ?? sc.faultCurrents.threePhaseAsym ?? 0);
+    sc.breakingCurrentKA = Number(raw?.breakingCurrentKA ?? sc.initialSymmetricalCurrentKA ?? 0);
+    sc.steadyStateCurrentKA = Number(raw?.steadyStateCurrentKA ?? sc.initialSymmetricalCurrentKA ?? 0);
+    sc.lineToGroundCurrentKA = Number(raw?.lineToGroundCurrentKA ?? sc.faultCurrents.lineToGround ?? 0);
+
+    sc.peakFactor = Number(raw?.peakFactor ?? 0);
+    sc.voltageFactor = Number(raw?.voltageFactor ?? 0);
+
+    // Ensure impedance.r/x/z aliases exist for IEC display
+    sc.impedance.r = Number(sc.impedance.rTotal ?? 0);
+    sc.impedance.x = Number(sc.impedance.xTotal ?? 0);
+    sc.impedance.z = Number(sc.impedance.zTotal ?? 0);
+
+    // Keep IEC raw fields (defensive copy)
+    try {
+      sc._iec60909Raw = JSON.parse(JSON.stringify(raw));
+    } catch (_) {
+      sc._iec60909Raw = null;
+    }
+  }
+
+  // ── Legacy IEEE (older schema) ──────────────────────────────────────────────
+  if (!raw?.faultCurrents && (raw?.faultCurrentKA !== undefined || raw?.asymFaultCurrentKA !== undefined)) {
+    const I3 = Number(raw?.faultCurrentKA ?? 0);
+    const Iasym = Number(raw?.asymFaultCurrentKA ?? 0);
+    sc.faultCurrents.threePhaseSym = I3;
+    sc.faultCurrents.threePhaseAsym = Iasym;
+    sc.faultCurrents.lineToGround = Number(raw?.lineToGroundKA ?? (I3 * 0.85));
+    sc.faultCurrents.lineToLine = Number(raw?.lineToLineKA ?? (I3 * 0.866));
+    sc.impedance.rTotal = Number(raw?.totalR ?? 0);
+    sc.impedance.xTotal = Number(raw?.totalX ?? 0);
+    sc.impedance.zTotal = Number(raw?.totalZ ?? Math.sqrt(sc.impedance.rTotal ** 2 + sc.impedance.xTotal ** 2));
+    sc.impedance.xrRatio = Number(raw?.xrRatio ?? (sc.impedance.rTotal ? sc.impedance.xTotal / sc.impedance.rTotal : 0));
+  }
+
+  // ── Motor contribution summary (if present) ─────────────────────────────────
+  if (raw?.motorContribution) {
+    const mc = raw.motorContribution;
+    sc.motorContribution.totalCurrent = Number(mc.totalSymmetricalContribution ?? mc.totalCurrent ?? mc.motorFaultCurrent ?? 0);
+    sc.motorContribution.motorCount = Number(mc.motorCount ?? (Array.isArray(mc.motors) ? mc.motors.length : 0));
+    sc.motorContribution.decayFactor = Number(mc.decayFactor ?? 0);
+
+    // Keep full details for UI tabs/reports
+    try {
+      sc._motorDetails = JSON.parse(JSON.stringify(mc));
+    } catch (_) {
+      sc._motorDetails = null;
+    }
+  }
+
+  // ── Backward-compatible aliases for existing UI/report code ─────────────────
+  sc.method = sc.method || sc.calculationMethod;
+  sc.xrRatio = sc.impedance?.xrRatio ?? 0;
+  sc.totalImpedance = {
+    resistance: sc.impedance?.rTotal ?? 0,
+    reactance: sc.impedance?.xTotal ?? 0,
+    magnitude: sc.impedance?.zTotal ?? 0,
+    angle: Math.atan2((sc.impedance?.xTotal ?? 0), (sc.impedance?.rTotal ?? 0)) * (180 / Math.PI)
+  };
+  sc.path = context?.path ?? null;
+
+  // FINAL IEC field guarantee: never allow IEC-native fields to be undefined
+  if (sc.method === 'iec-60909' || sc.calculationMethod === 'iec-60909') {
+    sc.calculationType = sc.calculationType ?? context?.iecCalcType ?? 'max';
+    sc.initialSymmetricalCurrentKA = Number(sc.initialSymmetricalCurrentKA ?? sc.faultCurrents?.threePhaseSym ?? 0);
+    sc.peakCurrentKA = Number(sc.peakCurrentKA ?? sc.faultCurrents?.threePhaseAsym ?? 0);
+    sc.lineToGroundCurrentKA = Number(sc.lineToGroundCurrentKA ?? sc.faultCurrents?.lineToGround ?? 0);
+
+    sc.peakFactor = Number(sc.peakFactor ?? 0);
+    sc.voltageFactor = Number(sc.voltageFactor ?? 0);
+    sc.breakingCurrentKA = Number(sc.breakingCurrentKA ?? sc.initialSymmetricalCurrentKA ?? 0);
+    sc.steadyStateCurrentKA = Number(sc.steadyStateCurrentKA ?? sc.initialSymmetricalCurrentKA ?? 0);
+
+    sc.impedance = sc.impedance || {};
+    sc.impedance.r = Number(sc.impedance.r ?? sc.impedance.rTotal ?? 0);
+    sc.impedance.x = Number(sc.impedance.x ?? sc.impedance.xTotal ?? 0);
+    sc.impedance.z = Number(sc.impedance.z ?? sc.impedance.zTotal ?? 0);
+  }
+
+  return sc;
+}
+/**
+ * Create a JSON-safe path trace (no bus/component objects; IDs/tags only)
+ * Prevents circular references when saving to CalculationState / autosave.
+ */
+function simplifyPathTrace(path) {
+  if (!Array.isArray(path)) return null;
+
+  return path.map(seg => ({
+    // Bus info (no bus object)
+    busId: seg?.bus?.id ?? null,
+    busName: seg?.bus?.name ?? null,
+    busVoltage: seg?.bus?.voltage ?? null,
+
+    // Component info (no component object)
+    componentId: seg?.component?.id ?? null,
+    componentType: seg?.component?.type ?? null,
+    componentTag: seg?.component?.tag ?? seg?.component?.name ?? null,
+
+    // Optional: topology breadcrumbs
+    fromBusId: (seg?.component?.fromBus ?? seg?.component?.fromBusId ?? null),
+    toBusId: (seg?.component?.toBus ?? seg?.component?.toBusId ?? null)
+  }));
+}
+
+/**
+ * Resolve IEC 60909 engine function from global scope and adapt call signature.
+ * Supports: 
+ *  - window.calculateIEC60909FaultCurrent(busId, {calculationType})
+ *  - window.calculateShortCircuitIEC60909(path, calcType)
+ */
+function resolveIEC60909Engine() {
+  if (typeof window !== 'undefined') {
+    if (typeof window.calculateIEC60909FaultCurrent === 'function') {
+      return { type: 'busId', fn: window.calculateIEC60909FaultCurrent };
+    }
+    if (typeof window.calculateShortCircuitIEC60909 === 'function') {
+      return { type: 'path', fn: window.calculateShortCircuitIEC60909 };
+    }
+  }
+  return null;
+}
+
+function buildIECPathFromTrace(trace) {
+  if (!Array.isArray(trace) || trace.length === 0) return null;
+  return trace.map((seg, idx) => {
+    const prevBusId = idx > 0 ? (trace[idx - 1]?.bus?.id ?? null) : (trace[0]?.bus?.id ?? null);
+    const thisBusId = seg?.bus?.id ?? null;
+    return {
+      fromBusId: prevBusId,
+      toBusId: thisBusId,
+      component: seg?.component ?? null
+    };
+  });
+}
+
+
 /**
  * Perform short circuit analysis for a bus
  * Returns detailed calculation steps and results
@@ -58,107 +361,209 @@ console.log('   ✅ From/To bus information included');
  * @param {String} method - 'point-to-point' or 'per-unit'
  * @returns {Object} Short circuit results with detailed steps
  */
-function calculateShortCircuit(busId, method = 'point-to-point') {
-    const bus = buses?.find(b => b.id === busId);
-    if (!bus) {
-        console.error(`❌ Bus ${busId} not found`);
-        throw new Error(`Bus ${busId} not found`);
-    }
-    
-    console.log('\n' + '═'.repeat(80));
-    console.log('SHORT CIRCUIT ANALYSIS - ENHANCED');
-    console.log('═'.repeat(80));
-    console.log(`Bus: ${bus.name} (${bus.voltage}V)`);
-    console.log(`Method: ${method}`);
-    console.log(`Time Point: ${SHORT_CIRCUIT_CONFIG.MOTOR_TIME_CYCLES} cycles`);
-    console.log('═'.repeat(80) + '\n');
-    
-    const path = traceBusPath(busId);
-    if (!path || path.length === 0) {
-        console.error('❌ Cannot trace path to source');
+
+function calculateShortCircuit(busId, method = 'point-to-point', options = {}) {
+  // Keep UI selection in sync for debug/tools (prevents selectedBusId being null)
+  try {
+    if (typeof window !== 'undefined') window.selectedBusId = busId;
+    if (typeof selectedBusId !== 'undefined') selectedBusId = busId;
+  } catch (_) {}
+
+
+  const bus = buses?.find(b => b.id === busId);
+  if (!bus) {
+    console.error(`❌ Bus ${busId} not found`);
+    throw new Error(`Bus ${busId} not found`);
+  }
+
+  const methodKey = String(method || 'point-to-point').toLowerCase();
+
+  console.log('\n' + '═'.repeat(80));
+  console.log('SHORT CIRCUIT ANALYSIS - ENHANCED');
+  console.log('═'.repeat(80));
+  console.log(`Bus: ${bus.name} (${bus.voltage}V)`);
+  console.log(`Method: ${methodKey}`);
+  console.log('═'.repeat(80) + '\n');
+
+  // IEC calc type (needed for Strict MIN rule)
+  const iecCalcType = (methodKey === 'iec-60909')
+    ? (String(options?.iecCalcType || document.getElementById('iecCalcType')?.value || 'max').toLowerCase().startsWith('min') ? 'min' : 'max')
+    : null;
+
+  // STRICT MIN: exclude motor contribution entirely for IEC MIN
+  const includeMotors = (methodKey === 'iec-60909') ? (iecCalcType === 'max') : true;
+
+  // Only add motor contribution externally for IEC MAX.
+  // IEEE engines already include motor contribution internally in this codebase.
+  const addMotorsExternally = (methodKey === 'iec-60909') && (iecCalcType === 'max');
+
+  try {
+    // Path is required for IEEE methods (point-to-point and per-unit)
+    let path = null;       // raw trace path for IEEE engines
+    let safePath = null;   // JSON-safe path for storage
+
+    if (methodKey !== 'iec-60909') {
+      path = traceBusPath(busId);
+      if (!Array.isArray(path) || path.length === 0) {
+        console.error('❌ Cannot trace path to source', { busId, busName: bus.name, method: methodKey });
         throw new Error('Cannot trace path to source. Ensure bus is connected to a source bus.');
+      }
+      safePath = simplifyPathTrace(path);
     }
-    
-    let result;
-    try {
-        if (method === 'iec-60909') {
-            // Get IEC calculation type from UI
-            const iecCalcTypeElement = document.getElementById('iecCalcType');
-            const iecCalcType = iecCalcTypeElement?.value || 'max';
-            result = calculateShortCircuitIEC60909(path, iecCalcType);
-        } else if (method === 'per-unit') {
-            result = calculateShortCircuitPerUnit(path);
-        } else {
-            result = calculateShortCircuitPointToPoint(path);
+
+    // 1) Compute base short circuit (IEEE or IEC)
+    let rawBase;
+
+    if (methodKey === 'iec-60909') {
+      const engine = resolveIEC60909Engine();
+      if (!engine) {
+        throw new Error('IEC 60909 module is not loaded. Ensure iec60909.js is included and loaded before shortCircuitCalc.js.');
+      }
+
+      if (engine.type === 'busId') {
+        rawBase = engine.fn(busId, { calculationType: iecCalcType });
+      } else {
+        // engine expects a path array (fromBusId/toBusId/component)
+        const trace = traceBusPath(busId);
+        if (!Array.isArray(trace) || trace.length === 0) {
+          throw new Error('IEC 60909 requires a valid path to a SOURCE bus. traceBusPath() returned null/empty.');
         }
-    } catch (error) {
-        console.error('❌ Calculation error:', error);
-        throw error;
+        const iecPath = buildIECPathFromTrace(trace);
+        rawBase = engine.fn(iecPath, iecCalcType);
+      }
+
+      rawBase.method = 'iec-60909';
+      rawBase.calculationType = iecCalcType;
+
+    } else if (methodKey === 'per-unit') {
+      rawBase = calculateShortCircuitPerUnit(path);
+
+    } else {
+      // default to point-to-point
+      rawBase = calculateShortCircuitPointToPoint(path);
     }
-    
-    if (!result || typeof result !== 'object') {
-        console.error('❌ Invalid calculation result');
-        throw new Error('Short circuit calculation returned invalid result');
+
+    // 2) Motor contribution handling (IEC MAX only)
+    let rawFinal = rawBase;
+
+    if (addMotorsExternally && typeof calculateTotalMotorContribution === 'function' && typeof combineSystemAndMotorFault === 'function') {
+      const mc = calculateTotalMotorContribution(busId, 'interrupting');
+      if (mc) {
+        const zIec = rawBase?.impedance || rawBase?.totalImpedance || {};
+        const rSys = Number(zIec.r ?? zIec.resistance ?? 0);
+        const xSys = Number(zIec.x ?? zIec.reactance ?? 0);
+        const zSys = Number(zIec.z ?? zIec.magnitude ?? Math.sqrt(rSys * rSys + xSys * xSys));
+
+        const sysStub = {
+          faultCurrents: {
+            threePhaseSym: Number(rawBase?.initialSymmetricalCurrentKA ?? rawBase?.faultCurrents?.threePhaseSym ?? 0),
+            // treat IEC peak current as asym for combining display
+            threePhaseAsym: Number(rawBase?.peakCurrentKA ?? rawBase?.faultCurrents?.threePhaseAsym ?? 0),
+            lineToGround: Number(rawBase?.lineToGroundCurrentKA ?? rawBase?.faultCurrents?.lineToGround ?? 0),
+            lineToLine: Number(rawBase?.lineToLineCurrentKA ?? rawBase?.faultCurrents?.lineToLine ?? 0)
+          },
+          totalImpedance: {
+            magnitude: zSys,
+            resistance: rSys,
+            reactance: xSys,
+            angle: Math.atan2(xSys, rSys) * (180 / Math.PI)
+          },
+          totalR: rSys,
+          totalX: xSys,
+          totalZ: zSys,
+          xrRatio: (rSys ? (xSys / rSys) : 0),
+          method: 'iec-60909',
+          path: null,
+          calculationDate: rawBase?.calculationDate || getCalculationTimestamp(),
+          calculationSteps: rawBase?.calculationSteps || rawBase?.steps || ''
+        };
+
+        const combined = combineSystemAndMotorFault(sysStub, mc);
+
+        // Preserve IEC markers
+        combined.method = 'iec-60909';
+        combined.calculationType = iecCalcType;
+
+        // Provide IEC-style fields for display
+        combined.initialSymmetricalCurrentKA = combined.faultCurrents?.threePhaseSym || 0;
+        combined.peakCurrentKA = combined.faultCurrents?.threePhaseAsym || 0;
+        combined.lineToGroundCurrentKA = combined.faultCurrents?.lineToGround || 0;
+        combined.breakingCurrentKA = rawBase?.breakingCurrentKA ?? combined.initialSymmetricalCurrentKA;
+        combined.steadyStateCurrentKA = rawBase?.steadyStateCurrentKA ?? combined.initialSymmetricalCurrentKA;
+        combined.peakFactor = rawBase?.peakFactor ?? 0;
+        combined.voltageFactor = rawBase?.voltageFactor ?? 0;
+        combined.standard = rawBase?.standard ?? 'IEC 60909-0:2016';
+
+        combined.impedance = {
+          r: combined.totalImpedance?.resistance || combined.totalR || 0,
+          x: combined.totalImpedance?.reactance || combined.totalX || 0,
+          z: combined.totalImpedance?.magnitude || combined.totalZ || 0,
+          xrRatio: combined.xrRatio || 0
+        };
+
+        try {
+          combined._iec60909Base = JSON.parse(JSON.stringify(rawBase));
+        } catch (_) {
+          combined._iec60909Base = null;
+        }
+
+        rawFinal = combined;
+      }
     }
-    
-    const scResults = {
-        faultCurrents: {
-            threePhaseSym: result.faultCurrentKA || 0,
-            threePhaseAsym: result.asymFaultCurrentKA || 0,
-            lineToGround: result.lineToGroundKA || (result.faultCurrentKA || 0) * 0.85,
-            lineToLine: (result.faultCurrentKA || 0) * 0.866
-        },
-        motorContribution: result.motorContribution || null,
-        totalImpedance: {
-            magnitude: result.totalZ || 0,
-            resistance: result.totalR || 0,
-            reactance: result.totalX || 0,
-            angle: (result.totalX && result.totalR) ? Math.atan2(result.totalX, result.totalR) * (180 / Math.PI) : 0
-        },
-        zeroSequenceImpedance: (result.totalZ0 && result.totalR0 && result.totalX0) ? {
-            magnitude: result.totalZ0,
-            resistance: result.totalR0,
-            reactance: result.totalX0
-        } : null,
-        xrRatio: result.xrRatio || 0,
-        method: result.method || method,
-        path: result.path || path,
-        perUnit: (method === 'per-unit' && result.totalRpu !== undefined) ? {
-            totalRpu: result.totalRpu,
-            totalXpu: result.totalXpu,
-            totalZpu: result.totalZpu,
-            baseKVA: result.baseKVA,
-            baseVoltage: result.baseVoltage,
-            baseZ: result.baseZ,
-            baseCurrent: result.baseCurrent
-        } : null,
-        calculationSteps: result.steps || 'No calculation steps available',
-        calculationDate: getCalculationTimestamp(),
-        arcFlash: null
-    };
-    
+
+    // 3) ANSI C37.010 decay summary (Option A: show only 3 & 5 cycles)
+    if (includeMotors && typeof getSystemMotorDecaySummary === 'function') {
+      rawFinal._motorDecaySummary = getSystemMotorDecaySummary(bus, [3, 5]);
+    }
+
+    // 4) Normalize to unified schema and store on bus (use safePath to avoid circular refs)
+    const normalized = normalizeShortCircuitToSchema(bus, rawFinal, {
+      method: methodKey,
+      iecCalcType,
+      includeMotors,
+      path: safePath
+    });
+
+    bus.results = bus.results || {};
+    bus.results.shortCircuit = normalized;
+
+    // 5) Store centralized state (display/export consistency)
+    if (typeof CalculationState !== 'undefined' && CalculationState?.store) {
+      CalculationState.store('shortCircuit', normalized, busId);
+    }
+
     console.log('✅ Short Circuit Analysis Complete');
-    console.log(`   3-Phase Fault: ${scResults.faultCurrents.threePhaseSym.toFixed(3)} kA`);
-    console.log(`   Line-to-Ground: ${scResults.faultCurrents.lineToGround.toFixed(3)} kA`);
-    if (scResults.motorContribution && scResults.motorContribution.motorCount > 0) {
-        const motorContrib = scResults.motorContribution.totalSymmetricalContribution || 
-                            (scResults.motorContribution.motorFaultCurrent / 1000) || 0;
-        console.log(`   Motor Contrib: ${motorContrib.toFixed(3)} kA`);
-    }
-    console.log(`   X/R Ratio: ${scResults.xrRatio.toFixed(2)}`);
+    console.log(`   3-Phase Sym: ${(normalized.faultCurrents?.threePhaseSym || 0).toFixed(3)} kA`);
+    console.log(`   3-Phase Asym: ${(normalized.faultCurrents?.threePhaseAsym || 0).toFixed(3)} kA`);
+    console.log(`   X/R Ratio: ${(normalized.impedance?.xrRatio || 0).toFixed(2)}`);
     console.log('');
-    
-    return scResults;
+
+    return normalized;
+
+  } catch (error) {
+    console.error('❌ Calculation error:', error);
+    throw error;
+  }
 }
 
 /**
  * Point-to-Point Short Circuit Calculation - ENHANCED
  * Pure ohmic method with comprehensive step-by-step tracing
+ *
+ * @param {Array} path - Bus path from traceBusPath()
+ * @returns {Object} Short circuit calculation results
+ * Short Circuit Calculation - ENHANCED
+ * Pure ohmic method with comprehensive step-by-step tracing
  * 
  * @param {Array} path - Bus path from traceBusPath()
  * @returns {Object} Short circuit calculation results
  */
+
 function calculateShortCircuitPointToPoint(path) {
+  if (!Array.isArray(path) || path.length === 0) {
+    console.error('❌ Point-to-Point SC error: invalid path', path);
+    throw new Error('Point-to-Point short circuit requires a valid path to a SOURCE bus. Trace path failed (null/empty).');
+  }
     // ══════════════════════════════════════════════════════════════════════════════
     // INITIALIZATION
     // ══════════════════════════════════════════════════════════════════════════════
@@ -206,7 +611,6 @@ function calculateShortCircuitPointToPoint(path) {
     if (!sourceBus) {
         throw new Error('Path has no source bus');
     }
-    
     currentVoltageLevel = sourceBus.voltage;
     
     // ══════════════════════════════════════════════════════════════════════════════
@@ -375,9 +779,30 @@ function calculateShortCircuitPointToPoint(path) {
                 xfmrX = xfmrX_single;
             }
             
-            const z0Factor = SHORT_CIRCUIT_CONFIG.Z0_FACTORS.transformer;
-            const xfmrR0 = xfmrR * z0Factor;
-            const xfmrX0 = xfmrX * z0Factor;
+            // ── Transformer Z0 based on vector group and grounding mode ──────
+            // Per IEC 60909-0 §3.3, IEEE 141-1993 §5.4, IEEE 242-2001 §7
+            const vgInfo = (typeof getTransformerVectorGroupZ0 === 'function')
+                ? getTransformerVectorGroupZ0(comp.vectorGroup || 'Dyn11')
+                : { z0_multiplier: 1.0, blocks_upstream_z0: true, ground_path_on_lv: true,
+                    note: 'Dyn11 default' };
+
+            let xfmrR0, xfmrX0, z0Factor;
+            if (vgInfo.z0_multiplier >= 999 || !vgInfo.ground_path_on_lv) {
+                // Blocked / open path — no meaningful L-G current on this side
+                // Use large but finite value so formula doesn't divide by 0
+                z0Factor = 999;
+                xfmrR0 = xfmrR * 100;   // Effectively blocks zero-seq
+                xfmrX0 = xfmrX * 100;
+            } else {
+                z0Factor = vgInfo.z0_multiplier;
+                xfmrR0 = xfmrR * z0Factor;
+                xfmrX0 = xfmrX * z0Factor;
+            }
+            // If transformer blocks upstream Z0, reset accumulated Z0 at this boundary
+            if (vgInfo.blocks_upstream_z0) {
+                totalR0 = 0;
+                totalX0 = 0;
+            }
             
             steps += `📐 IMPEDANCE CALCULATION (Secondary Side)\n`;
             steps += '─'.repeat(80) + '\n';
@@ -411,15 +836,29 @@ function calculateShortCircuitPointToPoint(path) {
             
             steps += `📊 IMPEDANCE COMPONENTS\n`;
             steps += '─'.repeat(80) + '\n';
+            steps += `Vector Group:        ${comp.vectorGroup || 'Dyn11'} (${vgInfo.note || ''})\n`;
+            steps += `Grounding Mode:      ${comp.groundingMode || 'solidly-grounded'}\n`;
+            if (vgInfo.blocks_upstream_z0) {
+                steps += `Z0 Boundary:         ⚡ Upstream Z0 reset at this transformer\n`;
+                steps += `                     (${comp.vectorGroup || 'Dyn11'} primary side blocks upstream zero-seq)\n`;
+            }
+            steps += '\n';
             steps += `Positive Sequence (Z1):\n`;
             steps += `   R1 = ${xfmrR.toFixed(6)} Ω\n`;
             steps += `   X1 = ${xfmrX.toFixed(6)} Ω\n`;
             steps += `   Z1 = ${Math.sqrt(xfmrR*xfmrR + xfmrX*xfmrX).toFixed(6)} Ω\n`;
             steps += '\n';
-            steps += `Zero Sequence (Z0) - Delta-Wye Grounded:\n`;
-            steps += `   R0 = ${xfmrR0.toFixed(6)} Ω (${z0Factor}× R1)\n`;
-            steps += `   X0 = ${xfmrX0.toFixed(6)} Ω (${z0Factor}× X1)\n`;
-            steps += `   ℹ️  Typical Delta-Wye grounded: Z0 ≈ Z1\n`;
+            if (z0Factor >= 999) {
+                steps += `Zero Sequence (Z0) — BLOCKED (${vgInfo.label || comp.vectorGroup}):\n`;
+                steps += `   ⚠️  No L-G fault current path on this bus side.\n`;
+                steps += `   R0 ≈ ∞,  X0 ≈ ∞  (zero-seq blocked by ${comp.vectorGroup || 'Dyn'} winding)\n`;
+                steps += `   Per IEEE 141-1993 §5.4.4 and IEEE 242-2001 §7\n`;
+            } else {
+                steps += `Zero Sequence (Z0) — ${vgInfo.label || comp.vectorGroup}:\n`;
+                steps += `   Z0/Z1 = ${z0Factor.toFixed(2)} (per IEC 60909-0 §3.3; IEEE 141-1993 §5.4)\n`;
+                steps += `   R0 = ${xfmrR0.toFixed(6)} Ω (${z0Factor.toFixed(2)}× R1)\n`;
+                steps += `   X0 = ${xfmrX0.toFixed(6)} Ω (${z0Factor.toFixed(2)}× X1)\n`;
+            }
             steps += '\n';
             
             const turnsRatio = comp.primary / comp.secondary;
@@ -499,6 +938,7 @@ function calculateShortCircuitPointToPoint(path) {
             steps += `Size:                ${comp.size}\n`;
             steps += `Material:            ${comp.material.toUpperCase()}\n`;
             steps += `Length:              ${comp.length} ft\n`;
+            steps += `Installation:        ${installFactors.label}\n`;
             steps += `From Bus:            ${comp.fromBusName || comp.fromBus}\n`;
             steps += `To Bus:              ${comp.toBusName || comp.toBus}\n`;
             steps += `Temperature:         ${temperature}°C\n`;
@@ -513,10 +953,17 @@ function calculateShortCircuitPointToPoint(path) {
             let rBase20 = materialDataFinal.r;
             let rBaseTemp = temperatureCorrection(rBase20, temperature, comp.material);
             
-            const cableR = (rBaseTemp * comp.length) / parallel;
-            const cableX = (materialDataFinal.x * comp.length) / parallel;
+            // ── Installation method adjustments ──────────────────────────────
+            // Reactance correction and Z0 factor depend on installation method.
+            // Per NEC Ch 9 Table 9 Note 3 (steel conduit) and IEEE 242-2001 §9.3.
+            const installFactors = (typeof getCableInstallationFactors === 'function')
+                ? getCableInstallationFactors(comp.installationMethod || comp.conduit || 'conduit-pvc')
+                : { x_factor: 1.0, z0_factor: 3.0, label: 'Default (PVC Conduit)' };
             
-            const z0Factor = SHORT_CIRCUIT_CONFIG.Z0_FACTORS.cable;
+            const cableR = (rBaseTemp * comp.length) / parallel;
+            const cableX = (materialDataFinal.x * comp.length * installFactors.x_factor) / parallel;
+            
+            const z0Factor = installFactors.z0_factor;
             const cableR0 = cableR * z0Factor;
             const cableX0 = cableX * z0Factor;
             
@@ -534,14 +981,22 @@ function calculateShortCircuitPointToPoint(path) {
             steps += `   ℹ️  Temperature coefficient applied to resistance only\n`;
             steps += '\n';
             
+            if (installFactors.x_factor !== 1.0) {
+                steps += `Reactance — Installation Method Correction:\n`;
+                steps += `   Method:           ${installFactors.label}\n`;
+                steps += `   X_factor:         ${installFactors.x_factor.toFixed(3)}× (NEC Ch 9 Note 3; IEEE 242-2001 §9.3)\n`;
+                steps += `   X_adjusted = ${materialDataFinal.x.toFixed(6)} × ${installFactors.x_factor.toFixed(3)} = ${(materialDataFinal.x*installFactors.x_factor).toFixed(6)} Ω/1000ft\n`;
+                steps += '\n';
+            }
+            
             steps += `Cable Impedance:\n`;
             steps += `   Formula:          Z = (Z_per_1000ft × Length) / Parallel\n`;
             steps += `   R = (${rBaseTemp.toFixed(6)} × ${comp.length}) / ${parallel}\n`;
             steps += `   R = ${(rBaseTemp * comp.length).toFixed(6)} / ${parallel}\n`;
             steps += `   R = ${cableR.toFixed(6)} Ω\n`;
             steps += '\n';
-            steps += `   X = (${materialDataFinal.x.toFixed(6)} × ${comp.length}) / ${parallel}\n`;
-            steps += `   X = ${(materialDataFinal.x * comp.length).toFixed(6)} / ${parallel}\n`;
+            steps += `   X = (${(materialDataFinal.x*installFactors.x_factor).toFixed(6)} × ${comp.length}) / ${parallel}\n`;
+            steps += `   X = ${(materialDataFinal.x*installFactors.x_factor * comp.length).toFixed(6)} / ${parallel}\n`;
             steps += `   X = ${cableX.toFixed(6)} Ω\n`;
             steps += '\n';
             
@@ -552,11 +1007,11 @@ function calculateShortCircuitPointToPoint(path) {
             steps += `   X1 = ${cableX.toFixed(6)} Ω\n`;
             steps += `   Z1 = ${Math.sqrt(cableR*cableR + cableX*cableX).toFixed(6)} Ω\n`;
             steps += '\n';
-            steps += `Zero Sequence (Z0) - Single-core in Steel Conduit:\n`;
-            steps += `   Formula:          Z0 ≈ ${z0Factor}× Z1 (conservative)\n`;
+            steps += `Zero Sequence (Z0) — ${installFactors.label}:\n`;
+            steps += `   Basis:            Z0/Z1 = ${z0Factor.toFixed(1)} (${installFactors.standard}; IEEE 242-2001 §9.3)\n`;
+            steps += `   Formula:          Z0 = ${z0Factor.toFixed(1)}× Z1\n`;
             steps += `   R0 = ${cableR.toFixed(6)} × ${z0Factor} = ${cableR0.toFixed(6)} Ω\n`;
             steps += `   X0 = ${cableX.toFixed(6)} × ${z0Factor} = ${cableX0.toFixed(6)} Ω\n`;
-            steps += `   ℹ️  Conservative estimate for single-core cables in steel conduit\n`;
             steps += '\n';
             
             totalR += cableR;
@@ -687,6 +1142,40 @@ function calculateShortCircuitPointToPoint(path) {
     const Z_total_LG = totalZ + totalZ2 + totalZ0;
     const lineToGroundCurrent = (3 * V_LN) / Z_total_LG;
     const lineToGroundKA = lineToGroundCurrent / 1000;
+  
+
+  // LINE-TO-LINE FAULT CURRENT (L-L) using sequence networks (Z2 ≈ Z1)
+  // Z_LL = Z1 + Z2 ≈ 2×Z1 (complex)
+  const Zll_r = totalR + totalR;
+  const Zll_x = totalX + totalX;
+  const Zll_mag = Math.sqrt(Zll_r*Zll_r + Zll_x*Zll_x) || 1e-18;
+  const lineToLineCurrent = targetBus.voltage / Zll_mag;
+  const lineToLineKA = lineToLineCurrent / 1000;
+  // DOUBLE LINE-TO-GROUND FAULT (L-L-G) using sequence networks (complex)
+  // Z2 is approximated as Z1 for static equipment
+  const Z1_r = totalR, Z1_x = totalX;
+  const Z2_r = totalR, Z2_x = totalX;
+  const Z0_r = totalR0, Z0_x = totalX0;
+  const den_par_r = (Z2_r + Z0_r), den_par_x = (Z2_x + Z0_x);
+  const den_par_mag2 = den_par_r*den_par_r + den_par_x*den_par_x || 1e-18;
+  // (Z2 * Z0) numerator  (complex multiply)
+  const num_par_r = Z2_r*Z0_r - Z2_x*Z0_x;
+  const num_par_x = Z2_r*Z0_x + Z2_x*Z0_r;
+  // Z_parallel = (Z2 × Z0) / (Z2 + Z0)  (complex divide)
+  const Zpar_r = (num_par_r*den_par_r + num_par_x*den_par_x)/den_par_mag2;
+  const Zpar_x = (num_par_x*den_par_r - num_par_r*den_par_x)/den_par_mag2;
+  // Z1_total_LLG = Z1 + Z_parallel(Z2,Z0)
+  const Zllg_r = Z1_r + Zpar_r;
+  const Zllg_x = Z1_x + Zpar_x;
+  const Zllg_mag = Math.sqrt(Zllg_r*Zllg_r + Zllg_x*Zllg_x) || 1e-18;
+  // Positive-sequence component:  I_a1 = V_LN / |Z1_total_LLG|
+  //   V_LN = V_LL / √3   →   I_a1 = V_LL / (√3 × |Zllg|)
+  // FIX: V_LL is in numerator; √3 must be in DENOMINATOR (not numerator)
+  //   WRONG was: (SQRT3 × V_LL) / Zllg  (gives I × 3 — overcounts by factor 3)
+  //   CORRECT:    V_LL / (√3 × Zllg)
+  const I_llg = targetBus.voltage / (SQRT3 * Zllg_mag);
+  const doubleLineToGroundKA = I_llg / 1000;
+
     
     steps += '═'.repeat(80) + '\n';
     steps += 'FINAL SHORT CIRCUIT CALCULATION\n';
@@ -817,7 +1306,7 @@ function calculateShortCircuitPointToPoint(path) {
     steps += '─'.repeat(80) + '\n';
     steps += `Three-Phase (L-L-L)           | ${faultCurrentKA.toFixed(3).padStart(16)} | ${asymFaultCurrentKA.toFixed(3).padStart(17)}\n`;
     steps += `Line-to-Ground (L-G)          | ${lineToGroundKA.toFixed(3).padStart(16)} | ${(lineToGroundKA * multiplier).toFixed(3).padStart(17)}\n`;
-    steps += `Line-to-Line (L-L)            | ${(faultCurrentKA * 0.866).toFixed(3).padStart(16)} | ${(asymFaultCurrentKA * 0.866).toFixed(3).padStart(17)}\n`;
+    steps += `Line-to-Line (L-L)            | ${lineToLineKA.toFixed(3).padStart(16)} | ${(lineToLineKA * multiplier).toFixed(3).padStart(17)}\n`;
     steps += '═'.repeat(80) + '\n\n';
     
     steps += `📚 STANDARDS COMPLIANCE\n`;
@@ -852,6 +1341,8 @@ function calculateShortCircuitPointToPoint(path) {
     }
   
     return {
+ lineToLineKA: lineToLineKA,
+ doubleLineToGroundKA: doubleLineToGroundKA,
         totalR: totalR,
         totalX: totalX,
         totalZ: totalZ,
@@ -868,7 +1359,8 @@ function calculateShortCircuitPointToPoint(path) {
         timeConstant: timeConstant,
         dcOffsetMultiplier: multiplier,
         motorContribution: motorContribution,
-        steps: steps,
+        calculationSteps: steps,
+    steps: steps,
         path: path,
         method: 'Point-to-Point'
     };
@@ -891,6 +1383,12 @@ function calculateShortCircuitPerUnit(path) {
     const temperature = parseFloat(document.getElementById('temperature')?.value) || 75;
     
     const BASE_KVA = 10000;
+
+    if (!Array.isArray(path) || path.length === 0) {
+        console.error('❌ Per-Unit SC error: invalid path', path);
+        throw new Error('Per-Unit short circuit requires a valid path to a SOURCE bus. Trace path failed (null/empty).');
+    }
+
     const targetBus = path[path.length - 1]?.bus;
     if (!targetBus) {
         throw new Error('Path has no target bus');
@@ -1077,6 +1575,7 @@ function calculateShortCircuitPerUnit(path) {
             steps += `Size:                ${comp.size}\n`;
             steps += `Material:            ${comp.material.toUpperCase()}\n`;
             steps += `Length:              ${comp.length} ft\n`;
+            steps += `Installation:        ${puInstallFactors.label}\n`;
             steps += `From Bus:            ${comp.fromBusName || comp.fromBus}\n`;
             steps += `To Bus:              ${comp.toBusName || comp.toBus}\n`;
             steps += `Temperature:         ${temperature}°C\n`;
@@ -1089,10 +1588,15 @@ function calculateShortCircuitPerUnit(path) {
             let rBase20 = materialData.r;
             let rBaseTemp = temperatureCorrection(rBase20, temperature, comp.material);
             
-            const cableR_ohms = (rBaseTemp * comp.length) / parallel;
-            const cableX_ohms = (materialData.x * comp.length) / parallel;
+            // ── Installation method adjustments ──────────────────────────────
+            const puInstallFactors = (typeof getCableInstallationFactors === 'function')
+                ? getCableInstallationFactors(comp.installationMethod || comp.conduit || 'conduit-pvc')
+                : { x_factor: 1.0, z0_factor: 3.0, label: 'Default (PVC Conduit)' };
             
-            const z0Factor = SHORT_CIRCUIT_CONFIG.Z0_FACTORS.cable;
+            const cableR_ohms = (rBaseTemp * comp.length) / parallel;
+            const cableX_ohms = (materialData.x * comp.length * puInstallFactors.x_factor) / parallel;
+            
+            const z0Factor = puInstallFactors.z0_factor;
             const cableR0_ohms = cableR_ohms * z0Factor;
             const cableX0_ohms = cableX_ohms * z0Factor;
             
@@ -1234,9 +1738,26 @@ function calculateShortCircuitPerUnit(path) {
             let R_pu_system = R_pu_own * baseConversion;
             let X_pu_system = X_pu_own * baseConversion;
             
-            const z0Factor = SHORT_CIRCUIT_CONFIG.Z0_FACTORS.transformer;
-            let R0_pu_system = R_pu_system * z0Factor;
-            let X0_pu_system = X_pu_system * z0Factor;
+            // ── Vector group Z0 ───────────────────────────────────────────────
+            const puVgInfo = (typeof getTransformerVectorGroupZ0 === 'function')
+                ? getTransformerVectorGroupZ0(comp.vectorGroup || 'Dyn11')
+                : { z0_multiplier: 1.0, blocks_upstream_z0: true, ground_path_on_lv: true,
+                    label: 'Dyn11 default', note: 'Dyn11 default' };
+
+            let z0Factor_pu, R0_pu_system, X0_pu_system;
+            if (puVgInfo.z0_multiplier >= 999 || !puVgInfo.ground_path_on_lv) {
+                z0Factor_pu = 999;
+                R0_pu_system = R_pu_system * 100;
+                X0_pu_system = X_pu_system * 100;
+            } else {
+                z0Factor_pu = puVgInfo.z0_multiplier;
+                R0_pu_system = R_pu_system * z0Factor_pu;
+                X0_pu_system = X_pu_system * z0Factor_pu;
+            }
+            if (puVgInfo.blocks_upstream_z0) {
+                totalR0pu = 0;
+                totalX0pu = 0;
+            }
             
             if (numParallel > 1) {
                 steps += `Parallel Configuration Effect:\n`;
@@ -1252,13 +1773,25 @@ function calculateShortCircuitPerUnit(path) {
             
             steps += `📊 FINAL PER-UNIT IMPEDANCES\n`;
             steps += '─'.repeat(80) + '\n';
+            steps += `Vector Group:        ${comp.vectorGroup || 'Dyn11'} — ${puVgInfo.label}\n`;
+            steps += `Grounding Mode:      ${comp.groundingMode || 'solidly-grounded'}\n`;
+            if (puVgInfo.blocks_upstream_z0) {
+                steps += `Z0 Boundary:         ⚡ Upstream Z0 reset here (primary winding traps zero-seq)\n`;
+            }
+            steps += '\n';
             steps += `Positive Sequence (Z1):\n`;
             steps += `   R_pu = ${R_pu_system.toFixed(6)} pu\n`;
             steps += `   X_pu = ${X_pu_system.toFixed(6)} pu\n`;
             steps += '\n';
-            steps += `Zero Sequence (Z0 = ${z0Factor}× Z1):\n`;
-            steps += `   R0_pu = ${R0_pu_system.toFixed(6)} pu\n`;
-            steps += `   X0_pu = ${X0_pu_system.toFixed(6)} pu\n`;
+            if (z0Factor_pu >= 999) {
+                steps += `Zero Sequence (Z0) — BLOCKED (${comp.vectorGroup}):\n`;
+                steps += `   ⚠️  No L-G path on secondary bus (${puVgInfo.label})\n`;
+                steps += `   R0_pu ≈ ∞,  X0_pu ≈ ∞  (per IEC 60909-0 §3.3; IEEE 141-1993 §5.4)\n`;
+            } else {
+                steps += `Zero Sequence (Z0 = ${z0Factor_pu.toFixed(2)}× Z1):\n`;
+                steps += `   R0_pu = ${R0_pu_system.toFixed(6)} pu\n`;
+                steps += `   X0_pu = ${X0_pu_system.toFixed(6)} pu\n`;
+            }
             steps += '\n';
             
             totalRpu += R_pu_system;
@@ -1358,6 +1891,28 @@ function calculateShortCircuitPerUnit(path) {
     const asymFaultCurrentKA = asymFaultCurrent / 1000;
     
     const totalZ0pu = Math.sqrt(totalR0pu * totalR0pu + totalX0pu * totalX0pu);
+
+  // DOUBLE LINE-TO-GROUND (L-L-G) in per-unit using complex arithmetic
+  const Z1pu_r = totalRpu, Z1pu_x = totalXpu;
+  const Z2pu_r = totalRpu, Z2pu_x = totalXpu;
+  const Z0pu_r = totalR0pu, Z0pu_x = totalX0pu;
+  const den_par_pu_r = (Z2pu_r + Z0pu_r), den_par_pu_x = (Z2pu_x + Z0pu_x);
+  const den_par_pu_mag2 = den_par_pu_r*den_par_pu_r + den_par_pu_x*den_par_pu_x || 1e-18;
+  const num_par_pu_r = Z2pu_r*Z0pu_r - Z2pu_x*Z0pu_x;
+  const num_par_pu_x = Z2pu_r*Z0pu_x + Z2pu_x*Z0pu_r;
+  const Zpar_pu_r = (num_par_pu_r*den_par_pu_r + num_par_pu_x*den_par_pu_x)/den_par_pu_mag2;
+  const Zpar_pu_x = (num_par_pu_x*den_par_pu_r - num_par_pu_r*den_par_pu_x)/den_par_pu_mag2;
+  const Zllg_pu_r = Z1pu_r + Zpar_pu_r;
+  const Zllg_pu_x = Z1pu_x + Zpar_pu_x;
+  const Zllg_pu_mag = Math.sqrt(Zllg_pu_r*Zllg_pu_r + Zllg_pu_x*Zllg_pu_x) || 1e-18;
+  // Positive-sequence current per unit:
+  //   I_base is defined on V_LL_base.  V_LN_pu = 1/√3 pu.
+  //   I_a1_pu = V_LN_pu / |Zllg_pu| = 1 / (√3 × |Zllg_pu|)
+  // FIX: denominator needs √3, NOT numerator.
+  //   WRONG was: √3 / |Zllg_pu|   (overcounts by factor 3)
+  //   CORRECT:   1 / (√3 × |Zllg_pu|)
+  const I_llg_pu = 1.0 / (Math.sqrt(3) * Zllg_pu_mag);
+  const doubleLineToGroundKA = (I_llg_pu * BASE_CURRENT) / 1000;
     const totalZ2pu = totalZpu;
     
     const Z_total_LG_pu = totalZpu + totalZ2pu + totalZ0pu;
@@ -1500,6 +2055,7 @@ function calculateShortCircuitPerUnit(path) {
     }
     
     return {
+ doubleLineToGroundKA: doubleLineToGroundKA,
         totalR: totalR_ohms,
         totalX: totalX_ohms,
         totalZ: totalZ_ohms,
@@ -1526,7 +2082,8 @@ function calculateShortCircuitPerUnit(path) {
         timeConstant: timeConstant,
         dcOffsetMultiplier: multiplier,
         motorContribution: motorContribution,
-        steps: steps,
+        calculationSteps: steps,
+    steps: steps,
         path: path,
         method: 'Per-Unit'
     };

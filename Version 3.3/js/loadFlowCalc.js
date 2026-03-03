@@ -663,6 +663,35 @@ function applyDemandFactorsToLoadFlow(loadFlow) {
     let busClassification = 'Standard Bus';
     
     // ════════════════════════════════════════════════════════════════════════════
+    // USER OVERRIDE CHECK — honour per-bus demand/diversity factors set in UI
+    // These are stored on the bus object (busManager.js newBusDemandFactor field)
+    // when the user explicitly enters values in the Bus Modal.
+    // If overrides exist they take full precedence over auto-calculated values.
+    // ════════════════════════════════════════════════════════════════════════════
+    const targetBusData = buses.find(b => b.id === loadFlow.busId);
+    const userDemandFactor = (targetBusData && Number.isFinite(Number(targetBusData.demandFactor))
+        && targetBusData.demandFactor > 0 && targetBusData.demandFactor <= 1.0)
+        ? Number(targetBusData.demandFactor) : null;
+    const userDiversityFactor = (targetBusData && Number.isFinite(Number(targetBusData.diversityFactor))
+        && targetBusData.diversityFactor >= 1.0)
+        ? Number(targetBusData.diversityFactor) : null;
+
+    let usingUserDemandOverride    = false;
+    let usingUserDiversityOverride = false;
+
+    if (userDemandFactor !== null) {
+        demandFactor         = userDemandFactor;
+        demandFactorNote     = `User-specified demand factor (${(demandFactor * 100).toFixed(1)}%) — overrides auto per NEC/IEEE`;
+        usingUserDemandOverride = true;
+        console.log(`✅ User demand factor override: ${demandFactor.toFixed(3)} on bus "${loadFlow.busName}"`);
+    }
+    if (userDiversityFactor !== null) {
+        diversityFactor              = userDiversityFactor;
+        usingUserDiversityOverride   = true;
+        console.log(`✅ User diversity factor override: ${diversityFactor.toFixed(3)} on bus "${loadFlow.busName}"`);
+    }
+    
+    // ════════════════════════════════════════════════════════════════════════════
     // BRANCH 1: MAIN DISTRIBUTION BUS (FEEDS MULTIPLE SUBSTATIONS)
     // ════════════════════════════════════════════════════════════════════════════
     
@@ -673,30 +702,32 @@ function applyDemandFactorsToLoadFlow(loadFlow) {
         busClassification = `Main Distribution (feeds ${downstreamTransformers.length} substations)`;
         
         // Don't apply motor demand factors at this level
-        demandFactor = 1.0;
-        demandFactorNote = `Main distribution bus - demand factors applied at substation level`;
-        
-        // Use system-level diversity based on number of substations
-        // Per IEEE 141-1993 Table 3-5
-        const substationCount = downstreamTransformers.length;
-        
-        if (substationCount <= 1) {
-            diversityFactor = 1.00;
-        } else if (substationCount <= 3) {
-            diversityFactor = 1.30;
-        } else if (substationCount <= 6) {
-            diversityFactor = 1.45;
-        } else if (substationCount <= 10) {
-            diversityFactor = 1.55;
-        } else if (substationCount <= 15) {
-            diversityFactor = 1.65;
-        } else if (substationCount <= 20) {
-            diversityFactor = 1.75;
-        } else {
-            diversityFactor = 1.85;
+        if (!usingUserDemandOverride) {
+            demandFactor = 1.0;
+            demandFactorNote = `Main distribution bus - demand factors applied at substation level`;
         }
         
-        console.log(`   System diversity factor: ${diversityFactor.toFixed(3)} (IEEE 141-1993 Table 3-5)`);
+        // Use system-level diversity based on number of substations (unless user overrode)
+        if (!usingUserDiversityOverride) {
+            const substationCount = downstreamTransformers.length;
+            if (substationCount <= 1) {
+                diversityFactor = 1.00;
+            } else if (substationCount <= 3) {
+                diversityFactor = 1.30;
+            } else if (substationCount <= 6) {
+                diversityFactor = 1.45;
+            } else if (substationCount <= 10) {
+                diversityFactor = 1.55;
+            } else if (substationCount <= 15) {
+                diversityFactor = 1.65;
+            } else if (substationCount <= 20) {
+                diversityFactor = 1.75;
+            } else {
+                diversityFactor = 1.85;
+            }
+        }
+        
+        console.log(`   System diversity factor: ${diversityFactor.toFixed(3)} (${usingUserDiversityOverride ? 'user override' : 'IEEE 141-1993 Table 3-5'})`);
     }
     
     // ════════════════════════════════════════════════════════════════════════════
@@ -709,30 +740,31 @@ function applyDemandFactorsToLoadFlow(loadFlow) {
         
         busClassification = `Motor Load Bus (${motorCount} motors)`;
         
-        // Apply motor demand factor based on count
-        // NEC 430.24: For multiple motors, use demand factors
-        if (motorCount === 1) {
-            demandFactor = 1.00;
-            demandFactorNote = 'Single motor - 100% demand (NEC 430.24)';
-        } else if (motorCount <= 2) {
-            demandFactor = 0.95;
-            demandFactorNote = `${motorCount} motors - 95% demand (NEC 430.24)`;
-        } else if (motorCount <= 3) {
-            demandFactor = 0.91;
-            demandFactorNote = `${motorCount} motors - 91% demand (NEC 430.24)`;
-        } else if (motorCount <= 5) {
-            demandFactor = 0.85;
-            demandFactorNote = `${motorCount} motors - 85% demand (NEC 430.24)`;
-        } else if (motorCount <= 10) {
-            demandFactor = 0.80;
-            demandFactorNote = `${motorCount} motors - 80% demand (NEC 430.24)`;
-        } else {
-            demandFactor = 0.75;
-            demandFactorNote = `${motorCount} motors - 75% demand (NEC 430.24)`;
+        if (!usingUserDemandOverride) {
+            if (motorCount === 1) {
+                demandFactor = 1.00;
+                demandFactorNote = 'Single motor - 100% demand (NEC 430.24)';
+            } else if (motorCount <= 2) {
+                demandFactor = 0.95;
+                demandFactorNote = `${motorCount} motors - 95% demand (NEC 430.24)`;
+            } else if (motorCount <= 3) {
+                demandFactor = 0.91;
+                demandFactorNote = `${motorCount} motors - 91% demand (NEC 430.24)`;
+            } else if (motorCount <= 5) {
+                demandFactor = 0.85;
+                demandFactorNote = `${motorCount} motors - 85% demand (NEC 430.24)`;
+            } else if (motorCount <= 10) {
+                demandFactor = 0.80;
+                demandFactorNote = `${motorCount} motors - 80% demand (NEC 430.24)`;
+            } else {
+                demandFactor = 0.75;
+                demandFactorNote = `${motorCount} motors - 75% demand (NEC 430.24)`;
+            }
         }
         
-        // Use standard bus-level diversity
-        diversityFactor = getDiversityFactorForBus(loadFlow.busId) || 1.2;
+        if (!usingUserDiversityOverride) {
+            diversityFactor = getDiversityFactorForBus(loadFlow.busId) || 1.2;
+        }
     }
     
     // ════════════════════════════════════════════════════════════════════════════
@@ -744,12 +776,13 @@ function applyDemandFactorsToLoadFlow(loadFlow) {
         
         busClassification = 'Mixed Load Bus';
         
-        // No motors - use general demand factor
-        demandFactor = 0.85;
-        demandFactorNote = 'Mixed loads - 85% demand factor (IEEE 141-1993)';
-        
-        // Use standard bus-level diversity
-        diversityFactor = getDiversityFactorForBus(loadFlow.busId) || 1.2;
+        if (!usingUserDemandOverride) {
+            demandFactor = 0.85;
+            demandFactorNote = 'Mixed loads - 85% demand factor (IEEE 141-1993)';
+        }
+        if (!usingUserDiversityOverride) {
+            diversityFactor = getDiversityFactorForBus(loadFlow.busId) || 1.2;
+        }
     }
     
     // ════════════════════════════════════════════════════════════════════════════
@@ -821,6 +854,9 @@ function applyDemandFactorsToLoadFlow(loadFlow) {
     steps += `📐 DEMAND FACTOR APPLICATION\n`;
     steps += '─'.repeat(80) + '\n';
     steps += `Demand Factor:             ${demandFactor.toFixed(3)} (${(demandFactor * 100).toFixed(1)}%)\n`;
+    if (usingUserDemandOverride) {
+        steps += `Source:                    ⚙️  USER-SPECIFIED OVERRIDE (Bus modal input)\n`;
+    }
     steps += `Note:                      ${demandFactorNote}\n`;
     steps += `Demand Load:               ${demandCurrent.toFixed(2)} A (${connectedCurrent > 0 ? (demandCurrent / connectedCurrent * 100).toFixed(1) : '0.0'}%)\n`;
     steps += `Formula:                   Demand = Connected × Demand Factor\n`;
@@ -830,7 +866,7 @@ function applyDemandFactorsToLoadFlow(loadFlow) {
     steps += '─'.repeat(80) + '\n';
     
     if (isMainDistributionBus) {
-        steps += `Diversity Factor:          ${diversityFactor.toFixed(3)} (IEEE 141-1993 Table 3-5)\n`;
+        steps += `Diversity Factor:          ${diversityFactor.toFixed(3)} (${usingUserDiversityOverride ? 'user override' : 'IEEE 141-1993 Table 3-5'})\n`;
         steps += `Application Level:         System-Level (${downstreamTransformers.length} substations)\n`;
         steps += `Diversity Load:            ${diversityCurrent.toFixed(2)} A (${connectedCurrent > 0 ? (diversityCurrent / connectedCurrent * 100).toFixed(1) : '0.0'}%)\n`;
         steps += `Formula:                   System MD = Connected / System DF\n`;
