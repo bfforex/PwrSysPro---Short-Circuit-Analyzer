@@ -7,7 +7,8 @@
  * @version 3.4.0
  * 
  * Features:
- * - Motor group diversity: 1 motor=1.00, 2-5=1.10, 6-10=1.15, 11-20=1.20, >20=1.25
+ * - Motor group diversity per IEEE 141-1993 Table 3-5:
+ *     1 motor=1.00, 2=1.05, 3=1.10, 4=1.15, 5=1.18, 6-10=1.25, 11-15=1.30, >15=1.35
  * - Load type diversity: Lighting=1.00, Receptacles=1.30-1.40
  * - Composite diversity weighted by kVA contribution
  * - Per-bus diversity breakdown stored in bus.results.loadFlow.diversitySummary

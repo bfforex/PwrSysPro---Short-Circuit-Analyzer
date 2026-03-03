@@ -154,7 +154,9 @@ const ARC_FLASH_CONFIG = {
  *   E_limit = 1.2 cal/cm² (onset of second-degree burn, bare skin)
  *
  * PPE CATEGORIES (NFPA 70E-2021 Table 130.7(C)(15)):
- *   Category 0: E < 1.2  cal/cm² — Untreated cotton
+ *   NOTE: Category 0 was eliminated in NFPA 70E-2015 and does NOT exist in NFPA 70E-2021.
+ *   E < 1.2 cal/cm² is the bare-skin onset threshold for second-degree burns (arc flash
+ *   boundary reference only) — it is NOT a PPE category. Minimum PPE is Category 1.
  *   Category 1: E < 4    cal/cm² — 4 cal/cm² rated arc-flash PPE
  *   Category 2: E < 8    cal/cm² — 8 cal/cm² rated arc-flash PPE
  *   Category 3: E < 25   cal/cm² — 25 cal/cm² rated arc-flash PPE
