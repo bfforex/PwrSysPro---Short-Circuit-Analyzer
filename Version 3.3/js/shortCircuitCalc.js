@@ -540,6 +540,33 @@ function calculateShortCircuit(busId, method = 'point-to-point', options = {}) {
           combined._iec60909Base = null;
         }
 
+        // Append motor contribution summary to calculation steps so UI and steps are consistent
+        const baseIk  = Number(rawBase?.initialSymmetricalCurrentKA ?? rawBase?.faultCurrents?.threePhaseSym ?? 0);
+        const motorIk = Number(mc.totalSymmetricalContribution ?? mc.faultCurrents?.threePhaseSym ?? 0);
+        const totIk  = combined.initialSymmetricalCurrentKA || 0;
+        const motorStepText = [
+          '',
+          '═'.repeat(80),
+          'MOTOR CONTRIBUTION (IEC 60909 MAX — external addition)',
+          '═'.repeat(80),
+          `IEC Network I"k (base):   ${baseIk.toFixed(3)} kA`,
+          `Motor Contribution I"k_m: ${motorIk.toFixed(3)} kA  (${mc.motorCount || 0} motor(s), interrupting)`,
+          `Total I"k (combined):     ${totIk.toFixed(3)} kA`,
+          '  (Combined via parallel impedance: I_total = √[(1/Z_sys + 1/Z_motor)⁻¹ method])',
+          `ip (Peak, combined):      ${combined.peakCurrentKA.toFixed(3)} kA`,
+          `Ib (Breaking, combined):  ${combined.breakingCurrentKA.toFixed(3)} kA`,
+          '─'.repeat(80),
+          'Per IEC 60909-0 Cl. 4.3.1 (MAX): motors included during interrupting interval.',
+          '═'.repeat(80)
+        ].join('\n');
+
+        // Carry base steps (format array if needed) then append motor section
+        const baseStepsArr = rawBase?.steps;
+        const baseStepsStr = rawBase?.calculationSteps ||
+          (Array.isArray(baseStepsArr) ? formatIECStepsArray(baseStepsArr, rawBase, bus, { method: 'iec-60909', iecCalcType }) : '');
+        combined.steps = Array.isArray(baseStepsArr) ? baseStepsArr : null; // preserve array for formatIECStepsArray
+        combined.calculationSteps = baseStepsStr + motorStepText;
+
         rawFinal = combined;
       }
     }

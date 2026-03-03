@@ -331,6 +331,11 @@
                        style="width: 100%; font-size: 10px;" aria-label="Project Address">
             </div>
             <div class="form-group">
+                <label for="projectCity" style="font-size: 11px;">City/Municipality:</label>
+                <input type="text" id="projectCity" placeholder="e.g., Makati City" 
+                       style="width: 100%; font-size: 10px;" aria-label="Project City">
+            </div>
+            <div class="form-group">
                 <label for="buildingType" style="font-size: 11px;">Building Type:</label>
                 <select id="buildingType" style="width: 100%; font-size: 10px;" aria-label="Building Type">
                     <option value="">Select Type</option>
@@ -339,6 +344,21 @@
                     <option value="Residential">Residential</option>
                     <option value="Institutional">Institutional</option>
                 </select>
+            </div>
+        </details>
+
+        <!-- Owner Information -->
+        <details class="collapsible-section" style="margin-top: 10px;">
+            <summary style="font-size: 11px; color: #667eea;">👤 Owner / Applicant</summary>
+            <div class="form-group">
+                <label for="ownerName" style="font-size: 11px;">Owner Name:</label>
+                <input type="text" id="ownerName" placeholder="Full Name / Company" 
+                       style="width: 100%; font-size: 10px;" aria-label="Owner Name">
+            </div>
+            <div class="form-group">
+                <label for="ownerContact" style="font-size: 11px;">Contact Number:</label>
+                <input type="text" id="ownerContact" placeholder="+63 xxx xxx xxxx" 
+                       style="width: 100%; font-size: 10px;" aria-label="Owner Contact Number">
             </div>
         </details>
         
@@ -369,6 +389,11 @@
                 <label for="electricalPermitNo" style="font-size: 11px;">Electrical Permit No.:</label>
                 <input type="text" id="electricalPermitNo" placeholder="EP-2024-1234" 
                        style="width: 100%; font-size: 10px;" aria-label="Electrical Permit Number">
+            </div>
+            <div class="form-group">
+                <label for="issuingOffice" style="font-size: 11px;">Issuing Office:</label>
+                <input type="text" id="issuingOffice" placeholder="Office of the Building Official" 
+                       style="width: 100%; font-size: 10px;" aria-label="Permit Issuing Office">
             </div>
         </details>
         
@@ -1668,11 +1693,15 @@ function populateRegulatoryFormFields() {
         
         const projectFields = {
             'projectAddress': projectInfo.projectAddress?.street || '',
+            'projectCity': projectInfo.projectAddress?.city || '',
             'buildingType': projectInfo.buildingType || '',
+            'ownerName': projectInfo.owner?.name || '',
+            'ownerContact': projectInfo.owner?.contactNumber || '',
             'utilityProvider': projectInfo.utility?.provider || '',
             'serviceVoltage': projectInfo.utility?.serviceVoltage || '',
             'buildingPermitNo': projectInfo.permits?.buildingPermitNo || '',
-            'electricalPermitNo': projectInfo.permits?.electricalPermitNo || ''
+            'electricalPermitNo': projectInfo.permits?.electricalPermitNo || '',
+            'issuingOffice': projectInfo.permits?.issuingOffice || ''
         };
         
         for (const [id, value] of Object.entries(projectFields)) {
@@ -1707,16 +1736,26 @@ function updateRegulatoryInfo() {
     if (typeof updateProjectInfo === 'function') {
         const projectUpdates = {
             projectAddress: {
-                street: document.getElementById('projectAddress')?.value || ''
+                street: document.getElementById('projectAddress')?.value || '',
+                city: document.getElementById('projectCity')?.value || ''
             },
             buildingType: document.getElementById('buildingType')?.value || '',
+            owner: {
+                name: document.getElementById('ownerName')?.value || '',
+                contactNumber: document.getElementById('ownerContact')?.value || ''
+            },
             utility: {
                 provider: document.getElementById('utilityProvider')?.value || '',
                 serviceVoltage: document.getElementById('serviceVoltage')?.value || ''
             },
             permits: {
                 buildingPermitNo: document.getElementById('buildingPermitNo')?.value || '',
-                electricalPermitNo: document.getElementById('electricalPermitNo')?.value || ''
+                electricalPermitNo: document.getElementById('electricalPermitNo')?.value || '',
+                issuingOffice: document.getElementById('issuingOffice')?.value || ''
+            },
+            engineer: {
+                name: document.getElementById('peEngineerName')?.value || '',
+                prcLicenseNo: document.getElementById('pePRCLicense')?.value || ''
             }
         };
         

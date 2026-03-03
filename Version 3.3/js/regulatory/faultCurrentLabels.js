@@ -25,7 +25,7 @@ function generateFaultCurrentLabel(bus, options = {}) {
     }
     
     const sc = bus.results.shortCircuit;
-    const faultCurrentKA = (sc.faultCurrents?.symmetrical3Phase || 0) / 1000;
+    const faultCurrentKA = sc.faultCurrents?.threePhaseSym || 0;
     const currentDate = new Date().toISOString().split('T')[0];
     const engineer = document.getElementById('engineer')?.value || 'Engineer';
     const projectName = document.getElementById('projectName')?.value || 'Project';
@@ -203,10 +203,10 @@ function generateDetailedFaultLabel(bus, options = {}) {
     // Fault currents
     html += '<div style="background: #fff; border: 2px solid #000; padding: 10px; margin-bottom: 15px; border-radius: 4px;">';
     html += '<table style="width: 100%; border-collapse: collapse;">';
-    html += '<tr style="border-bottom: 1px solid #ccc;"><td style="padding: 5px; font-weight: bold;">3-Phase Symmetrical:</td><td style="padding: 5px; text-align: right; font-size: 18px; color: #d32f2f;"><strong>' + ((fc.symmetrical3Phase || 0) / 1000).toFixed(2) + ' kA</strong></td></tr>';
-    html += '<tr style="border-bottom: 1px solid #ccc;"><td style="padding: 5px;">3-Phase Asymmetrical:</td><td style="padding: 5px; text-align: right;">' + ((fc.asymmetrical3Phase || 0) / 1000).toFixed(2) + ' kA</td></tr>';
-    html += '<tr style="border-bottom: 1px solid #ccc;"><td style="padding: 5px;">Line-to-Line:</td><td style="padding: 5px; text-align: right;">' + ((fc.lineToLine || 0) / 1000).toFixed(2) + ' kA</td></tr>';
-    html += '<tr><td style="padding: 5px;">Line-to-Ground:</td><td style="padding: 5px; text-align: right;">' + ((fc.lineToGround || 0) / 1000).toFixed(2) + ' kA</td></tr>';
+    html += '<tr style="border-bottom: 1px solid #ccc;"><td style="padding: 5px; font-weight: bold;">3-Phase Symmetrical:</td><td style="padding: 5px; text-align: right; font-size: 18px; color: #d32f2f;"><strong>' + (fc.threePhaseSym || 0).toFixed(2) + ' kA</strong></td></tr>';
+    html += '<tr style="border-bottom: 1px solid #ccc;"><td style="padding: 5px;">3-Phase Asymmetrical:</td><td style="padding: 5px; text-align: right;">' + (fc.threePhaseAsym || 0).toFixed(2) + ' kA</td></tr>';
+    html += '<tr style="border-bottom: 1px solid #ccc;"><td style="padding: 5px;">Line-to-Line:</td><td style="padding: 5px; text-align: right;">' + (fc.lineToLine || 0).toFixed(2) + ' kA</td></tr>';
+    html += '<tr><td style="padding: 5px;">Line-to-Ground:</td><td style="padding: 5px; text-align: right;">' + (fc.lineToGround || 0).toFixed(2) + ' kA</td></tr>';
     html += '</table>';
     html += '</div>';
     
