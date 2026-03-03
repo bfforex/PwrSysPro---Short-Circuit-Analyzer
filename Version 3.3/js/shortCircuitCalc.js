@@ -1647,6 +1647,11 @@ function calculateShortCircuitPerUnit(path) {
             const materialData = cableData[comp.material] || cableData['copper'];
             const parallel = comp.parallel || 1;
             
+            // ── Installation method adjustments ──────────────────────────────
+            const puInstallFactors = (typeof getCableInstallationFactors === 'function')
+                ? getCableInstallationFactors(comp.installationMethod || comp.conduit || 'conduit-pvc')
+                : { x_factor: 1.0, z0_factor: 3.0, label: 'Default (PVC Conduit)' };
+            
             steps += `🔌 CABLE INFORMATION\n`;
             steps += '─'.repeat(80) + '\n';
             steps += `Component Tag:       ${comp.tag || 'N/A'}\n`;
@@ -1666,11 +1671,6 @@ function calculateShortCircuitPerUnit(path) {
             
             let rBase20 = materialData.r;
             let rBaseTemp = temperatureCorrection(rBase20, temperature, comp.material);
-            
-            // ── Installation method adjustments ──────────────────────────────
-            const puInstallFactors = (typeof getCableInstallationFactors === 'function')
-                ? getCableInstallationFactors(comp.installationMethod || comp.conduit || 'conduit-pvc')
-                : { x_factor: 1.0, z0_factor: 3.0, label: 'Default (PVC Conduit)' };
             
             const cableR_ohms = (rBaseTemp * comp.length) / parallel;
             const cableX_ohms = (materialData.x * comp.length * puInstallFactors.x_factor) / parallel;
