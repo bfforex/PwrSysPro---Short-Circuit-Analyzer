@@ -926,7 +926,7 @@ function calculateShortCircuitPointToPoint(path) {
             
             steps += `🔄 IMPEDANCE REFERRAL TO SECONDARY SIDE\n`;
             steps += '─'.repeat(80) + '\n';
-            steps += `Per IEEE 141 Section 4.2.3:\n`;
+            steps += `Per IEEE 141 Section 5.2:\n`;
             steps += `   Formula:          Turns Ratio a = V_primary / V_secondary\n`;
             steps += `   a = ${comp.primary} / ${comp.secondary} = ${turnsRatio.toFixed(4)}\n`;
             steps += '\n';
@@ -1291,14 +1291,14 @@ function calculateShortCircuitPointToPoint(path) {
             steps += `⚡ INCLUDES MOTOR CONTRIBUTION: ${Number(motorSymKA).toFixed(3)} kA\n`;
             steps += `   ${motorContribution.motorCount} motor(s) downstream from fault point\n`;
         }
-        steps += `   Per IEEE 141-1993 Section 5.3.2, IEC 60909, and NEC Article 430\n`;
+        steps += `   Per IEEE 141-1993 Section 5.3, IEC 60909, and NEC Article 430\n`;
         steps += '\n';
     }
     
     steps += '═'.repeat(80) + '\n';
     steps += 'ASYMMETRICAL (PEAK) FAULT CURRENT\n';
     steps += '═'.repeat(80) + '\n\n';
-    steps += `📐 CALCULATION (Per IEEE 141 Section 5.2.3 and ANSI C37.010)\n`;
+    steps += `📐 CALCULATION (Per IEEE 141 Section 5.2 and ANSI C37.010)\n`;
     steps += '─'.repeat(80) + '\n';
     steps += `DC Time Constant:\n`;
     steps += `   Formula:          τ = L/R = X/(ωR) = X/(2πfR)\n`;
@@ -2046,13 +2046,13 @@ function calculateShortCircuitPerUnit(path) {
     if (withMotors) {
         steps += `⚡ INCLUDES MOTOR CONTRIBUTION: ${(motorContribution.motorFaultCurrent/1000).toFixed(3)} kA\n`;
         steps += `   ${motorContribution.motorCount} motor(s) downstream from fault point\n`;
-        steps += `   Per IEEE 141-1993 Section 5.3.2, IEC 60909, and NEC Article 430\n\n`;
+        steps += `   Per IEEE 141-1993 Section 5.3, IEC 60909, and NEC Article 430\n\n`;
     }
     
     steps += '═'.repeat(80) + '\n';
     steps += 'ASYMMETRICAL (PEAK) FAULT CURRENT\n';
     steps += '═'.repeat(80) + '\n';
-    steps += `Per IEEE 141 Section 5.2.3 and ANSI C37.010:\n\n`;
+    steps += `Per IEEE 141 Section 5.2 and ANSI C37.010:\n\n`;
     steps += `DC Time Constant:\n`;
     steps += `τ = X/(ωR) = ${totalX_ohms.toFixed(6)} / (2π × ${SHORT_CIRCUIT_CONFIG.SYSTEM_FREQUENCY} × ${totalR_ohms.toFixed(6)})\n`;
     steps += `τ = ${(timeConstant * 1000).toFixed(3)} ms\n\n`;

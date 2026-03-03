@@ -489,12 +489,14 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
           }
         }
         
-        // Priority 3: Raw downstream load
+        // Priority 3: Raw downstream load with demand factor applied (Issue #42)
         if (!(loadCurrent > 0) && typeof calculateDownstreamLoad === 'function' && targetBusId) {
           const downstreamLoad = Number(calculateDownstreamLoad(targetBusId));
           if (downstreamLoad > 0) {
-              loadCurrent = downstreamLoad;
-              loadCurrentSource = 'downstream connected load';
+              const targetBusDf = (busesArr.find(b => b.id === targetBusId))?.demandFactor;
+              const df = (Number.isFinite(targetBusDf) && targetBusDf > 0 && targetBusDf <= 1) ? targetBusDf : 1.0;
+              loadCurrent = downstreamLoad * df;
+              loadCurrentSource = df < 1 ? `downstream load × DF=${df.toFixed(2)} (demand)` : 'downstream connected load';
           }
         }
       } catch (_) {}
