@@ -1,13 +1,22 @@
 /**
  * Arc Flash Analysis Module
- * IEEE 1584-2018 and NFPA 70E-2021 Compliant
+ * IEEE 1584-2018 structure / NFPA 70E-2021 Compliant
+ *
+ * NOTE ON IEEE 1584 IMPLEMENTATION:
+ * This module references IEEE 1584-2018 for structure (equipment types, voltage classes,
+ * working distances, electrode configuration table). However, the core arcing current
+ * and incident energy calculations use the IEEE 1584-2002 simplified method
+ * (arcingFactor = 0.85, k-coefficient equations). The full IEEE 1584-2018 regression
+ * model requires populated k3–k8 coefficients from IEEE 1584-2018 Table 1, which are
+ * currently placeholder zeros. Results should be treated as conservative estimates.
  * 
  * @author bfforex
  * @date 2025-11-02 16:02:33 UTC
  * @version 1.0.0
  * 
  * Standards Compliance:
- * - IEEE 1584-2018 - Guide for Performing Arc-Flash Hazard Calculations
+ * - IEEE 1584-2002 - Arc Flash Calculations (simplified method implemented)
+ * - IEEE 1584-2018 - Guide for Performing Arc-Flash Hazard Calculations (structure referenced)
  * - NFPA 70E-2021 - Standard for Electrical Safety in the Workplace
  * - NEC Article 110.16 - Arc-Flash Hazard Warning
  * - OSHA 1910.335 - Safeguards for Personnel Protection
@@ -22,8 +31,8 @@
  */
 
 console.log('🔥 Loading Arc Flash Analysis Module v1.0.0...');
-console.log('   ✅ IEEE 1584-2018 - Latest calculation method');
-console.log('   ✅ NFPA 70E-2021 - PPE requirements');
+console.log('   ✅ IEEE 1584-2002 simplified method (conservative estimate)');
+console.log('   ✅ NFPA 70E-2021 - PPE requirements (Categories 1-4)');
 console.log('   ✅ Enhanced visual formatting');
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -80,7 +89,9 @@ const ARC_FLASH_CONFIG = {
             }
         },
         
-        // Electrode configuration factors
+        // Electrode configuration factors (k1, k2 from IEEE 1584-2002; k3-k8 are placeholders)
+        // NOTE: k3-k8 coefficients are placeholders. Full IEEE 1584-2018 regression requires
+        // populated values from IEEE 1584-2018 Table 1. Current implementation uses simplified 2002 method.
         ELECTRODE_CONFIG: {
             'VCB': { k1: -0.04287, k2: 1.035, k3: 0, k4: 0, k5: 0, k6: 0, k7: 0, k8: 0 },
             'VCBB': { k1: -0.04287, k2: 1.035, k3: 0, k4: 0, k5: 0, k6: 0, k7: 0, k8: 0 },
@@ -90,9 +101,11 @@ const ARC_FLASH_CONFIG = {
         }
     },
     
-    // NFPA 70E PPE Categories
+    // NFPA 70E-2021 Table 130.7(C)(15) — Categories 1–4
+    // NOTE: Category 0 was eliminated in NFPA 70E-2015 and does not exist in NFPA 70E-2021.
+    // < 1.2 cal/cm² is the bare-skin onset threshold for second-degree burns, used for
+    // arc flash boundary calculation only — it is NOT a PPE category.
     PPE_CATEGORIES: {
-        0: { cal: 1.2, clothing: 'Non-melting', voltage: 'All', hazard: 'Limited' },
         1: { cal: 4, clothing: 'FR shirt and pants', voltage: 'All', hazard: 'Low' },
         2: { cal: 8, clothing: 'FR shirt and pants, cotton underwear', voltage: 'All', hazard: 'Moderate' },
         3: { cal: 25, clothing: 'FR clothing, flash suit', voltage: 'All', hazard: 'High' },
@@ -206,7 +219,7 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
     const clearingTimeSec = clearingTimeCycles / 60; // Convert to seconds
     
     // Arcing current calculation factor
-    const arcingFactor = 0.85; // IEEE 1584-2018 typical value
+    const arcingFactor = 0.85; // IEEE 1584-2002 simplified method (conservative estimate)
     const arcingCurrent = bolted3PhaseFault * arcingFactor;
     
     // ══════════════════════════════════════════════════════════════════════════════
@@ -234,7 +247,7 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
         // Results (to be calculated)
         incidentEnergy: 0,
         arcFlashBoundary: 0,
-        ppeCategory: 0,
+        ppeCategory: 1,
         ppeRequirements: {},
         
         // Calculation details
@@ -463,8 +476,10 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
     let ppeRequirements;
     
     if (incidentEnergy < 1.2) {
-        ppeCategory = 0;
-        ppeRequirements = ARC_FLASH_CONFIG.PPE_CATEGORIES[0];
+        // Below 1.2 cal/cm² bare-skin onset threshold — below minimum PPE category
+        // Minimum required PPE is Category 1 per NFPA 70E-2021 Table 130.7(C)(15)
+        ppeCategory = 1;
+        ppeRequirements = ARC_FLASH_CONFIG.PPE_CATEGORIES[1];
     } else if (incidentEnergy < 4) {
         ppeCategory = 1;
         ppeRequirements = ARC_FLASH_CONFIG.PPE_CATEGORIES[1];

@@ -41,8 +41,12 @@ const IndustryStandards = {
                 dcComponent: 'Very High'
             }
         },
-        // IEEE recommended maximum for standard breakers
-        standardBreakerMax: 17,
+        // IEEE/UL voltage-class-specific X/R limits for standard breakers
+        standardBreakerXR: {
+            lowVoltage: 6.6,       // Per UL 489 / IEEE C37.13 (≤600V)
+            mediumVoltage: 15,     // Per IEEE C37.010 (rated ≤500 MVA)
+            mediumVoltageHigh: 17  // Per IEEE C37.010 (rated >500 MVA)
+        },
         // Warning threshold
         warningThreshold: 15,
         // Critical threshold
@@ -50,25 +54,25 @@ const IndustryStandards = {
     },
 
     /**
-     * Voltage Drop Standards (IEEE 141 - Red Book)
-     * Recommended maximum voltage drops
+     * Voltage Drop Standards
+     * NEC 210.19(A) FPN No. 4, NEC 215.2(A)(1) FPN, and IEEE 141-1993 §3.11
      */
     voltageDrop: {
         feeder: {
-            recommended: 2.5,
+            recommended: 3,    // NEC 215.2(A)(1) FPN / IEEE 141-1993 §3.11
             maximum: 3,
             unit: '%',
             description: 'Primary feeder circuits'
         },
         branch: {
-            recommended: 3,
-            maximum: 5,
+            recommended: 3,    // NEC 210.19(A) FPN No. 4
+            maximum: 3,
             unit: '%',
             description: 'Branch circuits and final loads'
         },
         combined: {
-            recommended: 5,
-            maximum: 7,
+            recommended: 5,    // NEC 210.19(A) FPN No. 4 / IEEE 141-1993 §3.11
+            maximum: 5,        // IEEE 141-1993 recommends 5% combined maximum
             unit: '%',
             description: 'Combined feeder and branch'
         },
@@ -76,7 +80,7 @@ const IndustryStandards = {
             starting: {
                 maximum: 15,
                 unit: '%',
-                description: 'Motor starting voltage drop'
+                description: 'Motor starting voltage dip (IEEE 141-1993 §3.11.2) — this is a voltage dip, not a steady-state voltage drop'
             },
             running: {
                 maximum: 5,
@@ -235,7 +239,7 @@ const IndustryStandards = {
         circuitBreaker: {
             interruptingCapacity: {
                 safetyMargin: 1.25,
-                description: 'Breaker IC should be 125% of calculated fault current'
+                description: 'Engineering practice: IC should exceed calculated fault current. Per NEC 110.9, IC must equal or exceed available fault current (no explicit margin required by code). The 1.25 factor is a recommended engineering safety margin, not a code requirement.'
             },
             operatingTime: {
                 instantaneous: { max: 0.05, unit: 's' },
