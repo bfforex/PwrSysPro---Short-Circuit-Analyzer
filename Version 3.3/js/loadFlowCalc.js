@@ -1120,14 +1120,8 @@ function calculateSystemMaximumDemand(substationBusIds, options = {}) {
                 substationMD_Primary = 0;
             }
             
-            // ✅ DEBUG LOGGING
-            console.log(`  Adding to total: ${substationMD_Primary.toFixed(2)} A`);
-            console.log(`  Current total: ${totalSubstationMD.toFixed(2)} A`);
-            
             // ✅ ACCUMULATE (INSIDE TRY BLOCK, BEFORE PUSH)
             totalSubstationMD += substationMD_Primary;
-            
-            console.log(`  New total: ${totalSubstationMD.toFixed(2)} A`);
         
             // ✅ ADD FINAL VALIDATION BEFORE PUSHING
             substationBreakdown.push({
