@@ -42,6 +42,30 @@ const FAULT_TYPE_CONFIG = {
     }
 };
 
+// Prefer using the already-calculated short circuit system impedance (avoids missing rPerFoot/xPerFoot data)
+function getZ1FromShortCircuit(bus) {
+  const sc = bus?.results?.shortCircuit;
+  const z = sc?.totalImpedance || null;
+  if (z && Number.isFinite(Number(z.magnitude)) && Number(z.magnitude) > 1e-6) {
+    return {
+      r: Number(z.resistance || 0),
+      x: Number(z.reactance || 0),
+      magnitude: Number(z.magnitude || 0)
+    };
+  }
+  // fallback to normalized impedance totals
+  const imp = sc?.impedance || null;
+  if (imp && Number.isFinite(Number(imp.zTotal)) && Number(imp.zTotal) > 1e-6) {
+    return {
+      r: Number(imp.rTotal || 0),
+      x: Number(imp.xTotal || 0),
+      magnitude: Number(imp.zTotal || 0)
+    };
+  }
+  return null;
+}
+
+
 /**
  * Calculate zero-sequence impedance for a component
  * 
@@ -176,7 +200,16 @@ function calculateAllFaultTypes(busId) {
     console.log(`Voltage: ${voltage}V (${vLN.toFixed(1)}V L-N)`);
     
     // Calculate sequence impedances
-    const seqZ = calculateSequenceImpedances(path);
+    let seqZ = calculateSequenceImpedances(path);
+
+  // Override with short-circuit derived Z1/Z2 when available (prevents unrealistic kA due to missing component impedance data)
+  const z1sc = getZ1FromShortCircuit(bus);
+  if (z1sc) {
+    const z0Factor = FAULT_TYPE_CONFIG.ZERO_SEQUENCE_FACTORS.CABLE_UNDERGROUND;
+    const z0 = { r: z1sc.r * z0Factor, x: z1sc.x * z0Factor, magnitude: z1sc.magnitude * z0Factor };
+    const z2 = { ...z1sc };
+    seqZ = { z1: z1sc, z2, z0 };
+  }
     
     console.log('\nSEQUENCE IMPEDANCES:');
     console.log(`  Z1 = ${seqZ.z1.r.toFixed(6)} + j${seqZ.z1.x.toFixed(6)} Ω  (|Z1| = ${seqZ.z1.magnitude.toFixed(6)} Ω)`);
