@@ -1,6 +1,8 @@
 // Application State
-let buses = [];
-let components = [];
+// Note: var (not let) is used for buses/components so that window.buses / window.components
+// are automatically kept in sync with the global variables (fix for Issue #37).
+var buses = [];
+var components = [];
 let calculationResults = null;
 let editingComponentIndex = null;
 let editingBusId = null;

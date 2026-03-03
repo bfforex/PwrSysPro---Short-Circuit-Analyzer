@@ -79,7 +79,7 @@ if (typeof window.DIVERSITY_FACTORS === 'undefined') {
         // ───────────────────────────────────────────────────────────────────
         welding: {
             description: 'Arc welders (duty cycle based)',
-            source: 'IEEE 141-1993 Section 3.3.6',
+            source: 'IEEE 141-1993 Section 3.3',
             
             arc_welders_30_duty: 3.33,      // 30% duty: DF = 3.33 (Kd = 0.30)
             arc_welders_60_duty: 1.67,      // 60% duty: DF = 1.67 (Kd = 0.60)

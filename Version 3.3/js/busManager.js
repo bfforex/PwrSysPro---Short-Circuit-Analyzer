@@ -190,9 +190,9 @@ function saveBus() {
     const diversityFactorField = document.getElementById('newBusDiversityFactor');
     if (diversityFactorField) {
         const diversityFactor = parseFloat(diversityFactorField.value);
-        if (! isNaN(diversityFactor) && diversityFactor >= 0 && diversityFactor <= 1) {
+        if (! isNaN(diversityFactor) && diversityFactor >= 1 && diversityFactor <= 4) {
             bus.diversityFactor = diversityFactor;
-            console.log(`✅ Bus ${name}: Diversity factor set to ${(diversityFactor * 100).toFixed(1)}%`);
+            console.log(`✅ Bus ${name}: Diversity factor set to ${diversityFactor.toFixed(2)}`);
         }
     }
     
@@ -433,6 +433,14 @@ function editBus(busId) {
         `;
     }
     
+    // Build parent bus options for the dropdown (Issue #40)
+    let parentBusOptions = '<option value="">None (Root Bus)</option>';
+    buses.forEach(b => {
+        if (b.id === busId) return; // cannot be its own parent
+        const sel = b.id === bus.parentBus ? 'selected' : '';
+        parentBusOptions += `<option value="${b.id}" ${sel}>${b.name} (${b.voltage}V)</option>`;
+    });
+
     modalBody.innerHTML = `
         <div class="form-group">
             <label>Bus Name:</label>
@@ -450,6 +458,11 @@ function editBus(busId) {
                 <option value="branch" ${bus.type === 'branch' ? 'selected' : ''}>Branch</option>
             </select>
             <div class="small-muted">Bus type cannot be changed after creation</div>
+        </div>
+        <div class="form-group">
+            <label for="editBusParent">Parent Bus:</label>
+            <select id="editBusParent">${parentBusOptions}</select>
+            <div class="small-muted">Changing the parent bus updates the network hierarchy</div>
         </div>
         <div class="form-group">
             <label>Bus Load Current (A) - Optional:
@@ -534,6 +547,16 @@ function saveBusEdits() {
     
     bus.name = document.getElementById('editBusName').value.trim();
     bus.voltage = parseFloat(document.getElementById('editBusVoltage').value);
+
+    // Apply parent bus change (Issue #40)
+    const editParentField = document.getElementById('editBusParent');
+    if (editParentField) {
+        const newParentId = editParentField.value || null;
+        if (newParentId !== bus.parentBus) {
+            bus.parentBus = newParentId;
+            console.log(`✅ Bus ${bus.name}: Parent bus updated to ${newParentId || 'None (Root)'}`);
+        }
+    }
     
     // ═══════════════════════════════════════════════════════════════════════
     // OPTION 1: UPDATE ONLY MANUAL LOAD (PRESERVE AUTO-CALCULATED)
@@ -576,9 +599,9 @@ function saveBusEdits() {
     const editDiversityFactorField = document.getElementById('editBusDiversityFactor');
     if (editDiversityFactorField) {
         const diversityFactor = parseFloat(editDiversityFactorField.value);
-        if (!isNaN(diversityFactor) && diversityFactor >= 0 && diversityFactor <= 1) {
+        if (!isNaN(diversityFactor) && diversityFactor >= 1 && diversityFactor <= 4) {
             bus.diversityFactor = diversityFactor;
-            console.log(`✅ Bus ${bus.name}: Diversity factor updated to ${(diversityFactor * 100).toFixed(1)}%`);
+            console.log(`✅ Bus ${bus.name}: Diversity factor updated to ${diversityFactor.toFixed(2)}`);
         } else {
             delete bus.diversityFactor;
             console.log(`🔄 Bus ${bus.name}: Using automatic diversity factor`);

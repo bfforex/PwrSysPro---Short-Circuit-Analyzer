@@ -121,7 +121,7 @@ function calculateDiversifiedLoad(components, loadType, options = {}) {
             case 'welding':
             case 'arc_welders':
                 diversityFactor = DF.welding.arc_welders_30_duty;
-                source = 'IEEE 141-1993 Section 3.3.6';
+                source = 'IEEE 141-1993 Section 3.3';
                 break;
                 
             case 'welding_bays':

@@ -313,7 +313,7 @@ function calculateMotorContribution(motor, busVoltage, faultVoltage = null, cont
 /**
  * Find all motors downstream from a bus (RECURSIVE)
  * 
- * Per IEEE 141 Section 5.3.2: "Motor contribution must include all motors
+ * Per IEEE 141 Section 5.3: "Motor contribution must include all motors
  * electrically between the fault point and the load"
  * 
  * Motor Connection Structure:
@@ -524,7 +524,7 @@ function calculateTotalMotorContribution(busId, contributionType = 'interrupting
     combinedSteps += `I_asym = ${(totalMotorFaultCurrent/1000).toFixed(3)} × ${asymMultiplier.toFixed(4)}\n`;
     combinedSteps += `I_asym = ${(totalMotorAsymCurrent/1000).toFixed(3)} kA\n\n`;
     
-    combinedSteps += `✅ Per IEEE 141-1993 Section 5.3.2:\n`;
+    combinedSteps += `✅ Per IEEE 141-1993 Section 5.3:\n`;
     combinedSteps += `   ALL downstream motors included in fault calculation\n`;
     combinedSteps += `   Impedances properly referred to fault voltage level\n\n`;
     
@@ -711,7 +711,7 @@ console.log('✅ Motor Contribution Module v1.4.1 loaded');
 console.log('   - CRITICAL FIX: Recursive downstream motor discovery');
 console.log('   - FIXED: Proper handling of fromBus/toBus motor structure');
 console.log('   - Voltage level correction: ENABLED');
-console.log('   - IEEE 141-1993 Section 5.3.2 compliant');
+console.log('   - IEEE 141-1993 Section 5.3 compliant');
 console.log('   - All motors on downstream buses: INCLUDED');
 console.log('   - Defensive checks: ENABLED');
 console.log('   - Proper indentation: FIXED');

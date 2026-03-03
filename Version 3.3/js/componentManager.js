@@ -489,7 +489,23 @@ function updateComponentInputs() {
                 <label for="motorHP">Motor Horsepower (HP):</label>
                 <input type="number" id="motorHP" placeholder="e.g., 100" step="0.1" min="0" required aria-label="Motor horsepower">
             </div>
-            
+
+            <div class="form-group">
+                <label for="motorPhases">
+                    Phase Configuration:
+                    <span class="tooltip">ℹ️
+                        <span class="tooltiptext">3-phase motors are standard in industrial systems. Single-phase motors create unbalanced loading on one phase. Select the correct phase configuration for accurate load-flow analysis (Issue #43).</span>
+                    </span>
+                </label>
+                <select id="motorPhases" aria-label="Select phase configuration">
+                    <option value="3" selected>3-Phase (Standard)</option>
+                    <option value="1">1-Phase (Single-Phase)</option>
+                </select>
+                <small style="color: #666; font-size: 0.85em;">
+                    Single-phase loads create phase imbalance in 3-phase systems
+                </small>
+            </div>
+
             <div class="form-group">
                 <label for="motorType">
                     Motor Type:
@@ -945,6 +961,10 @@ function addComponent() {
     
         // ✅ Get motor type
         const motorType = document.getElementById('motorType').value || 'induction';
+
+        // ✅ Get phase configuration (Issue #43: single-phase load support)
+        const motorPhasesEl = document.getElementById('motorPhases');
+        const motorPhases = motorPhasesEl ? parseInt(motorPhasesEl.value) : 3;
     
         // ✅ Get advanced parameters (optional with defaults)
         const efficiencyInput = document.getElementById('motorEfficiency');
@@ -1019,6 +1039,7 @@ function addComponent() {
             ...component,
             hp: hp,
             motorType: motorType,
+            phases: motorPhases,       // Issue #43: single-phase support
             efficiency: efficiency,
             powerFactor: powerFactor,
             name: motorName,
@@ -1892,6 +1913,15 @@ function editComponent(id) {
     const modal = document.getElementById('editComponentModal');
     const modalBody = document.getElementById('editComponentModalBody');
     
+    let fromBusOptions = '<option value="">-- Select Bus --</option>';
+    let toBusOptions = '<option value="">-- Select Bus --</option>';
+    buses.forEach(bus => {
+        const selFrom = bus.id === component.fromBus ? 'selected' : '';
+        const selTo = bus.id === component.toBus ? 'selected' : '';
+        fromBusOptions += `<option value="${bus.id}" ${selFrom}>${bus.name} (${bus.voltage}V)</option>`;
+        toBusOptions   += `<option value="${bus.id}" ${selTo}>${bus.name} (${bus.voltage}V)</option>`;
+    });
+
     let html = `
         <input type="hidden" id="editComponentId" value="${component.id}">
         <div class="form-group">
@@ -1899,12 +1929,12 @@ function editComponent(id) {
             <input type="text" value="${component.type}" disabled>
         </div>
         <div class="form-group">
-            <label>From Bus:</label>
-            <input type="text" value="${component.fromBusName || component.fromBus}" disabled>
+            <label for="editComponentFromBus">From Bus:</label>
+            <select id="editComponentFromBus">${fromBusOptions}</select>
         </div>
         <div class="form-group">
-            <label>To Bus:</label>
-            <input type="text" value="${component.toBusName || component.toBus}" disabled>
+            <label for="editComponentToBus">To Bus:</label>
+            <select id="editComponentToBus">${toBusOptions}</select>
         </div>
     `;
 
@@ -2094,7 +2124,16 @@ function editComponent(id) {
                 <label for="editMotorHP">Motor Horsepower (HP):</label>
                 <input type="number" id="editMotorHP" value="${component.hp}" step="0.1" min="0" required>
             </div>
-            
+
+            <div class="form-group">
+                <label for="editMotorPhases">Phase Configuration:</label>
+                <select id="editMotorPhases">
+                    <option value="3" ${(component.phases || 3) === 3 ? 'selected' : ''}>3-Phase (Standard)</option>
+                    <option value="1" ${component.phases === 1 ? 'selected' : ''}>1-Phase (Single-Phase)</option>
+                </select>
+                <small style="color: #666; font-size: 0.85em;">Single-phase motors create phase imbalance in 3-phase systems</small>
+            </div>
+
             <div class="form-group">
                 <label for="editMotorType">Motor Type:</label>
                 <select id="editMotorType">
@@ -2215,6 +2254,24 @@ function saveComponentEdits() {
         return;
     }
 
+    // Apply from/to bus changes (Issue #40)
+    const newFromBusId = document.getElementById('editComponentFromBus')?.value;
+    const newToBusId   = document.getElementById('editComponentToBus')?.value;
+    if (newFromBusId && newFromBusId !== component.fromBus) {
+        const newFromBus = buses.find(b => b.id === newFromBusId);
+        if (newFromBus) {
+            component.fromBus     = newFromBusId;
+            component.fromBusName = newFromBus.name;
+        }
+    }
+    if (newToBusId && newToBusId !== component.toBus) {
+        const newToBus = buses.find(b => b.id === newToBusId);
+        if (newToBus) {
+            component.toBus     = newToBusId;
+            component.toBusName = newToBus.name;
+        }
+    }
+
     if (component.type === 'cable') {
         const newTag = document.getElementById('editCableTag')?.value.trim();
         
@@ -2284,7 +2341,13 @@ function saveComponentEdits() {
         // FEATURE #1: MOTOR EDIT SAVE WITH TYPE
         // ═══════════════════════════════════════════════════════════════════
         component.hp = parseFloat(document.getElementById('editMotorHP').value);
-        
+
+        // ✅ Update phase configuration (Issue #43)
+        const editMotorPhases = document.getElementById('editMotorPhases');
+        if (editMotorPhases) {
+            component.phases = parseInt(editMotorPhases.value) || 3;
+        }
+
         // ✅ Update motor type
         const editMotorType = document.getElementById('editMotorType');
         if (editMotorType) {

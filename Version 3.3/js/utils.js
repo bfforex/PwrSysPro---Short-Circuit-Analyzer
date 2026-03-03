@@ -338,9 +338,17 @@ function calculateTransformerCurrent(kva, voltage, loadingFactor = 0.8) {
 
 /**
  * Calculate motor full load current
+ * @param {number} hp - Motor horsepower
+ * @param {number} voltage - Line-to-line voltage (V)
+ * @param {number} efficiency - Motor efficiency (default 0.9)
+ * @param {number} powerFactor - Power factor (default 0.85)
+ * @param {number} phases - Number of phases: 3 (default) or 1 for single-phase (Issue #43)
  */
-function calculateMotorCurrent(hp, voltage, efficiency = 0.9, powerFactor = 0.85) {
-    return (hp * 746) / (voltage * Math.sqrt(3) * efficiency * powerFactor);
+function calculateMotorCurrent(hp, voltage, efficiency = 0.9, powerFactor = 0.85, phases = 3) {
+    // Single-phase: I = HP × 746 / (V × η × PF)
+    // Three-phase:  I = HP × 746 / (√3 × V × η × PF)
+    const phaseFactor = (phases === 1) ? 1 : Math.sqrt(3);
+    return (hp * 746) / (voltage * phaseFactor * efficiency * powerFactor);
 }
 
 /**

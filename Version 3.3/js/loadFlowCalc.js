@@ -213,10 +213,12 @@ function calculateLoadFlow(busId) {
                     steps += `\n`;
                     steps += indent + '  ' + '─'.repeat(76 - depth * 2) + '\n';
                     
-                    const motorCurrent = calculateMotorCurrent(comp.hp, toBus.voltage);
+                    const motorPhases = comp.phases || 3;
+                    const motorCurrent = calculateMotorCurrent(comp.hp, toBus.voltage, undefined, undefined, motorPhases);
                     branchLoad += motorCurrent;
-                    
-                    const motorPowerKVA = (motorCurrent * toBus.voltage * Math.sqrt(3)) / 1000;
+
+                    const motorPhaseFactor = (motorPhases === 1) ? 1 : Math.sqrt(3);
+                    const motorPowerKVA = (motorCurrent * toBus.voltage * motorPhaseFactor) / 1000;
                     const motorPowerKW = motorPowerKVA * loadData.summary.powerFactor;
                     
                     loadData.breakdown.motors.push({
@@ -225,6 +227,7 @@ function calculateLoadFlow(busId) {
                         location: toBus.name,
                         locationTag: toBus.tag,
                         hp: comp.hp,
+                        phases: motorPhases,
                         voltage: toBus.voltage,
                         current: motorCurrent,
                         powerKVA: motorPowerKVA,
@@ -237,12 +240,13 @@ function calculateLoadFlow(busId) {
                     steps += `${indent}  Component Type:      MOTOR\n`;
                     steps += `${indent}  Horsepower:          ${comp.hp} HP\n`;
                     steps += `${indent}  Motor Type:          ${comp.motorType || 'Standard'}\n`;
+                    steps += `${indent}  Phase Config:        ${motorPhases === 1 ? '1-Phase (Single-Phase)' : '3-Phase'}\n`;
                     steps += `${indent}  From Bus:            ${currentBus.tag || currentBus.name} (${currentBus.name})\n`;
                     steps += `${indent}  To Bus:              ${toBus.tag || toBus.name} (${toBus.name})\n`;
                     steps += `${indent}  Voltage:             ${toBus.voltage}V\n\n`;
-                    
+
                     steps += `${indent}  📊 LOAD CALCULATION\n`;
-                    steps += `${indent}  Formula:  I = HP × 746 / (√3 × V × η × PF)\n`;
+                    steps += `${indent}  Formula:  ${motorPhases === 1 ? 'I = HP × 746 / (V × η × PF)  [Single-Phase]' : 'I = HP × 746 / (√3 × V × η × PF)  [3-Phase]'}\n`;
                     steps += `${indent}  Current:  ${motorCurrent.toFixed(2)} A\n`;
                     steps += `${indent}  Power:    ${motorPowerKVA.toFixed(2)} kVA (${motorPowerKW.toFixed(2)} kW)\n`;
                     steps += `${indent}  PF:       ${loadData.summary.powerFactor}\n\n`;
@@ -596,7 +600,21 @@ steps += `   • Percentages are of ACTUAL consumed load (${totalAtThisLevel.toF
     steps += '═'.repeat(80) + '\n';
     steps += 'END OF LOAD FLOW CALCULATION\n';
     steps += '═'.repeat(80) + '\n';
-    
+
+    // Issue #43: Single-phase load imbalance note
+    const singlePhaseMotors = loadData.breakdown.motors.filter(m => m.phases === 1);
+    if (singlePhaseMotors.length > 0) {
+        const spCurrent = singlePhaseMotors.reduce((s, m) => s + m.current, 0);
+        loadData.singlePhaseLoad = { count: singlePhaseMotors.length, totalCurrent: spCurrent };
+        steps += '\n⚠️  PHASE IMBALANCE WARNING\n';
+        steps += '─'.repeat(80) + '\n';
+        steps += `${singlePhaseMotors.length} single-phase motor(s) detected (${spCurrent.toFixed(2)} A total).\n`;
+        steps += 'Single-phase loads connected to a 3-phase system create unbalanced phase\n';
+        steps += 'currents. Neutral current may be significant. Ensure phase loading is\n';
+        steps += 'distributed to minimise imbalance per IEEE 141 Chapter 3.\n';
+        steps += '─'.repeat(80) + '\n';
+    }
+
     loadData.calculationSteps = steps;
     
     console.log('✅ Load Flow Analysis Complete (v2.2.1)');
