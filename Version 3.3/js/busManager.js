@@ -65,6 +65,19 @@ function closeAddBusModal() {
     document.getElementById('utilityModeGroup').style.display = 'none';
     document.getElementById('faultCurrentMode').style.display = 'block';
     document.getElementById('faultMVAMode').style.display = 'none';
+    // Clear new Mode A/B/C fields
+    const slgFaultEl = document.getElementById('newBusSLGFault');
+    if (slgFaultEl) slgFaultEl.value = '';
+    const slgXREl = document.getElementById('newBusSLGXR');
+    if (slgXREl) slgXREl.value = '';
+    const z1rEl = document.getElementById('newBusZ1R');
+    if (z1rEl) z1rEl.value = '';
+    const z1xEl = document.getElementById('newBusZ1X');
+    if (z1xEl) z1xEl.value = '';
+    const z0rEl = document.getElementById('newBusZ0R');
+    if (z0rEl) z0rEl.value = '';
+    const z0xEl = document.getElementById('newBusZ0X');
+    if (z0xEl) z0xEl.value = '';
     
     // Clear any errors
     if (typeof clearModalErrors === 'function') {
@@ -87,19 +100,44 @@ function toggleUtilityFields() {
 }
 
 /**
- * Toggle utility input mode (kA vs MVA)
+ * Toggle utility input mode (kA / MVA / Z sequence impedances)
+ * Updated for Issue #70 Modes A/B/C
  */
 function toggleUtilityInputMode() {
     const mode = document.getElementById('utilityMode').value;
-    const faultCurrentDiv = document.getElementById('faultCurrentMode');
-    const faultMVADiv = document.getElementById('faultMVAMode');
-    
+    const faultCurrentDiv  = document.getElementById('faultCurrentMode');
+    const faultMVADiv      = document.getElementById('faultMVAMode');
+    const slgDutyGroup     = document.getElementById('slgDutyGroup');
+    const slgXRGroup       = document.getElementById('slgXRGroup');
+    const seqImpGroup      = document.getElementById('seqImpedanceGroup');
+    const xrGroup          = document.getElementById('utilityXRGroup');
+
+    // Hide all first
+    [faultCurrentDiv, faultMVADiv, slgDutyGroup, slgXRGroup, seqImpGroup].forEach(
+        el => { if (el) el.style.display = 'none'; }
+    );
+
     if (mode === 'kA') {
+        // Mode B: 3Φ kA + optional SLG kA
         faultCurrentDiv.style.display = 'block';
-        faultMVADiv.style.display = 'none';
-    } else {
-        faultCurrentDiv.style.display = 'none';
+        if (slgDutyGroup) slgDutyGroup.style.display = 'block';
+        if (slgXRGroup)   slgXRGroup.style.display   = 'block';
+        if (xrGroup)      xrGroup.style.display       = 'block';
+        // Update SLG placeholder for kA mode
+        const slgInput = document.getElementById('newBusSLGFault');
+        if (slgInput) slgInput.placeholder = 'SLG kA (optional)';
+    } else if (mode === 'MVA') {
+        // Mode A: 3Φ MVA + optional SLG MVA
         faultMVADiv.style.display = 'block';
+        if (slgDutyGroup) slgDutyGroup.style.display = 'block';
+        if (slgXRGroup)   slgXRGroup.style.display   = 'block';
+        if (xrGroup)      xrGroup.style.display       = 'block';
+        const slgInput = document.getElementById('newBusSLGFault');
+        if (slgInput) slgInput.placeholder = 'SLG MVA (optional)';
+    } else {
+        // Mode C: sequence impedances
+        if (seqImpGroup)  seqImpGroup.style.display  = 'block';
+        if (xrGroup)      xrGroup.style.display       = 'none';  // not needed for Mode C
     }
 }
 
@@ -200,34 +238,67 @@ function saveBus() {
     
     if (type === 'source') {
         const utilityMode = document.getElementById('utilityMode').value;
-        const utilityXR = parseFloat(document.getElementById('newBusUtilityXR').value) || 3;
+        const utilityXR   = parseFloat(document.getElementById('newBusUtilityXR').value) || 3;
         
-        if (utilityMode === 'kA') {
+        if (utilityMode === 'Z') {
+            // Mode C: sequence impedances
+            const Z1_r = parseFloat(document.getElementById('newBusZ1R').value);
+            const Z1_x = parseFloat(document.getElementById('newBusZ1X').value);
+            if (!Number.isFinite(Z1_r) || !Number.isFinite(Z1_x) || (Z1_r === 0 && Z1_x === 0)) {
+                alert('Please enter Z1 sequence impedance (R1 and X1) for Mode C.');
+                return;
+            }
+            bus.utilityMode  = 'Z';
+            bus.utilityZ1_r  = Z1_r;
+            bus.utilityZ1_x  = Z1_x;
+            const Z0_r = parseFloat(document.getElementById('newBusZ0R').value);
+            const Z0_x = parseFloat(document.getElementById('newBusZ0X').value);
+            if (Number.isFinite(Z0_r)) { bus.utilityZ0_r = Z0_r; }
+            if (Number.isFinite(Z0_x)) { bus.utilityZ0_x = Z0_x; }
+            // Derive fault current from Z1 for display
+            const voltageKV = voltage / 1000;
+            const Z1_mag    = Math.sqrt(Z1_r * Z1_r + Z1_x * Z1_x) || 1e-18;
+            bus.utilityFaultCurrent = voltageKV / (Math.sqrt(3) * Z1_mag); // kA
+            bus.utilityXR    = Z1_x / (Z1_r || 1e-18);
+
+        } else if (utilityMode === 'kA') {
+            // Mode B: 3Φ kA + optional SLG kA
             const utilityFault = parseFloat(document.getElementById('newBusUtilityFault').value);
-            
             if (!utilityFault || utilityFault <= 0) {
                 alert('Please enter available fault current for source bus.');
                 return;
             }
-            
             bus.utilityFaultCurrent = utilityFault;
-            bus.utilityXR = utilityXR;
+            bus.utilityXR  = utilityXR;
             bus.utilityMode = 'kA';
+            // Optional SLG data
+            const slgVal = parseFloat(document.getElementById('newBusSLGFault')?.value);
+            if (Number.isFinite(slgVal) && slgVal > 0) {
+                bus.utilitySLGkA  = slgVal;
+                const slgXR = parseFloat(document.getElementById('newBusSLGXR')?.value);
+                if (Number.isFinite(slgXR) && slgXR > 0) bus.utilitySLGXR = slgXR;
+            }
+
         } else {
+            // Mode A: 3Φ MVA + optional SLG MVA
             const utilityMVA = parseFloat(document.getElementById('newBusUtilityMVA').value);
-            
             if (!utilityMVA || utilityMVA <= 0) {
                 alert('Please enter available fault MVA for source bus.');
                 return;
             }
-            
             const voltageKV = voltage / 1000;
             const faultCurrentKA = utilityMVA / (SQRT3 * voltageKV);
-            
             bus.utilityFaultMVA = utilityMVA;
             bus.utilityFaultCurrent = faultCurrentKA;
-            bus.utilityXR = utilityXR;
+            bus.utilityXR  = utilityXR;
             bus.utilityMode = 'MVA';
+            // Optional SLG data
+            const slgVal = parseFloat(document.getElementById('newBusSLGFault')?.value);
+            if (Number.isFinite(slgVal) && slgVal > 0) {
+                bus.utilitySLGMVA = slgVal;
+                const slgXR = parseFloat(document.getElementById('newBusSLGXR')?.value);
+                if (Number.isFinite(slgXR) && slgXR > 0) bus.utilitySLGXR = slgXR;
+            }
         }
     }
     

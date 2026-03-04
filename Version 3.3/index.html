@@ -724,14 +724,15 @@
 <div class="form-group">
 <label for="utilityMode">Utility Source Data Mode:</label>
 <select aria-label="Select utility source data mode" id="utilityMode" onchange="toggleUtilityInputMode()">
-<option value="kA">Fault Current (kA)</option>
-<option value="MVA">Fault MVA</option>
+<option value="kA">Mode B — Fault Current (kA) + X/R</option>
+<option value="MVA">Mode A — Fault MVA + X/R</option>
+<option value="Z">Mode C — Sequence Impedances (Ω)</option>
 </select>
 </div>
 </div>
 <div class="hidden" id="utilitySourceGroup">
 <div class="form-group" id="faultCurrentMode">
-<label for="newBusUtilityFault">Available Fault Current (kA):
+<label for="newBusUtilityFault">3Φ Fault Current (kA):
                             <span class="tooltip">ℹ️
                                 <span class="tooltiptext">Three-phase symmetrical fault current available from utility</span>
 </span>
@@ -739,16 +740,54 @@
 <input aria-label="Available fault current in kA" id="newBusUtilityFault" min="0" placeholder="e.g., 50" step="0.1" type="number"/>
 </div>
 <div class="form-group hidden" id="faultMVAMode">
-<label for="newBusUtilityMVA">Available Fault MVA:
+<label for="newBusUtilityMVA">3Φ Fault MVA:
                             <span class="tooltip">ℹ️
                                 <span class="tooltiptext">Three-phase symmetrical fault MVA from utility</span>
 </span>
 </label>
 <input aria-label="Available fault MVA" id="newBusUtilityMVA" min="0" placeholder="e.g., 500" step="0.1" type="number"/>
 </div>
+<!-- SLG (single line-to-ground) duty — optional for Modes A and B -->
+<div class="form-group hidden" id="slgDutyGroup">
+<label for="newBusSLGFault">SLG Fault Current/MVA (optional):
+                            <span class="tooltip">ℹ️
+                                <span class="tooltiptext">Single line-to-ground fault duty — used to derive Z0. Leave blank to use heuristic Z0 = 1.5×Z1.</span>
+</span>
+</label>
+<input aria-label="SLG fault current in kA or MVA" id="newBusSLGFault" min="0" placeholder="kA (Mode B) or MVA (Mode A)" step="0.01" type="number"/>
+</div>
+<div class="form-group hidden" id="slgXRGroup">
+<label for="newBusSLGXR">SLG X/R Ratio (optional):
+                            <span class="tooltip">ℹ️
+                                <span class="tooltiptext">X/R ratio for SLG fault — used to split Z0 into R0+jX0</span>
+</span>
+</label>
+<input aria-label="SLG X/R ratio" id="newBusSLGXR" min="0" placeholder="e.g., 3" step="0.1" type="number"/>
+</div>
+<!-- Mode C — Sequence Impedances -->
+<div class="hidden" id="seqImpedanceGroup">
+<div class="form-group">
+<label>Z1 Positive Sequence (Ω):
+    <span class="tooltip">ℹ️<span class="tooltiptext">Positive-sequence Thevenin impedance at POI</span></span>
+</label>
+<div style="display:flex; gap:6px;">
+<input aria-label="Z1 resistance R1 in ohms" id="newBusZ1R" min="0" placeholder="R1 (Ω)" step="0.000001" type="number" style="flex:1"/>
+<input aria-label="Z1 reactance X1 in ohms" id="newBusZ1X" min="0" placeholder="X1 (Ω)" step="0.000001" type="number" style="flex:1"/>
+</div>
+</div>
+<div class="form-group">
+<label>Z0 Zero Sequence (Ω):
+    <span class="tooltip">ℹ️<span class="tooltiptext">Zero-sequence Thevenin impedance at POI (leave blank = 1.5×Z1 heuristic)</span></span>
+</label>
+<div style="display:flex; gap:6px;">
+<input aria-label="Z0 resistance R0 in ohms" id="newBusZ0R" placeholder="R0 (Ω)" step="0.000001" type="number" style="flex:1"/>
+<input aria-label="Z0 reactance X0 in ohms" id="newBusZ0X" placeholder="X0 (Ω)" step="0.000001" type="number" style="flex:1"/>
+</div>
+</div>
+</div>
 </div>
 <div class="form-group hidden" id="utilityXRGroup">
-<label for="newBusUtilityXR">Source X/R Ratio:
+<label for="newBusUtilityXR">3Φ Source X/R Ratio:
                         <span class="tooltip">ℹ️
                             <span class="tooltiptext">Typical values: 3-10 for utility sources, 15-30 for generators</span>
 </span>
@@ -801,6 +840,7 @@
 <!-- LAYER 1: FOUNDATION (Constants, State, Utilities) -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script src="js/constants.js"></script>
+<script src="js/utilitySourceModel.js"></script>
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
 <!-- ═══════════════════════════════════════════════════════════ -->
