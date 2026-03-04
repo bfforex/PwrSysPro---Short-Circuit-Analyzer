@@ -1052,8 +1052,10 @@ function calculateShortCircuitPointToPoint(path) {
             }
             steps += '\n';
             
-            let rBase20 = materialDataFinal.r;
-            let rBaseTemp = temperatureCorrection(rBase20, temperature, comp.material);
+            // Cable data in constants.js is stored at 75°C (NEC Table 9 base temperature)
+            let rBase75 = materialDataFinal.r;
+            // temperatureCorrection adjusts relative to the 75°C table base
+            let rBaseTemp = temperatureCorrection(rBase75, temperature, comp.material);
             
             const cableR = (rBaseTemp * comp.length) / parallel;
             const cableX = (materialDataFinal.x * comp.length * installFactors.x_factor) / parallel;
@@ -1064,15 +1066,15 @@ function calculateShortCircuitPointToPoint(path) {
             
             steps += `📐 IMPEDANCE CALCULATION\n`;
             steps += '─'.repeat(80) + '\n';
-            steps += `Base Values (per 1000 ft at 20°C):\n`;
-            steps += `   R_base = ${rBase20.toFixed(6)} Ω/1000ft    (from NEC Ch 9 Table 9)\n`;
-            steps += `   X_base = ${materialDataFinal.x.toFixed(6)} Ω/1000ft    (from NEC Ch 9 Table 9)\n`;
+            steps += `Base Values (per ft at 75°C — NEC Ch 9 Table 9, already at operating temperature):\n`;
+            steps += `   R_base = ${rBase75.toFixed(6)} Ω/ft    (from NEC Ch 9 Table 9)\n`;
+            steps += `   X_base = ${materialDataFinal.x.toFixed(6)} Ω/ft    (from NEC Ch 9 Table 9)\n`;
             steps += '\n';
             
-            steps += `Temperature Correction (20°C → ${temperature}°C):\n`;
+            steps += `Temperature Correction (Base: 75°C NEC Table 9 → ${temperature}°C):\n`;
             steps += `   Formula:          R_corrected = R_base × k_temp\n`;
-            steps += `   R_corrected = ${rBase20.toFixed(6)} × ${(rBaseTemp/rBase20).toFixed(4)}\n`;
-            steps += `   R_corrected = ${rBaseTemp.toFixed(6)} Ω/1000ft\n`;
+            steps += `   R_corrected = ${rBase75.toFixed(6)} × ${(rBaseTemp/rBase75).toFixed(4)}\n`;
+            steps += `   R_corrected = ${rBaseTemp.toFixed(6)} Ω/ft\n`;
             steps += `   ℹ️  Temperature coefficient applied to resistance only\n`;
             steps += '\n';
             
@@ -1080,12 +1082,12 @@ function calculateShortCircuitPointToPoint(path) {
                 steps += `Reactance — Installation Method Correction:\n`;
                 steps += `   Method:           ${installFactors.label}\n`;
                 steps += `   X_factor:         ${installFactors.x_factor.toFixed(3)}× (NEC Ch 9 Note 3; IEEE 242-2001 §9.3)\n`;
-                steps += `   X_adjusted = ${materialDataFinal.x.toFixed(6)} × ${installFactors.x_factor.toFixed(3)} = ${(materialDataFinal.x*installFactors.x_factor).toFixed(6)} Ω/1000ft\n`;
+                steps += `   X_adjusted = ${materialDataFinal.x.toFixed(6)} × ${installFactors.x_factor.toFixed(3)} = ${(materialDataFinal.x*installFactors.x_factor).toFixed(6)} Ω/ft\n`;
                 steps += '\n';
             }
             
             steps += `Cable Impedance:\n`;
-            steps += `   Formula:          Z = (Z_per_1000ft × Length) / Parallel\n`;
+            steps += `   Formula:          Z = (Z_per_ft × Length) / Parallel\n`;
             steps += `   R = (${rBaseTemp.toFixed(6)} × ${comp.length}) / ${parallel}\n`;
             steps += `   R = ${(rBaseTemp * comp.length).toFixed(6)} / ${parallel}\n`;
             steps += `   R = ${cableR.toFixed(6)} Ω\n`;
@@ -1224,17 +1226,33 @@ function calculateShortCircuitPointToPoint(path) {
     const faultCurrentKA = faultCurrent / 1000;
     const xrRatio = totalX / totalR;
     
+    // ── Asymmetrical RMS at breaker contact parting time (interrupting duty) ──
+    // Per IEEE C37.010 / IEEE 141-1993 §5.2.3:
+    //   K_rms(t) = √(1 + 2×e^(-2t/τ))   where τ = X/(ωR) is the DC time constant
     const omega = 2 * Math.PI * SHORT_CIRCUIT_CONFIG.SYSTEM_FREQUENCY;
     const timeConstant = totalX / (omega * totalR);
     const contactTime = SHORT_CIRCUIT_CONFIG.CONTACT_PARTING_TIME;
     const multiplier = Math.sqrt(1 + 2 * Math.exp(-contactTime / timeConstant));
     const asymFaultCurrent = faultCurrent * multiplier;
     const asymFaultCurrentKA = asymFaultCurrent / 1000;
+
+    // ── Peak instantaneous (close-and-latch / momentary duty) ────────────────
+    // Per IEC 60909-0:2016 §3.10 / IEEE C37.010 first-cycle peak:
+    //   κ = 1.02 + 0.98×e^(-3R/X)
+    //   I_peak = √2 × κ × I_sym_rms
+    const kappaPeak = 1.02 + 0.98 * Math.exp(-3.0 * totalR / totalX);
+    const peakFaultCurrentKA = faultCurrentKA * Math.SQRT2 * kappaPeak;
     
+    // ── Line-to-ground fault: complex sequence impedance sum ─────────────────
+    // Per IEEE 141-1993 §5.4 / IEC 60909-0 §3.7:
+    //   I_LG = |3 × V_LN / (Z1 + Z2 + Z0)|
+    //   where Z2 ≈ Z1 for static equipment → denominator = (2R+R0) + j(2X+X0)
     const totalZ0 = Math.sqrt(totalR0 * totalR0 + totalX0 * totalX0);
-    const totalZ2 = totalZ;
     const V_LN = targetBus.voltage / SQRT3;
-    const Z_total_LG = totalZ + totalZ2 + totalZ0;
+    // Complex sum Z1+Z2+Z0 = (2R1+R0) + j(2X1+X0)
+    const Z_LG_R = totalR + totalR + totalR0;   // real part of (Z1+Z2+Z0)
+    const Z_LG_X = totalX + totalX + totalX0;   // imag part of (Z1+Z2+Z0)
+    const Z_total_LG = Math.sqrt(Z_LG_R * Z_LG_R + Z_LG_X * Z_LG_X) || 1e-18;
     const lineToGroundCurrent = (3 * V_LN) / Z_total_LG;
     const lineToGroundKA = lineToGroundCurrent / 1000;
   
@@ -1334,9 +1352,9 @@ function calculateShortCircuitPointToPoint(path) {
     }
     
     steps += '═'.repeat(80) + '\n';
-    steps += 'ASYMMETRICAL (PEAK) FAULT CURRENT\n';
+    steps += 'ASYMMETRICAL RMS FAULT CURRENT (INTERRUPTING DUTY — AT BREAKER PARTING TIME)\n';
     steps += '═'.repeat(80) + '\n\n';
-    steps += `📐 CALCULATION (Per IEEE 141 Section 5.2 and ANSI C37.010)\n`;
+    steps += `📐 CALCULATION (Per IEEE 141 Section 5.2.3 and ANSI C37.010)\n`;
     steps += '─'.repeat(80) + '\n';
     steps += `DC Time Constant:\n`;
     steps += `   Formula:          τ = L/R = X/(ωR) = X/(2πfR)\n`;
@@ -1344,18 +1362,34 @@ function calculateShortCircuitPointToPoint(path) {
     steps += `   τ = ${totalX.toFixed(6)} / ${(2 * Math.PI * SHORT_CIRCUIT_CONFIG.SYSTEM_FREQUENCY * totalR).toFixed(4)}\n`;
     steps += `   τ = ${(timeConstant * 1000).toFixed(3)} ms\n`;
     steps += '\n';
-    steps += `DC Offset Multiplier:\n`;
-    steps += `   Formula:          K = √(1 + 2e^(-t/τ))\n`;
+    steps += `RMS Asymmetrical Multiplier at Breaker Parting Time:\n`;
+    steps += `   Formula:          K_rms = √(1 + 2e^(-t/τ))  [IEEE C37.010]\n`;
     steps += `   where t = ${(contactTime * 1000).toFixed(2)} ms (breaker contact parting time)\n`;
-    steps += `   K = √(1 + 2e^(-${(contactTime * 1000).toFixed(2)}/${(timeConstant * 1000).toFixed(3)}))\n`;
-    steps += `   K = √(1 + 2e^${(-contactTime / timeConstant).toFixed(4)})\n`;
-    steps += `   K = √(1 + 2 × ${Math.exp(-contactTime / timeConstant).toFixed(4)})\n`;
-    steps += `   K = ${multiplier.toFixed(4)}\n`;
+    steps += `   K_rms = √(1 + 2e^(-${(contactTime * 1000).toFixed(2)}/${(timeConstant * 1000).toFixed(3)}))\n`;
+    steps += `   K_rms = √(1 + 2 × ${Math.exp(-contactTime / timeConstant).toFixed(4)})\n`;
+    steps += `   K_rms = ${multiplier.toFixed(4)}\n`;
     steps += '\n';
-    steps += `Asymmetrical Current:\n`;
-    steps += `   Formula:          I_asym = I_3φ × K\n`;
-    steps += `   I_asym = ${faultCurrentKA.toFixed(3)} kA × ${multiplier.toFixed(4)}\n`;
-    steps += `   I_asym = ${asymFaultCurrentKA.toFixed(3)} kA\n`;
+    steps += `Asymmetrical RMS Current (Interrupting Duty Basis):\n`;
+    steps += `   Formula:          I_asym_rms = I_3φ_sym × K_rms\n`;
+    steps += `   I_asym_rms = ${faultCurrentKA.toFixed(3)} kA × ${multiplier.toFixed(4)}\n`;
+    steps += `   I_asym_rms = ${asymFaultCurrentKA.toFixed(3)} kA  (RMS at ${(contactTime*1000).toFixed(0)} ms)\n`;
+    steps += '\n';
+
+    steps += '═'.repeat(80) + '\n';
+    steps += 'PEAK INSTANTANEOUS FAULT CURRENT (CLOSE-AND-LATCH / MOMENTARY DUTY)\n';
+    steps += '═'.repeat(80) + '\n\n';
+    steps += `📐 CALCULATION (Per IEC 60909-0:2016 §3.10 / IEEE C37.010 First-Cycle Peak)\n`;
+    steps += '─'.repeat(80) + '\n';
+    steps += `Peak Factor:\n`;
+    steps += `   Formula:          κ = 1.02 + 0.98 × e^(-3R/X)  [IEC 60909-0 / IEEE C37.010]\n`;
+    steps += `   κ = 1.02 + 0.98 × e^(-3 × ${totalR.toFixed(6)} / ${totalX.toFixed(6)})\n`;
+    steps += `   κ = ${kappaPeak.toFixed(4)}\n`;
+    steps += '\n';
+    steps += `Peak Instantaneous Current:\n`;
+    steps += `   Formula:          I_peak = √2 × κ × I_3φ_sym\n`;
+    steps += `   I_peak = ${Math.SQRT2.toFixed(4)} × ${kappaPeak.toFixed(4)} × ${faultCurrentKA.toFixed(3)} kA\n`;
+    steps += `   I_peak = ${peakFaultCurrentKA.toFixed(3)} kA  (instantaneous peak — close-and-latch/momentary duty)\n`;
+    steps += `   ℹ️  This value is used for bus bracing and close-and-latch breaker ratings.\n`;
     steps += '\n';
     
     steps += '═'.repeat(80) + '\n';
@@ -1363,7 +1397,8 @@ function calculateShortCircuitPointToPoint(path) {
     steps += '═'.repeat(80) + '\n\n';
     steps += `📐 CALCULATION (Per IEEE 141 Section 5.4 - Sequence Impedance Method)\n`;
     steps += '─'.repeat(80) + '\n';
-    steps += `Formula:             I_LG = 3 × V_LN / (Z1 + Z2 + Z0)\n`;
+    steps += `Formula:             I_LG = |3 × V_LN / (Z1 + Z2 + Z0)|\n`;
+    steps += `   (complex sum — real and imaginary parts summed before magnitude)\n`;
     steps += '\n';
     steps += `Step-by-Step Calculation:\n`;
     steps += `   Line-to-Neutral Voltage:\n`;
@@ -1371,10 +1406,11 @@ function calculateShortCircuitPointToPoint(path) {
     steps += `      V_LN = ${targetBus.voltage} / ${SQRT3.toFixed(4)}\n`;
     steps += `      V_LN = ${V_LN.toFixed(2)} V\n`;
     steps += '\n';
-    steps += `   Total Sequence Impedance:\n`;
-    steps += `      Z_total = Z1 + Z2 + Z0\n`;
-    steps += `      Z_total = ${totalZ.toFixed(6)} + ${totalZ2.toFixed(6)} + ${totalZ0.toFixed(6)}\n`;
-    steps += `      Z_total = ${Z_total_LG.toFixed(6)} Ω\n`;
+    steps += `   Complex Sum Z1 + Z2 + Z0  (Z2 ≈ Z1 for static equipment):\n`;
+    steps += `      Real:  R_total = R1 + R2 + R0 = ${totalR.toFixed(6)} + ${totalR.toFixed(6)} + ${totalR0.toFixed(6)} = ${Z_LG_R.toFixed(6)} Ω\n`;
+    steps += `      Imag:  X_total = X1 + X2 + X0 = ${totalX.toFixed(6)} + ${totalX.toFixed(6)} + ${totalX0.toFixed(6)} = ${Z_LG_X.toFixed(6)} Ω\n`;
+    steps += `      |Z_total| = √(R² + X²) = √(${Z_LG_R.toFixed(6)}² + ${Z_LG_X.toFixed(6)}²)\n`;
+    steps += `      |Z_total| = ${Z_total_LG.toFixed(6)} Ω\n`;
     steps += '\n';
     steps += `   Line-to-Ground Fault Current:\n`;
     steps += `      I_LG = 3 × ${V_LN.toFixed(2)} / ${Z_total_LG.toFixed(6)}\n`;
@@ -1394,23 +1430,26 @@ function calculateShortCircuitPointToPoint(path) {
     }
     steps += '\n';
     
+    // Column widths for the fault current summary table
+    const COL_SYM = 12, COL_ASYM = 23, COL_PEAK = 15;
+
     steps += '═'.repeat(80) + '\n';
     steps += 'FAULT CURRENT SUMMARY TABLE\n';
     steps += '═'.repeat(80) + '\n\n';
-    steps += `Fault Type                    | Symmetrical (kA) | Asymmetrical (kA)\n`;
+    steps += `Fault Type          | Sym RMS (kA) | Asym RMS @ Parting (kA) | Peak Inst. (kA)\n`;
     steps += '─'.repeat(80) + '\n';
-    steps += `Three-Phase (L-L-L)           | ${faultCurrentKA.toFixed(3).padStart(16)} | ${asymFaultCurrentKA.toFixed(3).padStart(17)}\n`;
-    steps += `Line-to-Ground (L-G)          | ${lineToGroundKA.toFixed(3).padStart(16)} | ${(lineToGroundKA * multiplier).toFixed(3).padStart(17)}\n`;
-    steps += `Line-to-Line (L-L)            | ${lineToLineKA.toFixed(3).padStart(16)} | ${(lineToLineKA * multiplier).toFixed(3).padStart(17)}\n`;
+    steps += `Three-Phase (L-L-L) | ${faultCurrentKA.toFixed(3).padStart(COL_SYM)} | ${asymFaultCurrentKA.toFixed(3).padStart(COL_ASYM)} | ${peakFaultCurrentKA.toFixed(3).padStart(COL_PEAK)}\n`;
+    steps += `Line-to-Ground (L-G)| ${lineToGroundKA.toFixed(3).padStart(COL_SYM)} | ${(lineToGroundKA * multiplier).toFixed(3).padStart(COL_ASYM)} | ${(lineToGroundKA * Math.SQRT2 * kappaPeak).toFixed(3).padStart(COL_PEAK)}\n`;
+    steps += `Line-to-Line (L-L)  | ${lineToLineKA.toFixed(3).padStart(COL_SYM)} | ${(lineToLineKA * multiplier).toFixed(3).padStart(COL_ASYM)} | ${(lineToLineKA * Math.SQRT2 * kappaPeak).toFixed(3).padStart(COL_PEAK)}\n`;
     steps += '═'.repeat(80) + '\n\n';
     
-    steps += `📚 STANDARDS COMPLIANCE\n`;
+    steps += `📚 METHOD REFERENCES\n`;
     steps += '─'.repeat(80) + '\n';
-    steps += `✅ IEEE 141-1993 (Red Book) - Short-Circuit Studies\n`;
-    steps += `✅ IEC 60909 - Short-Circuit Currents in Three-Phase Systems\n`;
-    steps += `✅ ANSI C37.010 - AC High-Voltage Circuit Breakers\n`;
-    steps += `✅ NEC Article 110.24 - Available Fault Current\n`;
-    steps += `✅ IEEE 142 (Green Book) - Grounding of Industrial Power Systems\n`;
+    steps += `• IEEE 141-1993 (Red Book) - Short-Circuit Studies (point-to-point method)\n`;
+    steps += `• IEC 60909-0:2016 - Short-Circuit Currents (peak factor κ formula)\n`;
+    steps += `• ANSI C37.010 - AC High-Voltage Circuit Breakers (interrupting duty)\n`;
+    steps += `• NEC Article 110.24 - Available Fault Current\n`;
+    steps += `• IEEE 142 (Green Book) - Grounding of Industrial Power Systems\n`;
     steps += '\n';
     
     steps += '═'.repeat(80) + '\n';
@@ -1449,6 +1488,8 @@ function calculateShortCircuitPointToPoint(path) {
         faultCurrentKA: faultCurrentKA,
         asymFaultCurrent: asymFaultCurrent,
         asymFaultCurrentKA: asymFaultCurrentKA,
+        peakFaultCurrentKA: peakFaultCurrentKA,
+        kappaPeak: kappaPeak,
         lineToGroundCurrent: lineToGroundCurrent,
         lineToGroundKA: lineToGroundKA,
         timeConstant: timeConstant,
@@ -1707,8 +1748,10 @@ function calculateShortCircuitPerUnit(path) {
             }
             steps += '\n';
             
-            let rBase20 = materialData.r;
-            let rBaseTemp = temperatureCorrection(rBase20, temperature, comp.material);
+            // Cable data in constants.js is stored at 75°C (NEC Table 9 base temperature)
+            let rBase75 = materialData.r;
+            // temperatureCorrection adjusts relative to the 75°C table base
+            let rBaseTemp = temperatureCorrection(rBase75, temperature, comp.material);
             
             const cableR_ohms = (rBaseTemp * comp.length) / parallel;
             const cableX_ohms = (materialData.x * comp.length * puInstallFactors.x_factor) / parallel;
@@ -1719,18 +1762,18 @@ function calculateShortCircuitPerUnit(path) {
             
             steps += `📐 IMPEDANCE CALCULATION (OHMIC)\n`;
             steps += '─'.repeat(80) + '\n';
-            steps += `Base Values (per 1000 ft at 20°C):\n`;
-            steps += `   R_base = ${rBase20.toFixed(6)} Ω/1000ft    (NEC Ch 9 Table 9)\n`;
-            steps += `   X_base = ${materialData.x.toFixed(6)} Ω/1000ft    (NEC Ch 9 Table 9)\n`;
+            steps += `Base Values (per ft at 75°C — NEC Ch 9 Table 9, already at operating temperature):\n`;
+            steps += `   R_base = ${rBase75.toFixed(6)} Ω/ft    (NEC Ch 9 Table 9)\n`;
+            steps += `   X_base = ${materialData.x.toFixed(6)} Ω/ft    (NEC Ch 9 Table 9)\n`;
             steps += '\n';
             
-            steps += `Temperature Correction (20°C → ${temperature}°C):\n`;
-            steps += `   R_corrected = ${rBase20.toFixed(6)} × ${(rBaseTemp/rBase20).toFixed(4)}\n`;
-            steps += `   R_corrected = ${rBaseTemp.toFixed(6)} Ω/1000ft\n`;
+            steps += `Temperature Correction (Base: 75°C NEC Table 9 → ${temperature}°C):\n`;
+            steps += `   R_corrected = ${rBase75.toFixed(6)} × ${(rBaseTemp/rBase75).toFixed(4)}\n`;
+            steps += `   R_corrected = ${rBaseTemp.toFixed(6)} Ω/ft\n`;
             steps += '\n';
             
             steps += `Cable Impedance:\n`;
-            steps += `   Formula:          Z = (Z_per_1000ft × Length) / Parallel\n`;
+            steps += `   Formula:          Z = (Z_per_ft × Length) / Parallel\n`;
             steps += `   R = (${rBaseTemp.toFixed(6)} × ${comp.length}) / ${parallel}\n`;
             steps += `   R = ${(rBaseTemp * comp.length).toFixed(6)} / ${parallel}\n`;
             steps += `   R = ${cableR_ohms.toFixed(6)} Ω\n`;
@@ -1998,6 +2041,7 @@ function calculateShortCircuitPerUnit(path) {
     const faultCurrent = faultCurrent_pu * BASE_CURRENT;
     const faultCurrentKA = faultCurrent / 1000;
     
+    // ── Asymmetrical RMS at breaker contact parting time (interrupting duty) ──
     const omega = 2 * Math.PI * SHORT_CIRCUIT_CONFIG.SYSTEM_FREQUENCY;
     const totalR_ohms = totalRpu * BASE_Z;
     const totalX_ohms = totalXpu * BASE_Z;
@@ -2006,6 +2050,11 @@ function calculateShortCircuitPerUnit(path) {
     const multiplier = Math.sqrt(1 + 2 * Math.exp(-contactTime / timeConstant));
     const asymFaultCurrent = faultCurrent * multiplier;
     const asymFaultCurrentKA = asymFaultCurrent / 1000;
+
+    // ── Peak instantaneous (close-and-latch / momentary duty) ────────────────
+    // κ = 1.02 + 0.98×e^(-3R/X)  [IEC 60909-0:2016 §3.10 / IEEE C37.010]
+    const kappaPeak = 1.02 + 0.98 * Math.exp(-3.0 * totalRpu / totalXpu);
+    const peakFaultCurrentKA = faultCurrentKA * Math.SQRT2 * kappaPeak;
     
     const totalZ0pu = Math.sqrt(totalR0pu * totalR0pu + totalX0pu * totalX0pu);
 
@@ -2022,17 +2071,16 @@ function calculateShortCircuitPerUnit(path) {
   const Zllg_pu_r = Z1pu_r + Zpar_pu_r;
   const Zllg_pu_x = Z1pu_x + Zpar_pu_x;
   const Zllg_pu_mag = Math.sqrt(Zllg_pu_r*Zllg_pu_r + Zllg_pu_x*Zllg_pu_x) || 1e-18;
-  // Positive-sequence current per unit:
-  //   I_base is defined on V_LL_base.  V_LN_pu = 1/√3 pu.
-  //   I_a1_pu = V_LN_pu / |Zllg_pu| = 1 / (√3 × |Zllg_pu|)
-  // FIX: denominator needs √3, NOT numerator.
-  //   WRONG was: √3 / |Zllg_pu|   (overcounts by factor 3)
-  //   CORRECT:   1 / (√3 × |Zllg_pu|)
+  // I_a1_pu = V_LN_pu / |Zllg_pu| = 1 / (√3 × |Zllg_pu|)
   const I_llg_pu = 1.0 / (Math.sqrt(3) * Zllg_pu_mag);
   const doubleLineToGroundKA = (I_llg_pu * BASE_CURRENT) / 1000;
-    const totalZ2pu = totalZpu;
-    
-    const Z_total_LG_pu = totalZpu + totalZ2pu + totalZ0pu;
+
+    // ── Line-to-ground fault: complex sequence impedance sum ─────────────────
+    // Per IEEE 141-1993 §5.4: I_LG = |3×V_LN / (Z1+Z2+Z0)|
+    // Complex sum: (2R1+R0) + j(2X1+X0); Z2≈Z1
+    const Z_LG_R_pu = totalRpu + totalRpu + totalR0pu;   // real part
+    const Z_LG_X_pu = totalXpu + totalXpu + totalX0pu;   // imaginary part
+    const Z_total_LG_pu = Math.sqrt(Z_LG_R_pu * Z_LG_R_pu + Z_LG_X_pu * Z_LG_X_pu) || 1e-18;
     const lineToGroundCurrent_pu = 3.0 / Z_total_LG_pu;
     const lineToGroundCurrent = lineToGroundCurrent_pu * BASE_CURRENT;
     const lineToGroundKA = lineToGroundCurrent / 1000;
@@ -2063,7 +2111,7 @@ function calculateShortCircuitPerUnit(path) {
     steps += `  Z0/Z1 Ratio = ${(totalZ0pu/totalZpu).toFixed(3)}\n\n`;
     
     steps += `Z2 (Negative Sequence):\n`;
-    steps += `  Z2_pu ≈ Z1_pu = ${totalZ2pu.toFixed(6)} pu\n\n`;
+    steps += `  Z2_pu ≈ Z1_pu = ${totalZpu.toFixed(6)} pu\n\n`;
     
     steps += `Total System Impedance (Ohmic Equivalent):\n`;
     steps += `  Z1: R = ${totalR_ohms.toFixed(6)} Ω, X = ${totalX_ohms.toFixed(6)} Ω, Z = ${totalZ_ohms.toFixed(6)} Ω\n`;
@@ -2088,31 +2136,44 @@ function calculateShortCircuitPerUnit(path) {
     }
     
     steps += '═'.repeat(80) + '\n';
-    steps += 'ASYMMETRICAL (PEAK) FAULT CURRENT\n';
+    steps += 'ASYMMETRICAL RMS FAULT CURRENT (INTERRUPTING DUTY — AT BREAKER PARTING TIME)\n';
     steps += '═'.repeat(80) + '\n';
-    steps += `Per IEEE 141 Section 5.2 and ANSI C37.010:\n\n`;
+    steps += `Per IEEE 141 Section 5.2.3 and ANSI C37.010:\n\n`;
     steps += `DC Time Constant:\n`;
     steps += `τ = X/(ωR) = ${totalX_ohms.toFixed(6)} / (2π × ${SHORT_CIRCUIT_CONFIG.SYSTEM_FREQUENCY} × ${totalR_ohms.toFixed(6)})\n`;
     steps += `τ = ${(timeConstant * 1000).toFixed(3)} ms\n\n`;
-    steps += `DC Offset Multiplier:\n`;
-    steps += `K = √(1 + 2e^(-t/τ))\n`;
+    steps += `RMS Asymmetrical Multiplier (at breaker parting time):\n`;
+    steps += `K_rms = √(1 + 2e^(-t/τ))   [IEEE C37.010]\n`;
     steps += `where t = ${(contactTime * 1000).toFixed(2)} ms\n`;
-    steps += `K = ${multiplier.toFixed(4)}\n\n`;
-    steps += `Asymmetrical Current:\n`;
-    steps += `I_asym = ${faultCurrentKA.toFixed(3)} kA × ${multiplier.toFixed(4)}\n`;
-    steps += `I_asym = ${asymFaultCurrentKA.toFixed(3)} kA\n\n`;
+    steps += `K_rms = ${multiplier.toFixed(4)}\n\n`;
+    steps += `Asymmetrical RMS (Interrupting Duty Basis):\n`;
+    steps += `I_asym_rms = ${faultCurrentKA.toFixed(3)} kA × ${multiplier.toFixed(4)}\n`;
+    steps += `I_asym_rms = ${asymFaultCurrentKA.toFixed(3)} kA  (RMS at ${(contactTime*1000).toFixed(0)} ms)\n\n`;
+
+    steps += '═'.repeat(80) + '\n';
+    steps += 'PEAK INSTANTANEOUS FAULT CURRENT (CLOSE-AND-LATCH / MOMENTARY DUTY)\n';
+    steps += '═'.repeat(80) + '\n';
+    steps += `Per IEC 60909-0:2016 §3.10 / IEEE C37.010 First-Cycle Peak:\n\n`;
+    steps += `Peak Factor:\n`;
+    steps += `κ = 1.02 + 0.98 × e^(-3R/X)  [IEC 60909-0 / IEEE C37.010]\n`;
+    steps += `κ = ${kappaPeak.toFixed(4)}\n\n`;
+    steps += `Peak Instantaneous Current:\n`;
+    steps += `I_peak = √2 × κ × I_3φ_sym\n`;
+    steps += `I_peak = ${Math.SQRT2.toFixed(4)} × ${kappaPeak.toFixed(4)} × ${faultCurrentKA.toFixed(3)} kA\n`;
+    steps += `I_peak = ${peakFaultCurrentKA.toFixed(3)} kA  (instantaneous peak — close-and-latch/momentary duty)\n\n`;
     
     steps += '═'.repeat(80) + '\n';
     steps += 'LINE-TO-GROUND FAULT CURRENT\n';
     steps += '═'.repeat(80) + '\n';
     steps += `Per IEEE 141 Section 5.4 (Per-Unit Method):\n\n`;
     steps += `Formula:\n`;
-    steps += `I_LG_pu = 3 × V_pu / (Z1_pu + Z2_pu + Z0_pu)\n\n`;
+    steps += `I_LG_pu = |3 × V_pu / (Z1_pu + Z2_pu + Z0_pu)|  (complex sum before magnitude)\n\n`;
     steps += `Per-Unit Calculation:\n`;
     steps += `V_pu = 1.0 pu (at fault point)\n`;
-    steps += `Z_total_pu = Z1_pu + Z2_pu + Z0_pu\n`;
-    steps += `Z_total_pu = ${totalZpu.toFixed(6)} + ${totalZ2pu.toFixed(6)} + ${totalZ0pu.toFixed(6)}\n`;
-    steps += `Z_total_pu = ${Z_total_LG_pu.toFixed(6)} pu\n\n`;
+    steps += `Complex sum Z1 + Z2 + Z0  (Z2 ≈ Z1):\n`;
+    steps += `  Real:  R_total_pu = R1 + R2 + R0 = ${totalRpu.toFixed(6)} + ${totalRpu.toFixed(6)} + ${totalR0pu.toFixed(6)} = ${Z_LG_R_pu.toFixed(6)} pu\n`;
+    steps += `  Imag:  X_total_pu = X1 + X2 + X0 = ${totalXpu.toFixed(6)} + ${totalXpu.toFixed(6)} + ${totalX0pu.toFixed(6)} = ${Z_LG_X_pu.toFixed(6)} pu\n`;
+    steps += `  |Z_total_pu| = √(R² + X²) = ${Z_total_LG_pu.toFixed(6)} pu\n\n`;
     steps += `I_LG_pu = 3.0 / ${Z_total_LG_pu.toFixed(6)} = ${lineToGroundCurrent_pu.toFixed(6)} pu\n\n`;
     steps += `Conversion to Actual Current:\n`;
     steps += `I_LG = I_LG_pu × I_base\n`;
@@ -2129,14 +2190,18 @@ function calculateShortCircuitPerUnit(path) {
         steps += `✓ 3-phase fault (${faultCurrentKA.toFixed(3)} kA) is limiting case.\n\n`;
     }
     
+    // Column widths for the fault current summary table
+    const COL_SYM_PU = 12, COL_ASYM_PU = 23, COL_PEAK_PU = 15;
+
     steps += '═'.repeat(80) + '\n';
     steps += 'FAULT CURRENT SUMMARY\n';
     steps += '═'.repeat(80) + '\n';
-    steps += `Fault Type                    | Symmetrical (kA) | Asymmetrical (kA)\n`;
+    steps += `Fault Type          | Sym RMS (kA) | Asym RMS @ Parting (kA) | Peak Inst. (kA)\n`;
     steps += '-'.repeat(80) + '\n';
-    steps += `Three-Phase (L-L-L)           | ${faultCurrentKA.toFixed(3).padStart(16)} | ${asymFaultCurrentKA.toFixed(3).padStart(17)}\n`;
-    steps += `Line-to-Ground (L-G)          | ${lineToGroundKA.toFixed(3).padStart(16)} | ${(lineToGroundKA * multiplier).toFixed(3).padStart(17)}\n`;
-    steps += `Line-to-Line (L-L)            | ${(faultCurrentKA * 0.866).toFixed(3).padStart(16)} | ${(asymFaultCurrentKA * 0.866).toFixed(3).padStart(17)}\n`;
+    const llKA = faultCurrentKA * 0.866;
+    steps += `Three-Phase (L-L-L) | ${faultCurrentKA.toFixed(3).padStart(COL_SYM_PU)} | ${asymFaultCurrentKA.toFixed(3).padStart(COL_ASYM_PU)} | ${peakFaultCurrentKA.toFixed(3).padStart(COL_PEAK_PU)}\n`;
+    steps += `Line-to-Ground (L-G)| ${lineToGroundKA.toFixed(3).padStart(COL_SYM_PU)} | ${(lineToGroundKA * multiplier).toFixed(3).padStart(COL_ASYM_PU)} | ${(lineToGroundKA * Math.SQRT2 * kappaPeak).toFixed(3).padStart(COL_PEAK_PU)}\n`;
+    steps += `Line-to-Line (L-L)  | ${llKA.toFixed(3).padStart(COL_SYM_PU)} | ${(llKA * multiplier).toFixed(3).padStart(COL_ASYM_PU)} | ${(llKA * Math.SQRT2 * kappaPeak).toFixed(3).padStart(COL_PEAK_PU)}\n`;
     steps += '='.repeat(80) + '\n\n';
     
     steps += `PER-UNIT SYSTEM ADVANTAGES:\n`;
@@ -2146,12 +2211,12 @@ function calculateShortCircuitPerUnit(path) {
     steps += `  ✓ Standard for multi-voltage level systems\n`;
     steps += `  ✓ Sequence impedances (Z0, Z1, Z2) easily tracked\n\n`;
     
-    steps += `Standards Compliance:\n`;
-    steps += `✓ IEEE 141-1993 (Red Book) - Short-Circuit Studies\n`;
-    steps += `✓ IEC 60909 - Short-Circuit Currents in Three-Phase Systems\n`;
-    steps += `✓ ANSI C37.010 - AC High-Voltage Circuit Breakers\n`;
-    steps += `✓ NEC Article 110.24 - Available Fault Current\n`;
-    steps += `✓ IEEE 142 (Green Book) - Grounding of Industrial Power Systems\n\n`;
+    steps += `Method References:\n`;
+    steps += `• IEEE 141-1993 (Red Book) - Short-Circuit Studies (per-unit method)\n`;
+    steps += `• IEC 60909-0:2016 - Short-Circuit Currents (peak factor κ formula)\n`;
+    steps += `• ANSI C37.010 - AC High-Voltage Circuit Breakers (interrupting duty)\n`;
+    steps += `• NEC Article 110.24 - Available Fault Current\n`;
+    steps += `• IEEE 142 (Green Book) - Grounding of Industrial Power Systems\n\n`;
 
     // ══════════════════════════════════════════════════════════════════════════════
     // PROTECTION DEVICE REQUIREMENTS
@@ -2194,6 +2259,8 @@ function calculateShortCircuitPerUnit(path) {
         faultCurrentKA: faultCurrentKA,
         asymFaultCurrent: asymFaultCurrent,
         asymFaultCurrentKA: asymFaultCurrentKA,
+        peakFaultCurrentKA: peakFaultCurrentKA,
+        kappaPeak: kappaPeak,
         lineToGroundCurrent: lineToGroundCurrent,
         lineToGroundKA: lineToGroundKA,
         timeConstant: timeConstant,
