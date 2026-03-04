@@ -320,18 +320,18 @@ section('Section 3: IEEE 141-1993 §3.4 Voltage Drop Calculations');
 // Test 3.2: NEC compliance limits
 (function testNECComplianceLimits() {
     const FEEDER_LIMIT = 3;   // NEC 215.2(A)(1)
-    const BRANCH_LIMIT = 5;   // NEC 210.19(A)
-    const COMBINED_LIMIT = 7; // IEEE 141-1993
+    const BRANCH_LIMIT = 3;   // NEC 210.19(A) FPN No. 4
+    const COMBINED_LIMIT = 5; // NEC 210.19(A) FPN No. 4 / IEEE 141-1993 §3.11
 
     assert(FEEDER_LIMIT === 3, 'NEC 215.2(A)(1): Feeder VD limit = 3%', '');
-    assert(BRANCH_LIMIT === 5, 'NEC 210.19(A): Branch VD limit = 5%', '');
-    assert(COMBINED_LIMIT === 7, 'IEEE 141-1993: Combined VD limit = 7%', '');
+    assert(BRANCH_LIMIT === 3, 'NEC 210.19(A) FPN No. 4: Branch VD limit = 3%', '');
+    assert(COMBINED_LIMIT === 5, 'NEC 210.19(A) FPN No. 4 / IEEE 141-1993 §3.11: Combined VD limit = 5%', '');
 
     // Compliance test logic
     const testVD = 6.5;
     assert(testVD > FEEDER_LIMIT, 'VD 6.5% exceeds feeder limit (3%)', '');
-    assert(testVD > BRANCH_LIMIT, 'VD 6.5% exceeds branch limit (5%)', '');
-    assert(testVD < COMBINED_LIMIT, 'VD 6.5% within combined limit (7%)', '');
+    assert(testVD > BRANCH_LIMIT, 'VD 6.5% exceeds branch limit (3%)', '');
+    assert(testVD > COMBINED_LIMIT, 'VD 6.5% exceeds combined limit (5%)', '');
 })();
 
 // Test 3.3: Temperature correction of cable resistance (IEEE 141-1993)
