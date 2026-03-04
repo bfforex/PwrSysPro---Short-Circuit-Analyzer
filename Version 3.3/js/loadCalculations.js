@@ -117,6 +117,27 @@ function calculateDownstreamLoad(busId) {
                     // But we'll note their contribution
                     console.log(`   Generator: ${comp.rating} kVA (source)`);
                     break;
+
+                case 'load':
+                    // Non-motor load (lighting, heating, receptacle, HVAC, etc.) — Issue #50
+                    // Use pre-calculated current if available, otherwise derive from kW + PF
+                    if (comp.currentA && comp.currentA > 0) {
+                        branchLoad += comp.currentA;
+                        console.log(`   ${comp.loadType || 'Load'}: ${comp.kw} kW = ${comp.currentA.toFixed(2)} A`);
+                    } else if (comp.kw && comp.kw > 0) {
+                        const busVolt = toBus.voltage || fromBus?.voltage || 480;
+                        const pf = comp.powerFactor || 0.90;
+                        let loadCurr;
+                        if ((comp.phases || 3) === 1) {
+                            loadCurr = (comp.kw * 1000) / (busVolt * pf);
+                        } else {
+                            loadCurr = (comp.kw * 1000) / (Math.sqrt(3) * busVolt * pf);
+                        }
+                        branchLoad += loadCurr;
+                        console.log(`   ${comp.loadType || 'Load'}: ${comp.kw} kW = ${loadCurr.toFixed(2)} A`);
+                    }
+                    break;
+
                     
                 default:
                     // For other components, traverse downstream

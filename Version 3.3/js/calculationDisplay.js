@@ -236,7 +236,7 @@ function generateShortCircuitDisplay(busId, results) {
         <div class="stat-card">
           <div class="stat-icon">📈</div>
           <div class="stat-value">${num(results.faultCurrents?.threePhaseAsym).toFixed(2)}</div>
-          <div class="stat-label">3-Phase Asym (kA)</div>
+          <div class="stat-label">${isIEC ? 'Peak ip (kA)' : '3-Phase Asym (kA)'}</div>
         </div>
         <div class="stat-card">
           <div class="stat-icon">🔄</div>
@@ -285,8 +285,8 @@ function generateShortCircuitDisplay(busId, results) {
   html += `
       <h4>📊 Other Fault Types</h4>
       <div class="result-item">
-        <strong>Line-to-Ground:</strong> ${num(results.faultCurrents?.lineToGround).toFixed(2)} kA (≈85% of 3-phase)<br>
-        <strong>Line-to-Line:</strong> ${num(results.faultCurrents?.lineToLine).toFixed(2)} kA (≈86.6% of 3-phase)
+        <strong>Line-to-Ground:</strong> ${num(results.faultCurrents?.lineToGround).toFixed(2)} kA ${isIEC ? '(IEC I″k1 — zero-sequence method)' : '(≈85% of 3-phase)'}<br>
+        <strong>Line-to-Line:</strong> ${num(results.faultCurrents?.lineToLine).toFixed(2)} kA ${isIEC ? '(IEC I″k2 = √3/2 × I″k)' : '(≈86.6% of 3-phase)'}
       </div>
 
       ${generateMotorDetailsTable(results)}

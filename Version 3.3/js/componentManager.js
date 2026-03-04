@@ -577,6 +577,49 @@ function updateComponentInputs() {
                 </div>
             </details>
         `;
+    } else if (type === 'load') {
+        // ═══════════════════════════════════════════════════════════════════════
+        // NON-MOTOR LOAD COMPONENT (Issue #50)
+        // Supports: Lighting, Heating, Receptacle/Outlet, HVAC, Welding, General
+        // ═══════════════════════════════════════════════════════════════════════
+        html = `
+            <div class="form-group">
+                <label for="loadType">Load Type:</label>
+                <select id="loadType" aria-label="Select load type">
+                    <option value="lighting">Lighting (Continuous)</option>
+                    <option value="heating">Heating Load</option>
+                    <option value="receptacle">Receptacle / Outlet</option>
+                    <option value="hvac">HVAC / Air Conditioning</option>
+                    <option value="welding">Welding Load</option>
+                    <option value="general">General / Other</option>
+                </select>
+                <small style="color: #666; font-size: 0.85em;">
+                    Affects diversity factor per IEEE 141-1993
+                </small>
+            </div>
+            <div class="form-group">
+                <label for="loadKW">Connected Load (kW):</label>
+                <input type="number" id="loadKW" placeholder="e.g., 50" step="0.1" min="0" required aria-label="Load power in kW">
+            </div>
+            <div class="form-group">
+                <label for="loadPowerFactor">Power Factor (0.0 – 1.0):</label>
+                <input type="number" id="loadPowerFactor" placeholder="0.90 (default)" step="0.01" min="0.1" max="1.0" aria-label="Load power factor">
+                <small style="color: #666; font-size: 0.85em;">
+                    Lighting/heating ≈ 1.00, HVAC ≈ 0.85, general ≈ 0.90
+                </small>
+            </div>
+            <div class="form-group">
+                <label for="loadPhases">Phase Configuration:</label>
+                <select id="loadPhases" aria-label="Select load phase configuration">
+                    <option value="3" selected>3-Phase</option>
+                    <option value="1">1-Phase (Single-Phase)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="loadName">Load Name / Tag (Optional):</label>
+                <input type="text" id="loadName" placeholder="e.g., Warehouse Lighting LT-01" aria-label="Load name or tag">
+            </div>
+        `;
     } else if (type === 'bus-tie') {
         // ═══════════════════════════════════════════════════════════════════════
         // BUS TIE (CIRCUIT BREAKER) COMPONENT
@@ -1070,6 +1113,72 @@ function addComponent() {
         console.log(`Power Factor:    ${powerFactor.toFixed(2)}`);
         console.log('═'.repeat(70) + '\n');
         
+    } else if (type === 'load') {
+        // ═══════════════════════════════════════════════════════════════════
+        // NON-MOTOR LOAD COMPONENT (Issue #50)
+        // ═══════════════════════════════════════════════════════════════════
+        const loadType = document.getElementById('loadType').value || 'general';
+        const loadKW = parseFloat(document.getElementById('loadKW').value);
+        if (!loadKW || loadKW <= 0) {
+            alert('❌ Please enter a valid connected load (kW)!');
+            return;
+        }
+        const loadPF = parseFloat(document.getElementById('loadPowerFactor').value) || 0.90;
+        const loadPhasesEl = document.getElementById('loadPhases');
+        const loadPhases = loadPhasesEl ? parseInt(loadPhasesEl.value) : 3;
+        const loadNameInput = document.getElementById('loadName');
+        const loadName = (loadNameInput && loadNameInput.value.trim())
+            ? loadNameInput.value.trim()
+            : `${loadKW} kW ${loadType} load`;
+
+        // Compute full-load current
+        const busVoltage = toBus.voltage || fromBus.voltage || 480;
+        let loadCurrentA;
+        if (loadPhases === 3) {
+            loadCurrentA = (loadKW * 1000) / (Math.sqrt(3) * busVoltage * loadPF);
+        } else {
+            loadCurrentA = (loadKW * 1000) / (busVoltage * loadPF);
+        }
+
+        // Auto-generate tag: LD-{LOADTYPE_ABBR}-{FROMBUS_TAG}-{SEQ}
+        const typeAbbr = { lighting: 'LT', heating: 'HT', receptacle: 'RC', hvac: 'AC', welding: 'WD', general: 'LD' }[loadType] || 'LD';
+        const fromBusTagFormatted = (fromBus.tag || fromBus.name.replace(/\s/g, '')).toUpperCase();
+        const existingLoads = components.filter(c => c.type === 'load' && c.fromBus === fromBusId && c.loadType === loadType);
+        const nextSeq = existingLoads.length + 1;
+        const loadTag = `${typeAbbr}-${fromBusTagFormatted}-${nextSeq}`;
+
+        component = {
+            id: generateId(),
+            type: 'load',
+            loadType: loadType,
+            name: loadName,
+            tag: loadTag,
+            kw: loadKW,
+            powerFactor: loadPF,
+            phases: loadPhases,
+            currentA: loadCurrentA,
+            fromBus: fromBusId,
+            toBus: toBusId,
+            fromBusName: fromBus.name,
+            toBusName: toBus.name,
+            voltage: busVoltage,
+            addedAt: new Date().toISOString()
+        };
+
+        console.log('═'.repeat(70));
+        console.log('LOAD COMPONENT ADDED');
+        console.log('═'.repeat(70));
+        console.log(`Tag:             ${loadTag}`);
+        console.log(`Type:            ${loadType}`);
+        console.log(`Name:            ${loadName}`);
+        console.log(`Connected Load:  ${loadKW} kW`);
+        console.log(`Power Factor:    ${loadPF.toFixed(2)}`);
+        console.log(`Phases:          ${loadPhases}`);
+        console.log(`Current:         ${loadCurrentA.toFixed(2)} A`);
+        console.log(`From Bus:        ${fromBus.name}`);
+        console.log(`To Bus:          ${toBus.name}`);
+        console.log('═'.repeat(70) + '\n');
+
     } else if (type === 'bus-tie') {
         // ═══════════════════════════════════════════════════════════════════
         // BUS TIE WITH AUTO-TAG GENERATION
@@ -1220,6 +1329,13 @@ function addComponent() {
                        `Type: ${component.motorType}\n` +
                        `Location: ${component.location}\n` +
                        `Tag: ${component.tag}`);
+    } else if (type === 'load') {
+        alert(`✅ Load "${component.tag}" added successfully!\n\n` +
+                       `Name: ${component.name}\n` +
+                       `Type: ${component.loadType}\n` +
+                       `Connected Load: ${component.kw} kW\n` +
+                       `Current: ${component.currentA.toFixed(2)} A\n` +
+                       `Bus: ${toBus.name}`);
     } else if (type === 'bus-tie') {
         alert(`✅ Bus Tie "${component.tag}" added successfully!\n\n` +
               `Tag: ${component.tag}\n` +
@@ -1468,6 +1584,51 @@ function displayComponents() {
                         <div class="info-row">
                             <strong>Efficiency:</strong> ${((comp.efficiency || 0.90) * 100).toFixed(1)}% | 
                             <strong>PF:</strong> ${(comp.powerFactor || 0.85).toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ═══════════════════════════════════════════════════════════════
+        // NON-MOTOR LOAD COMPONENT (Issue #50)
+        // ═══════════════════════════════════════════════════════════════
+        else if (comp.type === 'load') {
+            const loadTypeDisplay = comp.loadType
+                ? comp.loadType.charAt(0).toUpperCase() + comp.loadType.slice(1)
+                : 'Load';
+            html += `
+                <div class="component-header">
+                    <div class="component-type-section">
+                        <span class="component-icon">💡</span>
+                        <span class="component-tag-display">
+                            <strong>${comp.tag || 'N/A'}</strong>
+                            <span class="component-desc">- ${comp.name}</span>
+                        </span>
+                    </div>
+                    <div class="component-controls">
+                        <button class="btn btn-secondary btn-small btn-edit" data-id="${comp.id}" title="Edit load">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn btn-danger btn-small btn-delete" data-id="${comp.id}" title="Delete load">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="component-details">
+                    <div class="component-tag-badge">🏷️ ${comp.tag || 'N/A'}</div>
+                    <div class="component-info-grid">
+                        <div class="info-row">
+                            <strong>Bus:</strong> <span class="bus-name-highlight">${comp.toBusName || comp.toBus}</span>
+                        </div>
+                        <div class="info-row">
+                            <strong>Type:</strong> ${loadTypeDisplay} |
+                            <strong>Phases:</strong> ${comp.phases || 3}
+                        </div>
+                        <div class="info-row">
+                            <strong>kW:</strong> ${comp.kw} |
+                            <strong>PF:</strong> ${(comp.powerFactor || 0.90).toFixed(2)} |
+                            <strong>Current:</strong> ${(comp.currentA || 0).toFixed(2)} A
                         </div>
                     </div>
                 </div>
@@ -2166,6 +2327,42 @@ function editComponent(id) {
                 </div>
             </details>
         `;
+    }  else if (component.type === 'load') {
+        // ═══════════════════════════════════════════════════════════════════
+        // NON-MOTOR LOAD EDIT FORM (Issue #50)
+        // ═══════════════════════════════════════════════════════════════════
+        html += `
+            <div class="form-group">
+                <label for="editLoadType">Load Type:</label>
+                <select id="editLoadType">
+                    <option value="lighting"  ${component.loadType === 'lighting'  ? 'selected' : ''}>Lighting (Continuous)</option>
+                    <option value="heating"   ${component.loadType === 'heating'   ? 'selected' : ''}>Heating Load</option>
+                    <option value="receptacle"${component.loadType === 'receptacle'? 'selected' : ''}>Receptacle / Outlet</option>
+                    <option value="hvac"      ${component.loadType === 'hvac'      ? 'selected' : ''}>HVAC / Air Conditioning</option>
+                    <option value="welding"   ${component.loadType === 'welding'   ? 'selected' : ''}>Welding Load</option>
+                    <option value="general"   ${(!component.loadType || component.loadType === 'general') ? 'selected' : ''}>General / Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="editLoadKW">Connected Load (kW):</label>
+                <input type="number" id="editLoadKW" value="${component.kw || ''}" step="0.1" min="0" required>
+            </div>
+            <div class="form-group">
+                <label for="editLoadPowerFactor">Power Factor (0.0 – 1.0):</label>
+                <input type="number" id="editLoadPowerFactor" value="${component.powerFactor || ''}" placeholder="0.90 (default)" step="0.01" min="0.1" max="1.0">
+            </div>
+            <div class="form-group">
+                <label for="editLoadPhases">Phase Configuration:</label>
+                <select id="editLoadPhases">
+                    <option value="3" ${(component.phases || 3) === 3 ? 'selected' : ''}>3-Phase</option>
+                    <option value="1" ${component.phases === 1 ? 'selected' : ''}>1-Phase (Single-Phase)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="editLoadName">Load Name / Tag:</label>
+                <input type="text" id="editLoadName" value="${component.name || ''}" placeholder="e.g., Warehouse Lighting LT-01">
+            </div>
+        `;
     }  else if (component.type === 'bus-tie') {
                     // BUS TIE EDIT FORM
                     html += `
@@ -2392,6 +2589,41 @@ function saveComponentEdits() {
         console.log(`   Efficiency: ${(component.efficiency * 100).toFixed(1)}%`);
         console.log(`   Power Factor: ${component.powerFactor.toFixed(2)}`);
 
+    } else if (component.type === 'load') {
+        // ═══════════════════════════════════════════════════════════════════
+        // NON-MOTOR LOAD EDIT SAVE (Issue #50)
+        // ═══════════════════════════════════════════════════════════════════
+        const editLoadKW = parseFloat(document.getElementById('editLoadKW').value);
+        if (!editLoadKW || editLoadKW <= 0) {
+            alert('❌ Please enter a valid connected load (kW)!');
+            return;
+        }
+        component.loadType = document.getElementById('editLoadType').value || 'general';
+        component.kw = editLoadKW;
+
+        const editLoadPF = parseFloat(document.getElementById('editLoadPowerFactor').value);
+        component.powerFactor = (editLoadPF >= 0.1 && editLoadPF <= 1.0) ? editLoadPF : 0.90;
+
+        const editLoadPhases = document.getElementById('editLoadPhases');
+        component.phases = editLoadPhases ? parseInt(editLoadPhases.value) : 3;
+
+        const editLoadName = document.getElementById('editLoadName');
+        component.name = (editLoadName && editLoadName.value.trim())
+            ? editLoadName.value.trim()
+            : `${component.kw} kW ${component.loadType} load`;
+
+        // Recalculate current
+        const busVolt = component.voltage || 480;
+        if (component.phases === 1) {
+            component.currentA = (component.kw * 1000) / (busVolt * component.powerFactor);
+        } else {
+            component.currentA = (component.kw * 1000) / (Math.sqrt(3) * busVolt * component.powerFactor);
+        }
+
+        console.log(`✅ Load updated: ${component.name}`);
+        console.log(`   kW: ${component.kw}, PF: ${component.powerFactor}, Phases: ${component.phases}`);
+        console.log(`   Current: ${component.currentA.toFixed(2)} A`);
+
     } else if (component.type === 'bus-tie') {
         const rating = parseFloat(document.getElementById('editBusTieRating').value);
              const length = parseFloat(document.getElementById('editBusTieLength').value);
@@ -2605,6 +2837,9 @@ function validateComponent(component) {
     } else if (component.type === 'motor') {
         if (!component.hp || component.hp <= 0) errors.push('Invalid motor HP');
         if (!component.motorType) errors.push('Missing motor type');
+    } else if (component.type === 'load') {
+        if (!component.kw || component.kw <= 0) errors.push('Invalid load kW');
+        if (!component.loadType) errors.push('Missing load type');
     }
     
     return {
