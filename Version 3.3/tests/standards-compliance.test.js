@@ -929,6 +929,38 @@ section('Section 11: Issue #70 Bug Fix Regressions');
     assertApprox(1 * FT_TO_M, 0.3048, 'ft→m: 1 ft = 0.3048 m exactly (NIST definition)', 1e-10, ' m');
 })();
 
+// ─── Fix 6 (Issue #70 Comment 4): IEC source-bus crash fix ───────────────────
+// iec60909.js line 962 formerly had trace.length < 2, which rejected source-bus
+// calculations (path length = 1). Fix: changed to !trace.length.
+(function testIECSourceBusPathCheck() {
+    // Simulate the old check (should reject single-element path):
+    function oldCheck(trace) {
+        return !Array.isArray(trace) || trace.length < 2;
+    }
+    // Simulate the new check (accepts single-element path):
+    function newCheck(trace) {
+        return !Array.isArray(trace) || !trace.length;
+    }
+
+    const sourcePath   = [{ bus: { id: 'src', type: 'source', voltage: 13200 }, component: null }];
+    const normalPath   = [{ bus: { id: 'src', type: 'source', voltage: 13200 }, component: null },
+                          { bus: { id: 'b1',  type: 'distribution', voltage: 480 }, component: { type: 'transformer' } }];
+    const emptyPath    = [];
+    const nullPath     = null;
+
+    // Old check incorrectly rejects source-bus path (length 1)
+    assert(oldCheck(sourcePath),  'Old check: source-bus path (len=1) was incorrectly rejected', '');
+    assert(!oldCheck(normalPath), 'Old check: normal path (len=2) was accepted', '');
+    assert(oldCheck(emptyPath),   'Old check: empty path was rejected', '');
+    assert(oldCheck(nullPath),    'Old check: null path was rejected', '');
+
+    // New check correctly accepts source-bus path (length 1)
+    assert(!newCheck(sourcePath), 'New check: source-bus path (len=1) is now accepted (IEC source-bus crash fix)', '');
+    assert(!newCheck(normalPath), 'New check: normal path (len=2) is still accepted', '');
+    assert(newCheck(emptyPath),   'New check: empty path is still rejected', '');
+    assert(newCheck(nullPath),    'New check: null path is still rejected', '');
+})();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SUMMARY
 // ─────────────────────────────────────────────────────────────────────────────

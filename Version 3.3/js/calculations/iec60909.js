@@ -959,8 +959,8 @@ function calculateShortCircuitIEC60909(path, calcType = 'max') {
 function calculateIEC60909FaultCurrent(busId, options = {}) {
     const calcType = (options.calculationType || options.calcType || 'max').toLowerCase();
     const trace    = (typeof traceBusPath === 'function') ? traceBusPath(busId) : null;
-    if (!Array.isArray(trace) || trace.length < 2) {
-        throw new Error('IEC 60909 requires a valid path to a SOURCE bus. traceBusPath() returned null/short path.');
+    if (!Array.isArray(trace) || !trace.length) {
+        throw new Error('IEC 60909 requires a valid path to a SOURCE bus. traceBusPath() returned null/empty.');
     }
     return calculateShortCircuitIEC60909(trace, calcType);
 }
