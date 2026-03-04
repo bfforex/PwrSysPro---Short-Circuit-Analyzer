@@ -428,8 +428,8 @@ function calculateCableVoltageDrop(cable, current, powerFactor, temperature, vol
     }
     
     // Calculate total impedance
-    const R = (rBase * length / 1000) / parallel;
-    const X = (xBase * length / 1000) / parallel;
+    const R = (rBase * length) / parallel;
+    const X = (xBase * length) / parallel;
     
     // Calculate voltage drop
     const cosTheta = powerFactor;

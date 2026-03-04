@@ -17,7 +17,7 @@
  * 
  * Issue #3 FIX (2025-12-01):
  * - Voltage drop % now calculated against TAP-ADJUSTED nominal voltage
- * - Per IEEE 141-1993 Section 3.4: "Voltage regulation calculations shall use
+ * - Per IEEE 141-1993 §4.6: "Voltage regulation calculations shall use
  *   the actual secondary voltage considering tap settings"
  * - Example: +2.5% tap on 440V = 451V baseline for VD% calculation
  * 
@@ -40,7 +40,7 @@
  * Standards:
  * - NEC Article 210.19(A) - Branch Circuit Voltage Drop
  * - NEC Article 215.2(A)(1) - Feeder Voltage Drop  
- * - IEEE 141-1993 Section 3.4 - Voltage Drop Calculations
+ * - IEEE 141-1993 §3.11 - Voltage Drop Calculations
  */
 
 console.log('🔧 Loading Voltage Drop Calculation Module v2.2.0...');
@@ -58,8 +58,8 @@ console.log('   ✅ All v2.0.0 features maintained');
 const VOLTAGE_DROP_CONFIG = {
     // NEC Recommended Limits
     FEEDER_LIMIT: 3,           // NEC 215.2(A)(1)
-    BRANCH_LIMIT: 5,           // NEC 210.19(A)
-    COMBINED_LIMIT: 7,         // IEEE 141
+    BRANCH_LIMIT: 3,           // NEC 210.19(A) FPN No. 4
+    COMBINED_LIMIT: 5,         // NEC 210.19(A) FPN No. 4 / IEEE 141-1993 §3.11
     
     // System defaults
     DEFAULT_POWER_FACTOR: 0.85,
@@ -171,12 +171,12 @@ function calculateMotorLoadCurrent(hp, voltage, efficiency = 0.90, powerFactor =
  * Calculates cumulative voltage drop from source to target bus by summing
  * the voltage drop across each series cable segment. Transformer voltage
  * changes are tracked but do not contribute to percentage drop (they reset
- * the baseline per IEEE 141-1993 §3.4).
+ * the baseline per IEEE 141-1993 §4.6).
  *
  * STANDARDS:
- * - NEC 2017 Article 210.19(A) - Branch circuit maximum 5% VD (informational note)
+ * - NEC 2017 Article 210.19(A) - Branch circuit maximum 3% VD (informational note)
  * - NEC 2017 Article 215.2(A)(1) - Feeder maximum 3% VD (informational note)
- * - IEEE 141-1993 §3.4 - "Voltage-drop calculations" (combined feeder+branch ≤ 7%)
+ * - IEEE 141-1993 §3.11 - "Voltage-drop calculations" (combined feeder+branch ≤ 5%)
  * - IEEE 141-1993 Table 3-5 - Diversity factors for operating load estimation
  *
  * FORMULA (three-phase voltage drop, per cable segment):
@@ -258,6 +258,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
   
   let currentVoltage = sourceVoltage;
   let currentVoltageLevel = sourceVoltage;
+  let levelBaseVoltage = sourceVoltage; // resets after each transformer step-down
 
   // ══════════════════════════════════════════════════════════════════════════════
   // RESULT STRUCTURE
@@ -355,7 +356,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
       steps += `Source Impedance:    ${utilityZ.toFixed(6)} Ω (X/R: ${utilityXR})\n\n`;
     }
     
-    steps += `${VOLTAGE_DROP_CONFIG.ICONS.warning} IMPORTANT: Per IEEE 141-1993 Section 3.2.1:\n`;
+    steps += `${VOLTAGE_DROP_CONFIG.ICONS.warning} IMPORTANT: Per IEEE 141-1993 §4.6.2:\n`;
     steps += `   "Voltage drop calculations shall begin at the first\n`;
     steps += `    distribution point, NOT including utility source impedance."\n\n`;
     steps += `${VOLTAGE_DROP_CONFIG.ICONS.pass} SOURCE IMPEDANCE EXCLUDED FROM VOLTAGE DROP CALCULATION\n`;
@@ -363,7 +364,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
     steps += `   Voltage drop starts from FIRST COMPONENT after source.\n\n`;
     
     console.log('ℹ️  Source impedance detected and EXCLUDED from voltage drop');
-    console.log('   Per IEEE 141-1993 Section 3.2.1');
+    console.log('   Per IEEE 141-1993 §4.6.2');
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
@@ -549,18 +550,18 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
 
       steps += `📐 IMPEDANCE VALUES\n`;
       steps += '─'.repeat(80) + '\n';
-      steps += `Base (per 1000ft @ 20°C):\n`;
-      steps += `   R_base = ${rBase20.toFixed(6)} Ω/1000ft (NEC Ch 9 Table 9)\n`;
-      steps += `   X_base = ${xBase.toFixed(6)} Ω/1000ft (NEC Ch 9 Table 9)\n\n`;
+      steps += `Base (per ft @ 75°C):\n`;
+      steps += `   R_base = ${rBase20.toFixed(6)} Ω/ft (NEC Ch 9 Table 9)\n`;
+      steps += `   X_base = ${xBase.toFixed(6)} Ω/ft (NEC Ch 9 Table 9)\n\n`;
       
-      steps += `Temperature Correction (20°C → ${temperature}°C):\n`;
-      steps += `   R_corrected = ${rBaseTemp.toFixed(6)} Ω/1000ft\n`;
+      steps += `Temperature Correction (75°C → ${temperature}°C):\n`;
+      steps += `   R_corrected = ${rBaseTemp.toFixed(6)} Ω/ft\n`;
       steps += `   ${VOLTAGE_DROP_CONFIG.ICONS.info} Reactance not affected by temperature\n\n`;
       
       if (parallel > 1) {
         steps += `Parallel Configuration:\n`;
-        steps += `   R = ${rBaseTemp.toFixed(6)} / ${parallel} = ${(rBaseTemp/parallel).toFixed(6)} Ω/1000ft\n`;
-        steps += `   X = ${xBase.toFixed(6)} / ${parallel} = ${(xBase/parallel).toFixed(6)} Ω/1000ft\n\n`;
+        steps += `   R = ${rBaseTemp.toFixed(6)} / ${parallel} = ${(rBaseTemp/parallel).toFixed(6)} Ω/ft\n`;
+        steps += `   X = ${xBase.toFixed(6)} / ${parallel} = ${(xBase/parallel).toFixed(6)} Ω/ft\n\n`;
       }
 
       steps += `📊 VOLTAGE DROP CALCULATION\n`;
@@ -625,10 +626,8 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
         point: `Cable ${stepNumber}${comp.tag ? ` (${comp.tag})` : ''}`,
         voltage: currentVoltage,
         dropFromPrevious: dropVolts,
-        cumulativeDrop: sourceVoltage - currentVoltage
+        cumulativeDrop: levelBaseVoltage - currentVoltage
       });
-
-      vdData.totalDropVolts += dropVolts;
 
       if (dropPercent > vdData.maxDropPercent) {
         vdData.maxDropPercent = dropPercent;
@@ -674,15 +673,42 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
       const x = z * xr / Math.sqrt(1 + xr * xr);
       const r = z / Math.sqrt(1 + xr * xr);
 
-      // Get secondary current
+      // Get secondary current — same 4-priority system as cables (demand/diversity-aware)
       let secondaryCurrent = 0;
       try {
-        if (typeof calculateDownstreamLoad === 'function' && comp.toBus) {
+        const secondaryBus = busesArr.find(b => b && b.id === comp.toBus);
+
+        // Priority 1: Use diversityLoad from load flow demand summary on secondary bus
+        if (secondaryBus) {
+          const demandResult = secondaryBus?.results?.loadFlow;
+          if (demandResult) {
+            const lf = demandResult.demandSummary || demandResult;
+            const lfCurrent = Number(lf.diversityCurrent || lf.diversityLoad
+                || demandResult.diversityLoad || demandResult.demandLoad || 0);
+            if (lfCurrent > 0) secondaryCurrent = lfCurrent;
+          }
+        }
+
+        // Priority 2: Live diversity calc on secondary bus
+        if (!(secondaryCurrent > 0) && typeof calculateDownstreamLoadWithDiversity === 'function' && comp.toBus) {
+          const diversityResult = calculateDownstreamLoadWithDiversity(comp.toBus, { applyDiversity: true });
+          if (diversityResult && diversityResult.diversifiedLoad > 0) {
+            secondaryCurrent = diversityResult.diversifiedLoad;
+          }
+        }
+
+        // Priority 3: Raw downstream load with demand factor on secondary bus
+        if (!(secondaryCurrent > 0) && typeof calculateDownstreamLoad === 'function' && comp.toBus) {
           const downstream = Number(calculateDownstreamLoad(comp.toBus));
-          if (downstream > 0) secondaryCurrent = downstream;
+          if (downstream > 0) {
+            const secBusDf = (busesArr.find(b => b.id === comp.toBus))?.demandFactor;
+            const df = (Number.isFinite(secBusDf) && secBusDf > 0 && secBusDf <= 1) ? secBusDf : 1.0;
+            secondaryCurrent = downstream * df;
+          }
         }
       } catch (_) {}
 
+      // Priority 4: Load flow transformer breakdown or getLoadCurrent fallback
       if (!(secondaryCurrent > 0) &&
           loadFlowData && loadFlowData.breakdown && Array.isArray(loadFlowData.breakdown.transformers)) {
         const t = loadFlowData.breakdown.transformers.find(t =>
@@ -716,7 +742,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
       const dropVolts = SQRT3 * secondaryCurrent * (r * cosTheta + x * sinTheta);
       
       // ✅ Issue #3 FIX: Calculate drop % against TAP-ADJUSTED nominal (NOT original nominal)
-      // Per IEEE 141-1993 Section 3.4: "Voltage regulation shall be calculated
+      // Per IEEE 141-1993 §4.6: "Voltage regulation shall be calculated
       // using the actual secondary voltage considering tap settings"
       const tapAdjustedBaseline = secondaryV * (1 + tapSetting / 100);
       const dropPercent = (tapAdjustedBaseline > 0) ? (dropVolts / tapAdjustedBaseline) * 100 : 0;
@@ -849,11 +875,12 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
         point: `Transformer ${stepNumber}${comp.tag ? ` (${comp.tag})` : ''}`,
         voltage: currentVoltage,
         dropFromPrevious: dropVolts,
-        cumulativeDrop: sourceVoltage - currentVoltage,
+        cumulativeDrop: tapAdjustedBaseline - currentVoltage,
         note: tapSetting !== 0 ? `Tap: ${tapSetting > 0 ? '+' : ''}${tapSetting}%` : null
       });
 
-      vdData.totalDropVolts += dropVolts;
+      // Reset per-level baseline to the transformer's nominal secondary voltage
+      levelBaseVoltage = tapAdjustedBaseline;
 
       if (dropPercent > vdData.maxDropPercent) {
         vdData.maxDropPercent = dropPercent;
@@ -891,7 +918,7 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
   let baselineDescription = 'Nominal Voltage';
   
   if (vdData.tapAdjustment.hasTransformerWithTap) {
-    // Use tap-adjusted nominal as baseline per IEEE 141-1993 Section 3.4
+    // Use tap-adjusted nominal as baseline per IEEE 141-1993 §4.6
     baselineForVDPercent = vdData.tapAdjustment.tapAdjustedNominal;
     baselineDescription = `Tap-Adjusted Nominal (${vdData.tapAdjustment.tapPercent > 0 ? '+' : ''}${vdData.tapAdjustment.tapPercent}% tap)`;
     console.log(`${VOLTAGE_DROP_CONFIG.ICONS.info} Issue #3 FIX: Using tap-adjusted nominal ${baselineForVDPercent}V for VD% calculation`);
@@ -1015,11 +1042,11 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
   steps += '─'.repeat(80) + '\n';
   steps += `✓ NEC 210.19(A) - Branch Circuit Conductors\n`;
   steps += `✓ NEC 215.2(A)(1) - Feeder Conductors\n`;
-  steps += `✓ IEEE 141-1993 Section 3.4 - Voltage Drop Calculations\n`;
+  steps += `✓ IEEE 141-1993 §3.11 - Voltage Drop Calculations\n`;
   
   // ✅ Issue #3 FIX: Note about tap adjustment compliance
   if (vdData.tapAdjustment.hasTransformerWithTap) {
-    steps += `✓ IEEE 141-1993 Section 3.4.2 - Transformer Tap Adjustment Applied\n`;
+    steps += `✓ IEEE 141-1993 §4.6 - Transformer Tap Adjustment Applied\n`;
   }
   steps += '\n';
 
@@ -1060,7 +1087,7 @@ console.log('   - ENHANCED: From/To bus information');
 console.log('   - NEW: Helper functions for load calculations');
 console.log('   - FIXED: Issue #3 - Tap-adjusted baseline for VD% (IEEE 141-1993)');
 console.log('   - MAINTAINED: All v2.0.0 features');
-console.log('   - Standards: NEC 2023, IEEE 141-1993');
+console.log('   - Standards: NEC 2017, IEEE 141-1993');
 console.log('   - Date: 2025-12-01');
 console.log('   - Author: bfforex');
 console.log('');

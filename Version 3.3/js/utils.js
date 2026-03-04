@@ -59,10 +59,11 @@ function updateSessionTime() {
 
 /**
  * Temperature correction for cable resistance
+ * Base reference: 75°C (per NEC 2017 Chapter 9, Table 9)
  */
-function temperatureCorrection(r20, temp, material = 'copper') {
+function temperatureCorrection(r75, temp, material = 'copper') {
     const alpha = TEMP_COEFFICIENT[material];
-    return r20 * (1 + alpha * (temp - 20));
+    return r75 * (1 + alpha * (temp - 75));
 }
 
 /**
