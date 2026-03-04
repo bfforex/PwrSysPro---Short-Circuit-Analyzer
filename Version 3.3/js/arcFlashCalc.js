@@ -147,7 +147,7 @@ const ARC_FLASH_CONFIG = {
  *   D = working distance [mm], t = clearing time [s]
  *
  * FORMULA (Arcing current approximation):
- *   I_arc = 0.85 × I_bolted   (conservative 85% factor per IEEE 1584-2018 §4.4)
+ *   I_arc = 0.85 × I_bolted   (conservative 85% factor, IEEE 1584-2002 simplified method)
  *
  * FORMULA (Arc-Flash Boundary):
  *   D_B = [4.184 × P_arc × t / (E_limit × 10^6)]^(1/x) × 610   [mm]
@@ -253,7 +253,7 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
         ppeRequirements: {},
         
         // Calculation details
-        calculationMethod: 'IEEE 1584-2018',
+        calculationMethod: 'IEEE 1584-2002 (simplified)',
         standard: 'NFPA 70E-2021',
         calculationSteps: '',
         calculationDate: getCalculationTimestamp()
@@ -278,7 +278,8 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
     
     steps += `${ARC_FLASH_CONFIG.ICONS.shield} SAFETY STANDARDS\n`;
     steps += '─'.repeat(80) + '\n';
-    steps += `• IEEE 1584-2018 - Arc-Flash Hazard Calculation (Latest Edition)\n`;
+    steps += `• IEEE 1584-2002 - Arc-Flash Hazard Calculations (simplified method implemented)\n`;
+    steps += `• IEEE 1584-2018 - Equipment types, voltage classes, and working distances referenced\n`;
     steps += `• NFPA 70E-2021 - Electrical Safety in the Workplace\n`;
     steps += `• NEC Article 110.16 - Arc-Flash Hazard Warning Labels\n`;
     steps += `• OSHA 1910.335 - Safeguards for Personnel Protection\n\n`;
@@ -295,7 +296,7 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
     steps += '─'.repeat(80) + '\n';
     steps += `System Voltage:              ${voltage} V\n`;
     steps += `Bolted Fault Current:        ${(bolted3PhaseFault / 1000).toFixed(3)} kA (${bolted3PhaseFault.toFixed(0)} A)\n`;
-    steps += `Arcing Current Factor:       ${arcingFactor} (IEEE 1584-2018 typical)\n`;
+    steps += `Arcing Current Factor:       ${arcingFactor} (IEEE 1584-2002 simplified method)\n`;
     steps += `Arcing Fault Current:        ${arcFlashData.arcingCurrentKA.toFixed(3)} kA (${arcingCurrent.toFixed(0)} A)\n\n`;
     
     steps += `${ARC_FLASH_CONFIG.ICONS.measure} EQUIPMENT CONFIGURATION\n`;
@@ -312,26 +313,26 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
     steps += `Frequency:                   60 Hz\n\n`;
     
     // ══════════════════════════════════════════════════════════════════════════════
-    // STEP 2: INCIDENT ENERGY CALCULATION (IEEE 1584-2018)
+    // STEP 2: INCIDENT ENERGY CALCULATION (IEEE 1584-2002 simplified method)
     // ══════════════════════════════════════════════════════════════════════════════
     
     steps += '═'.repeat(80) + '\n';
     steps += `${ARC_FLASH_CONFIG.ICONS.fire} STEP 2: INCIDENT ENERGY CALCULATION\n`;
     steps += '═'.repeat(80) + '\n\n';
     
-    // IEEE 1584-2018 Method
+    // Lee / IEEE 1584-2002 Simplified Method
     // For low voltage (208V - 600V) systems
     
     let incidentEnergy;
     
     if (voltage >= 208 && voltage <= 600) {
         // Low voltage calculation
-        steps += `${ARC_FLASH_CONFIG.ICONS.calculate} IEEE 1584-2018 LOW VOLTAGE METHOD\n`;
+        steps += `${ARC_FLASH_CONFIG.ICONS.calculate} LEE METHOD / IEEE 1584-2002 SIMPLIFIED (Low Voltage)\n`;
         steps += '─'.repeat(80) + '\n';
         steps += `Voltage Range: 208V - 600V\n\n`;
         
         // Simplified calculation for demonstration
-        // Full IEEE 1584-2018 has more complex equations
+        // Full IEEE 1584-2018 multi-variable regression is not yet implemented (requires k3–k8 coefficients)
         const k = 0; // Electrode configuration factor
         const logIarc = Math.log10(arcingCurrent);
         const logE = k + 0.662 * logIarc + 0.0966 * voltage / 1000 + 0.000526 * electrodeGap + 0.5588 * voltage / 1000 * logIarc - 0.00304 * electrodeGap * logIarc;
@@ -362,7 +363,7 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
         
     } else if (voltage > 600 && voltage <= 15000) {
         // Medium voltage calculation
-        steps += `${ARC_FLASH_CONFIG.ICONS.calculate} IEEE 1584-2018 MEDIUM VOLTAGE METHOD\n`;
+        steps += `${ARC_FLASH_CONFIG.ICONS.calculate} LEE METHOD / IEEE 1584-2002 SIMPLIFIED (Medium Voltage)\n`;
         steps += '─'.repeat(80) + '\n';
         steps += `Voltage Range: 601V - 15kV\n\n`;
         
@@ -389,7 +390,7 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
         steps += `  E = 4.184 × ${arcPower.toFixed(2)} × ${exposureTime.toFixed(3)} × 372100 / (${distance.toFixed(0)}² × 10)\n`;
         steps += `  E = ${incidentEnergy.toFixed(2)} cal/cm²\n\n`;
     } else {
-        throw new Error(`Voltage ${voltage}V outside IEEE 1584-2018 range (208V - 15kV)`);
+        throw new Error(`Voltage ${voltage}V outside supported arc flash voltage range (208V - 15kV)`);
     }
     
     arcFlashData.incidentEnergy = incidentEnergy;
@@ -623,7 +624,7 @@ function calculateArcFlash(busId, shortCircuitData, options = {}) {
     
     steps += `${ARC_FLASH_CONFIG.ICONS.shield} SAFETY COMPLIANCE\n`;
     steps += '─'.repeat(80) + '\n';
-    steps += `✓ IEEE 1584-2018 - Arc-Flash Hazard Calculations\n`;
+    steps += `✓ IEEE 1584-2002 - Arc-Flash Hazard Calculations (simplified method)\n`;
     steps += `✓ NFPA 70E-2021 - Electrical Safety Standards\n`;
     steps += `✓ NEC Article 110.16 - Warning Label Requirements\n`;
     steps += `✓ OSHA 1910.335 - Personnel Protection\n\n`;
@@ -723,7 +724,7 @@ if (typeof window !== 'undefined') {
 }
 
 console.log('✅ Arc Flash Analysis Module v1.0.0 loaded');
-console.log('   - IEEE 1584-2018 compliant');
+console.log('   - IEEE 1584-2002 simplified method (structure from IEEE 1584-2018 referenced)');
 console.log('   - NFPA 70E-2021 compliant');
 console.log('   - PPE recommendations included');
 console.log('   - Equipment labeling data provided');
