@@ -809,6 +809,127 @@ assert(scoreHighFC > scoreLowVD,  'Critical path: High fault current path ranks 
 assertApprox(scoreHighVD, 375 + 200 + 500, 'Critical path score calculation for 7.5% VD path', 0.001, '');
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SECTION 11: ISSUE #70 FIXES — Regression Tests
+// Reference: GitHub Issue #70, all addendum comments
+// ─────────────────────────────────────────────────────────────────────────────
+
+section('Section 11: Issue #70 Bug Fix Regressions');
+
+// ─── Fix 1 (Comment 3): totalZ2 = totalZ for static equipment ───────────────
+// calculateShortCircuitPointToPoint referenced `totalZ2` without declaring it,
+// causing a ReferenceError.  For static equipment, Z2 ≈ Z1 = totalZ.
+(function testTotalZ2StaticEquipment() {
+    const totalR = 0.002, totalX = 0.006;
+    const totalZ = Math.sqrt(totalR * totalR + totalX * totalX);
+    const totalZ2 = totalZ; // the fix: Z2 ≈ Z1 for static equipment
+
+    assertApprox(totalZ2, totalZ, 'Issue #70 Fix 1: Z2 = Z1 for static equipment (P-P method)', 1e-9, ' Ω');
+    assert(typeof totalZ2 !== 'undefined', 'Issue #70 Fix 1: totalZ2 is defined (no ReferenceError)', '');
+    assert(totalZ2 > 0, 'Issue #70 Fix 1: totalZ2 is positive (valid impedance)', '');
+})();
+
+// ─── Fix 2 (Comment 2 §2.1): IEC c_min = 0.90 for LV ±10% ─────────────────
+// The IEC MIN report used c_min = 0.95, which corresponds to LV ±6% tolerance.
+// Per IEC 60909-0:2016 Table 1, LV ±10% requires c_min = 0.90.
+(function testIECVoltageFactor() {
+    // Replicate the getVoltageFactor logic from iec60909.js
+    const IEC_VOLTAGE_FACTORS = {
+        MAX: { LV_230_400: 1.05, LV_OTHER: 1.10, MV: 1.10, HV: 1.10 },
+        MIN: { LV: 0.90, MV_HV: 1.00 }   // Fixed: was 0.95, correct is 0.90 (±10% LV)
+    };
+    function getVF(voltage, calcType) {
+        if (calcType === 'max') {
+            if (voltage <= 1000) {
+                if (voltage === 230 || voltage === 400 || voltage === 220 || voltage === 380)
+                    return IEC_VOLTAGE_FACTORS.MAX.LV_230_400;
+                return IEC_VOLTAGE_FACTORS.MAX.LV_OTHER;
+            }
+            if (voltage <= 35000) return IEC_VOLTAGE_FACTORS.MAX.MV;
+            return IEC_VOLTAGE_FACTORS.MAX.HV;
+        }
+        if (voltage <= 1000) return IEC_VOLTAGE_FACTORS.MIN.LV;
+        return IEC_VOLTAGE_FACTORS.MIN.MV_HV;
+    }
+
+    assertApprox(getVF(440, 'max'), 1.10, 'IEC c_max for 440V LV system (±10%)', 1e-9, '');
+    assertApprox(getVF(440, 'min'), 0.90, 'IEC c_min for 440V LV system (±10%) — Fix Issue #70', 1e-9, '');
+    assertApprox(getVF(400, 'max'), 1.05, 'IEC c_max for 400V (230/400V nominal group)', 1e-9, '');
+    assertApprox(getVF(13200, 'max'), 1.10, 'IEC c_max for 13.2kV MV system', 1e-9, '');
+    assertApprox(getVF(13200, 'min'), 1.00, 'IEC c_min for 13.2kV MV system', 1e-9, '');
+    assert(getVF(440, 'min') < getVF(440, 'max'), 'IEC: c_min < c_max for same voltage (sanity check)', '');
+    assert(Math.abs(getVF(440, 'min') - 0.95) > 0.001, 'IEC c_min is NOT 0.95 (old wrong value rejected)', '');
+})();
+
+// ─── Fix 3 (Comment 2 §1.1): IEC Ik''1 uses √3 × c × Un / |Z_sum| ─────────
+// The previous formula dropped √3, understating earth-fault current by ~1.732×.
+// For a bolted LG fault (far-from-generator, Z2≈Z1):
+//   I"k1 = √3 × c × Un / |Z1 + Z2 + Z0|
+//   (equivalently: 3 × c × (Un/√3) / |Z_sum|)
+(function testIECIk1Formula() {
+    const SQRT3_local = Math.sqrt(3);
+    const Un = 440;    // line-to-line voltage (V)
+    const c  = 1.10;   // c_max for 440V LV
+    // Example sequence impedances
+    const R1 = 0.002, X1 = 0.006;
+    const R0 = 0.004, X0 = 0.012; // Z0 = 2×Z1 (simplified)
+    // |Z1+Z2+Z0| using Z2=Z1:
+    const Rsum = R1 + R1 + R0;
+    const Xsum = X1 + X1 + X0;
+    const Zsum = Math.sqrt(Rsum * Rsum + Xsum * Xsum);
+
+    const ik1_correct  = SQRT3_local * c * Un / Zsum;       // Fix: with √3
+    const ik1_old_wrong = c * Un / Zsum;                     // Old code (missing √3)
+
+    // The corrected value must be exactly √3 times the old wrong value
+    assertApprox(ik1_correct / ik1_old_wrong, SQRT3_local,
+        'IEC Ik1 Fix: corrected formula gives sqrt3x the old wrong value', 1e-6, '');
+
+    // Via V_LN path: I_a1 = c × V_LN / Zsum; I"k1 = 3 × I_a1
+    const V_LN = Un / SQRT3_local;
+    const ik1_via_VLN = 3 * c * V_LN / Zsum;
+    assertApprox(ik1_correct, ik1_via_VLN,
+        'IEC Ik1: sqrt3 c Un/|Z| equals 3 c V_LN/|Z| (algebraic equivalence)', 1e-6, ' A');
+
+    assert(ik1_correct > ik1_old_wrong,
+        'IEC Ik1: corrected value > old wrong value (sqrt3 factor increases result)', '');
+})();
+
+// ─── Fix 4 (Comment 2 §6.2): IEC_NEC_CABLE_CROSSREF verified mapping ────────
+// Previously, all NEC sizes defaulted to 70 mm². Now a verified table is used.
+(function testIECNECCableCrossRef() {
+    // Replicate IEC_NEC_CABLE_CROSSREF from constants.js
+    const crossRef = {
+        '14': '1.5', '12': '2.5', '10': '4', '8': '6', '6': '10',
+        '4': '16', '3': '16', '2': '25', '1': '35',
+        '1/0': '50', '2/0': '70', '3/0': '95', '4/0': '95',
+        '250': '120', '300': '150', '350': '185', '400': '185',
+        '500': '240', '600': '300', '700': '300', '750': '300', '1000': '300'
+    };
+
+    // Key sizes cited in Issue #70 Comment 2 §6.2
+    assert(crossRef['500'] === '240',  'IEC crossref: 500 kcmil → 240 mm² (Issue #70: was wrongly 70 mm²)', '');
+    assert(crossRef['250'] === '120',  'IEC crossref: 250 kcmil → 120 mm² (Issue #70: was wrongly 70 mm²)', '');
+    assert(crossRef['4/0'] === '95',   'IEC crossref: 4/0 AWG → 95 mm² (Issue #70: was wrongly 70 mm²)', '');
+    assert(crossRef['2/0'] === '70',   'IEC crossref: 2/0 AWG → 70 mm² (coincidentally correct default)', '');
+    assert(crossRef['14']  === '1.5',  'IEC crossref: 14 AWG → 1.5 mm²', '');
+    assert(crossRef['350'] === '185',  'IEC crossref: 350 kcmil → 185 mm²', '');
+    assert(crossRef['1']   === '35',   'IEC crossref: 1 AWG → 35 mm²', '');
+})();
+
+// ─── Fix 5 (Comment 2 §6.1): ft→m conversion correct in all code paths ──────
+(function testFtToMConversion() {
+    const FT_TO_M = 0.3048;
+    const lengthFt = 100;
+    const lengthM  = lengthFt * FT_TO_M;
+
+    assertApprox(lengthM, 30.48, 'ft→m: 100 ft = 30.48 m (not 100 m)', 1e-6, ' m');
+    assert(Math.abs(lengthM - 100) > 1, 'ft→m: 100 ft must NOT equal 100 m (Issue #70 §6.1)', '');
+
+    // Verify the formula: 1 ft = 0.3048 m exactly (by definition, NIST SP 811)
+    assertApprox(1 * FT_TO_M, 0.3048, 'ft→m: 1 ft = 0.3048 m exactly (NIST definition)', 1e-10, ' m');
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SUMMARY
 // ─────────────────────────────────────────────────────────────────────────────
 

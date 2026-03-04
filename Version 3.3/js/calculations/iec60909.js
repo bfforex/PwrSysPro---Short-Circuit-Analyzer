@@ -32,7 +32,10 @@ const IEC60909_CONFIG = {
             HV:         1.10
         },
         MIN: {
-            LV:    0.95,
+            // Fix Issue #70 Comment 2 §2.1: For LV ±10% tolerance, c_min = 0.90 (not 0.95).
+            // IEC 60909-0:2016 Table 1: c_max=1.10 / c_min=0.90 for LV systems with Un ≤1 kV
+            // and voltage tolerance +6%/-10% or +10%/-10%.
+            LV:    0.90,
             MV_HV: 1.00
         }
     },
@@ -101,7 +104,11 @@ function getIECCableImpedance(cable, temperature) {
 
     if (!data) {
         console.warn('⚠️  IEC_CABLE_IMPEDANCE_DATA not available — ensure constants.js is loaded first.');
-        return { r: 0.001, x: 0.0004, r0: 0.003, x0: 0.0012, iecSize, necSize: resolved.necSize, crossRefUsed: true, lengthM: cable.length, lengthFt: cable.length, lengthUnit: 'ft', parallel: 1, r20_per_km: 0, rT_per_km: 0, x_per_km: 0, tempFactor: 1, material: 'copper', note: 'IEC data unavailable' };
+        // Fix Issue #70 Comment 2 §6.1: Apply ft→m conversion in fallback too.
+        // Previously used cable.length directly as metres, causing "100 ft = 100.00 m" error.
+        const fbLengthUnit = cable.lengthUnit || 'ft';
+        const fbLengthM    = (fbLengthUnit === 'ft') ? cable.length * 0.3048 : cable.length;
+        return { r: 0.001, x: 0.0004, r0: 0.003, x0: 0.0012, iecSize, necSize: resolved.necSize, crossRefUsed: true, lengthM: fbLengthM, lengthFt: cable.length, lengthUnit: fbLengthUnit, parallel: 1, r20_per_km: 0, rT_per_km: 0, x_per_km: 0, tempFactor: 1, material: 'copper', note: 'IEC data unavailable' };
     }
 
     const mat     = cable.material === 'aluminum' ? 'aluminum' : 'copper';
@@ -793,7 +800,11 @@ function calculateShortCircuitIEC60909(path, calcType = 'max') {
     const Zlg_r   = totalR + totalR + totalR0;
     const Zlg_x   = totalX + totalX + totalX0;
     const Zlg_mag = Math.sqrt(Zlg_r * Zlg_r + Zlg_x * Zlg_x);
-    const ik1     = (cFactor * Un) / Zlg_mag;
+    // Fix Issue #70 Comment 2 §1.1: The previous code dropped √3, understating Ik''1 by ~1.732.
+    // IEC 60909-0:2016 Eq. 16 (far-from-generator, Zf=0, Z2≈Z1):
+    //   I"k1 = (√3 × c × Un) / |Z1 + Z2 + Z0|   (Un = line-to-line voltage)
+    // Equivalent via V_LN: I_a1 = c·V_LN / |Z_sum|, then I"k1 = 3·I_a1 = √3·c·Un / |Z_sum|
+    const ik1     = (Math.sqrt(3) * cFactor * Un) / Zlg_mag;
     const ik1KA   = ik1 / 1000;
 
     steps += '═'.repeat(80) + '\n';
@@ -801,8 +812,9 @@ function calculateShortCircuitIEC60909(path, calcType = 'max') {
     steps += '═'.repeat(80) + '\n\n';
     steps += `📐 CALCULATION (IEC 60909-0:2016 Section 4.7.3, Eq. 16)\n`;
     steps += '─'.repeat(80) + '\n';
-    steps += `Formula:             I"k1 = (√3 × c × Un) / |Z1 + Z2 + Z0|  =  c × Un / |Z1 + Z2 + Z0|\n`;
-    steps += `   (√3 numerator and √3 denominator from line-to-neutral voltage cancel)\n`;
+    steps += `Formula:             I"k1 = (√3 × c × Un) / |Z1 + Z2 + Z0|\n`;
+    steps += `   (Un = line-to-line voltage; equivalently 3·c·V_LN / |Z_sum| where V_LN = Un/√3)\n`;
+    steps += `   Per IEC 60909-0:2016 Eq. 16 — Ik''1 for far-from-generator conditions\n`;
     steps += '\n';
     steps += `Step-by-Step Calculation:\n`;
     steps += `   Z2 ≈ Z1  (static equipment — no generator correction)\n`;
@@ -815,9 +827,9 @@ function calculateShortCircuitIEC60909(path, calcType = 'max') {
     steps += `      |Z_sum| = √(${Zlg_r.toFixed(6)}² + ${Zlg_x.toFixed(6)}²)\n`;
     steps += `      |Z_sum| = ${Zlg_mag.toFixed(6)} Ω\n`;
     steps += '\n';
-    steps += `   I"k1 = (c × Un) / |Z_sum|\n`;
-    steps += `   I"k1 = (${cFactor.toFixed(3)} × ${Un}) / ${Zlg_mag.toFixed(6)}\n`;
-    steps += `   I"k1 = ${(cFactor * Un).toFixed(2)} / ${Zlg_mag.toFixed(6)}\n`;
+    steps += `   I"k1 = (√3 × c × Un) / |Z_sum|\n`;
+    steps += `   I"k1 = (${Math.sqrt(3).toFixed(4)} × ${cFactor.toFixed(3)} × ${Un}) / ${Zlg_mag.toFixed(6)}\n`;
+    steps += `   I"k1 = ${(Math.sqrt(3) * cFactor * Un).toFixed(2)} / ${Zlg_mag.toFixed(6)}\n`;
     steps += `   I"k1 = ${ik1.toFixed(2)} A\n`;
     steps += `   I"k1 = ${ik1KA.toFixed(3)} kA\n`;
     steps += '\n';
