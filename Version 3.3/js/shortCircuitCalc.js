@@ -1248,6 +1248,9 @@ function calculateShortCircuitPointToPoint(path) {
     //   I_LG = |3 × V_LN / (Z1 + Z2 + Z0)|
     //   where Z2 ≈ Z1 for static equipment → denominator = (2R+R0) + j(2X+X0)
     const totalZ0 = Math.sqrt(totalR0 * totalR0 + totalX0 * totalX0);
+    // Z2 ≈ Z1 for static equipment (no rotating machines in P-P path)
+    // Fix Issue #70 Comment 3: totalZ2 was referenced but never declared, causing ReferenceError.
+    const totalZ2 = totalZ;
     const V_LN = targetBus.voltage / SQRT3;
     // Complex sum Z1+Z2+Z0 = (2R1+R0) + j(2X1+X0)
     const Z_LG_R = totalR + totalR + totalR0;   // real part of (Z1+Z2+Z0)
