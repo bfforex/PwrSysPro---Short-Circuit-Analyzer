@@ -1148,7 +1148,7 @@ function addComponent() {
         const loadTag = `${typeAbbr}-${fromBusTagFormatted}-${nextSeq}`;
 
         component = {
-            id: generateId(),
+            id: generateComponentId(),
             type: 'load',
             loadType: loadType,
             name: loadName,
