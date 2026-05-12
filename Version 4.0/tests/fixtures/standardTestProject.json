@@ -1,0 +1,60 @@
+{
+  "version": "4.0",
+  "schema": "test-fixture-v1",
+  "projectInfo": {
+    "name": "PwrSysPro Standard Regression Fixture",
+    "engineer": "Automated Test Harness"
+  },
+  "buses": [
+    {
+      "id": "TEST-SRC-001",
+      "name": "Utility 13.8kV",
+      "type": "source",
+      "voltage": 13800,
+      "faultMVA": 500,
+      "xrRatio": 15
+    },
+    {
+      "id": "TEST-BUS-001",
+      "name": "MDB 480V",
+      "type": "distribution",
+      "voltage": 480
+    },
+    {
+      "id": "TEST-BUS-002",
+      "name": "Panel-A 480V",
+      "type": "branch",
+      "voltage": 480
+    }
+  ],
+  "components": [
+    {
+      "id": "TEST-TXF-001",
+      "type": "transformer",
+      "fromBus": "TEST-SRC-001",
+      "toBus": "TEST-BUS-001",
+      "rating": 1000,
+      "ratingKVA": 1000,
+      "primary": 13800,
+      "secondary": 480,
+      "impedance": 5.75,
+      "xrRatio": 6
+    },
+    {
+      "id": "TEST-CBL-001",
+      "type": "cable",
+      "fromBus": "TEST-BUS-001",
+      "toBus": "TEST-BUS-002",
+      "size": "2/0",
+      "material": "copper",
+      "conduit": "magnetic",
+      "length": 100,
+      "lengthFeet": 100,
+      "sets": 1
+    }
+  ],
+  "projectLoadCurrent": 200,
+  "projectPF": 0.85,
+  "voltageDropLimit": 3,
+  "temperature": 75
+}
