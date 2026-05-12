@@ -75,157 +75,7 @@ function saveProject() {
  alert(`❌ Failed to save project:\n\n${error.message}\n\nCheck browser console for details.`); 
  } 
 } 
-/** 
- * Clean path array 
- * 
- * @param {Array} pathArray - Array of path segments 
- * @returns {Array} Cleaned path array 
- */ 
-function cleanPathArray(pathArray) { 
- if (!Array.isArray(pathArray)) return []; 
- return pathArray 
- .filter(segment => segment && segment.bus) 
- .map(segment => { 
- // Create a clean bus object without results property 
- const cleanBus = { 
- id: segment.bus. id, 
- name: segment. bus.name || 'Unknown', 
- voltage: segment.bus.voltage || 0, 
- type: segment.bus.type || 'unknown', 
- tag: segment.bus.tag || '' 
- }; 
- // ✅ DO NOT include segment.bus.results - this causes circular reference 
- const cleanComponent = segment.component ? { 
- id: segment.component.id, 
- type: segment.component.type || 'unknown', 
- name: segment.component.name || 'Unknown Component', 
- tag: segment.component.tag || '' 
- } : null; 
- return { 
- sequence: segment.sequence || 0, 
- bus: cleanBus, 
- component: cleanComponent 
- }; 
- }); 
-} 
-/** 
- * Clean result object 
- * 
- * @param {Object} resultObj - Result object 
- * @returns {Object} Cleaned result object 
- */ 
-function cleanResultObject(resultObj) { 
- if (!resultObj || typeof resultObj !== 'object') return null; 
- const cleaned = { ...resultObj }; 
- // ✅ CRITICAL: Clean the path to remove circular references 
- if (cleaned.path) { 
- cleaned.path = cleanPathArray(cleaned.path); 
- } 
- // Clean motorContribution if present 
- if (cleaned.motorContribution && cleaned.motorContribution.motors) { 
- cleaned.motorContribution = { 
- ... cleaned.motorContribution, 
- motors: Array.isArray(cleaned.motorContribution.motors) 
- ? cleaned.motorContribution.motors.map(m => ({ 
- id: m.id, 
- name: m.name, 
- hp: m.hp, 
- motorType: m.motorType 
- })) 
- : [] 
- }; 
- } 
- return cleaned; 
-} 
-/** 
- * Clean results object 
- * 
- * @param {Object} results - Results object 
- * @returns {Object} Cleaned results object 
- */ 
-function cleanResultsObject(results) { 
- if (!results || typeof results !== 'object') return null; 
- const cleaned = {}; 
- // Clean shortCircuit results 
- if (results.shortCircuit) { 
- cleaned.shortCircuit = cleanResultObject(results.shortCircuit); 
- } 
- // Clean loadFlow results 
- if (results. loadFlow) { 
- const lfCleaned = { ...results.loadFlow }; 
- // Remove any path arrays from load flow too 
- if (lfCleaned.pathTrace) { 
- lfCleaned.pathTrace = cleanPathArray(lfCleaned.pathTrace); 
- } 
- cleaned.loadFlow = lfCleaned; 
- } 
- // Clean voltageDrop results 
- if (results. voltageDrop) { 
- const vdCleaned = { ...results.voltageDrop }; 
- // Remove any path arrays 
- if (vdCleaned.path) { 
- vdCleaned.path = cleanPathArray(vdCleaned.path); 
- } 
- cleaned.voltageDrop = vdCleaned; 
- } 
- // Clean arcFlash results 
- if (results.arcFlash) { 
- cleaned.arcFlash = { ...results.arcFlash }; 
- } 
- // Clean main path if exists at top level 
- if (results.path) { 
- cleaned.path = cleanPathArray(results.path); 
- } 
- // Copy other properties (scalars only) 
- Object.keys(results).forEach(key => { 
- if (! cleaned[key] && typeof results[key] !== 'object') { 
- cleaned[key] = results[key]; 
- } 
- }); 
- return cleaned; 
-} 
-/** 
- * Clean buses for serialization 
- * Removes circular references from bus objects 
- * 
- * @param {Array} buses - Array of bus objects 
- * @returns {Array} Cleaned bus array 
- */ 
-function cleanBusesForSerialization(buses) { 
- if (!Array. isArray(buses)) return []; 
- return buses.map(bus => { 
- if (! bus || typeof bus !== 'object') return null; 
- const busClone = { 
- id: bus.id, 
- name: bus.name, 
- voltage: bus.voltage, 
- type: bus.type, 
- tag: bus.tag, 
- parent: bus.parent, 
- parentBus: bus.parentBus, 
- availableFaultCurrent: bus.availableFaultCurrent, 
- xrRatio: bus.xrRatio, 
- demandFactor: bus.demandFactor, 
- diversityFactor: bus.diversityFactor, 
- utilityFaultCurrent: bus.utilityFaultCurrent, 
- utilityFaultMVA: bus.utilityFaultMVA, 
- utilityXR: bus.utilityXR, 
- loadCurrent: bus.loadCurrent, 
- // ✅ CRITICAL FIX: Preserve auto-calculated flag to prevent double-counting 
- // Added: 2025-12-01 by bfforex 
- loadCurrentAutoCalculated: bus.loadCurrentAutoCalculated || false, 
- }; 
- // ✅ Clean results to remove circular references 
- if (bus.results) { 
- busClone.results = cleanResultsObject(bus.results); 
- } 
- // ✅ Remove systemFault to prevent circular references 
- // DO NOT include bus.systemFault 
- // ✅ Remove pathComponents to prevent circular references 
- // DO NOT include bus.pathComponents 
- return busClone; 
- }). filter(bus => bus !== null); 
-} 
+
 /** 
  * Validate project data structure and types 
  * ✅ ISSUE #8: Comprehensive input validation 
@@ -919,7 +769,13 @@ window.loadProject = loadProject;
 window.scheduleAutoSave = scheduleAutoSave; 
 window.autoSaveToLocalStorage = autoSaveToLocalStorage; 
 window.loadAutoSavedProject = loadAutoSavedProject; 
-window.cleanBusesForSerialization = cleanBusesForSerialization; 
+window.cleanBusesForSerialization = function(buses) {
+  return Array.isArray(buses)
+    ? buses.map(function(bus) {
+        return ProjectSerializer.serializeBus(bus, { includeResults: true });
+      }).filter(Boolean)
+    : [];
+};
 console.log('✅ Project Manager v1.3.2 loaded'); 
 console.log(' - Circular reference fix: COMPLETE'); 
 console.log(' - Auto-save: OPTIMIZED (results stripped to avoid quota errors)'); 
