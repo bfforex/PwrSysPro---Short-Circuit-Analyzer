@@ -1,7 +1,4 @@
 // Utility compatibility shim
-// PR-03: utils.js split into focused modules
-// This file remains for backward compatibility and load-order stability.
-
 (function initUtilsShim(global) {
     'use strict';
 
