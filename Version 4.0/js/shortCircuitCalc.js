@@ -149,6 +149,7 @@ function scFollowupSafeNum(value, fallback = 0) {
 
 function asymMultiplierFromXR(xr, t) {
     if (!(xr > 0)) return 1.0;
+    if (!(SHORT_CIRCUIT_CONFIG.SYSTEM_FREQUENCY > 0)) return 1.0;
     const tau = xr / (2 * Math.PI * SHORT_CIRCUIT_CONFIG.SYSTEM_FREQUENCY);
     return Math.sqrt(1 + 2 * Math.exp(-2 * t / tau));
 }
@@ -290,7 +291,7 @@ function generatePathOnlyReferredThroughFaultSupplement(result) {
         const referredKA = targetFaultKA * (targetVoltage / deviceVoltage);
         const interruptingKA = getDeviceInterruptingKAForFollowup(device);
         const continuousA = getDeviceContinuousAForFollowup(device);
-        const utilization = interruptingKA > 0 ? referredKA / interruptingKA * 100 : null;
+        const utilization = interruptingKA > 0 ? (referredKA / interruptingKA) * 100 : null;
         const resultText = interruptingKA > 0 ? (referredKA <= interruptingKA ? 'PASS' : 'FAIL') : 'CHECK REQUIRED';
         rows.push({ device, downstreamTransformers, deviceVoltage, referredKA, interruptingKA, continuousA, utilization, resultText });
     });
