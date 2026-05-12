@@ -44,31 +44,16 @@ function saveProject() {
  const projectNumber = document.getElementById('projectNumber').value || ''; 
  console.log('💾 Saving project...'); 
  // Clean buses - remove circular references 
- const busesClean = cleanBusesForSerialization(buses); 
- // Create project data object 
- const projectData = { 
- projectInfo: { 
- name: projectName, 
- engineer: engineer, 
- projectNumber: projectNumber, 
- savedDate: new Date().toISOString(), 
- version: PROJECT_MANAGER_VERSION 
- }, 
- buses: busesClean, 
- components: components, 
- protectionDevices: Array.isArray(protectionDevices) ? protectionDevices : [], 
- protectionZones: Array.isArray(protectionZones) ? protectionZones : [], 
- protectionAssociations: Array.isArray(protectionAssociations) ? protectionAssociations : [], 
- settings: { 
- loadCurrent: parseFloat(document.getElementById('loadCurrent').value) || 100, 
- powerFactor: parseFloat(document.getElementById('powerFactor').value) || 0.9, 
- voltageDropLimit: parseFloat(document.getElementById('voltageDropLimit').value) || 3, 
- temperature: parseFloat(document.getElementById('temperature').value) || 75, 
- method: document.querySelector('input[name="method"]:checked')?.value || 'point-to-point' 
- } 
- }; 
- // Convert to JSON 
- const json = JSON.stringify(projectData, null, 2); 
+ const projectData = ProjectSerializer.buildProjectData({
+   includeResults: true,
+   autoSave: false
+ });
+ const busesClean = projectData.buses;
+ const json = ProjectSerializer.serialize({
+   includeResults: true,
+   autoSave: false,
+   pretty: true
+ });
  // Create blob and download 
  const blob = new Blob([json], { type: 'application/json' }); 
  const url = URL.createObjectURL(blob); 
@@ -695,7 +680,7 @@ function loadProject() {
  const reader = new FileReader(); 
  reader.onload = function(e) { 
  try { 
- const projectData = JSON.parse(e.target.result); 
+ const projectData = ProjectSerializer.deserialize(e.target.result);
  console.log('📦 Project data loaded'); 
  console.log(' Version:', projectData.projectInfo?.version || 'Unknown'); 
  console.log(' Buses:', projectData.buses?.length || 0); 
@@ -823,54 +808,13 @@ function autoSaveToLocalStorage() {
  // Auto-save only essential data - results can be recalculated 
  // Added: 2026-02-03 to fix quota exceeded error (Issue: bus count 94+) 
  // ═══════════════════════════════════════════════════════════ 
- const busesClean = buses.map(bus => { 
- if (!bus || typeof bus !== 'object') return null; 
- const busClone = { 
- id: bus.id, 
- name: bus.name, 
- voltage: bus.voltage, 
- type: bus.type, 
- tag: bus.tag, 
- parent: bus.parent, 
- parentBus: bus.parentBus, 
- availableFaultCurrent: bus.availableFaultCurrent, 
- xrRatio: bus.xrRatio, 
- demandFactor: bus.demandFactor, 
- diversityFactor: bus.diversityFactor, 
- utilityFaultCurrent: bus.utilityFaultCurrent, 
- utilityFaultMVA: bus.utilityFaultMVA, 
- utilityXR: bus.utilityXR, 
- loadCurrent: bus.loadCurrent, 
- loadCurrentAutoCalculated: bus.loadCurrentAutoCalculated || false, 
- }; 
- // ✅ DO NOT save results in auto-save to reduce size 
- // Results can be recalculated after restore 
- // DO NOT include: bus.results, bus.systemFault, bus.pathComponents 
- return busClone; 
- }).filter(bus => bus !== null); 
- const projectData = { 
- projectInfo: { 
- name: projectName, 
- engineer: document.getElementById('engineer').value || '', 
- projectNumber: document.getElementById('projectNumber').value || '', 
- savedDate: new Date().toISOString(), 
- version: PROJECT_MANAGER_VERSION, 
- autoSave: true 
- }, 
- buses: busesClean, 
- components: components, 
- protectionDevices: Array.isArray(protectionDevices) ? protectionDevices : [], 
- protectionZones: Array.isArray(protectionZones) ? protectionZones : [], 
- protectionAssociations: Array.isArray(protectionAssociations) ? protectionAssociations : [], 
- settings: { 
- loadCurrent: parseFloat(document.getElementById('loadCurrent').value) || 100, 
- powerFactor: parseFloat(document.getElementById('powerFactor').value) || 0.9, 
- voltageDropLimit: parseFloat(document.getElementById('voltageDropLimit').value) || 3, 
- temperature: parseFloat(document.getElementById('temperature').value) || 75, 
- method: document.querySelector('input[name="method"]:checked')?.value || 'point-to-point' 
- } 
- }; 
- const json = JSON.stringify(projectData); 
+ const projectData = ProjectSerializer.buildProjectData({
+   includeResults: false,
+   autoSave: true
+ });
+ 
+ const busesClean = projectData.buses;
+ const json = JSON.stringify(projectData);
  const sizeKB = (json.length / 1024).toFixed(2); 
  // Check if data size is approaching localStorage limit (typically 5-10MB) 
  // Warn if > 4MB, which should never happen with stripped results 
@@ -911,7 +855,7 @@ function loadAutoSavedProject() {
  try { 
  const json = localStorage.getItem('pwrsyspro_autosave'); 
  if (!json) return false; 
- const projectData = JSON.parse(json); 
+ const projectData = ProjectSerializer.deserialize(json);
  if (! projectData.projectInfo?.autoSave) return false; 
  const savedDate = new Date(projectData.projectInfo.savedDate); 
  const now = new Date(); 
