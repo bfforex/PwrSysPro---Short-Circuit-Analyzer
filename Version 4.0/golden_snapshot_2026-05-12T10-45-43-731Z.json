@@ -1,0 +1,1809 @@
+{
+  "createdAt": "2026-05-12T10:45:43.727Z",
+  "appVersion": "4.0",
+  "projectSchema": null,
+  "metadata": {
+    "busCount": 31,
+    "componentCount": 30
+  },
+  "buses": [
+    {
+      "busId": "BUS-1762222254194-8ybwrda14",
+      "busName": "MERALCO-CCP",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 4.385763897495092,
+        "asymmetricalFaultCurrentKA": 4.3938799036130245,
+        "xrRatio": 5.992207618624303,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0,
+        "ppeCategory": null,
+        "arcFlashBoundaryFt": 0
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762222402905-q0t8vp7qh",
+      "busName": "EHV1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 4.375806228530331,
+        "asymmetricalFaultCurrentKA": 4.383561403889461,
+        "xrRatio": 5.95130117381695,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 881.6923498008007,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 975.8215706699995
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762223739042-bperctkgb",
+      "busName": "DS01",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 4.327373962618643,
+        "asymmetricalFaultCurrentKA": 4.332609773274388,
+        "xrRatio": 5.612835315626763,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 871.9336091007596,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 970.4062540136582
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762224487365-i17qyals5",
+      "busName": "LCJ1-1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 4.312166213142425,
+        "asymmetricalFaultCurrentKA": 4.317258596117898,
+        "xrRatio": 5.592626870959286,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 868.8693608981208,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 968.6995972797607
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762234835703-5kwivppsj",
+      "busName": "LCJ1-4",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 26.218467427939878,
+        "asymmetricalFaultCurrentKA": 26.21869435576578,
+        "xrRatio": 3.2339382349815873,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.09522016366243528,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 5.0704481250533995
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762235598231-urpdmbs56",
+      "busName": "DS02",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 3.9536485873865965,
+        "asymmetricalFaultCurrentKA": 3.9538749834459765,
+        "xrRatio": 3.8595156952643306,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 796.6307307145747,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 927.5565692569595
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762236000113-t2w9x2pxk",
+      "busName": "LCH1-1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 3.8896500111169963,
+        "asymmetricalFaultCurrentKA": 3.8897753142696874,
+        "xrRatio": 3.6448640591923795,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 783.7354944659619,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 920.0186596060098
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762236288576-uzcbhf3a7",
+      "busName": "LCH1-4",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 25.61444198777612,
+        "asymmetricalFaultCurrentKA": 25.614550360439676,
+        "xrRatio": 3.046863410630266,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.09343805399455232,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 5.022775585125134
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762236777474-apa3ul4ue",
+      "busName": "DS03",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 3.7354820756401246,
+        "asymmetricalFaultCurrentKA": 3.7355193736459276,
+        "xrRatio": 3.2740718074421804,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 752.671804211973,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 901.6016573570231
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762237159057-ox95kgf42",
+      "busName": "LCC1-1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 3.522764431293002,
+        "asymmetricalFaultCurrentKA": 3.5227714451642327,
+        "xrRatio": 2.871905023983127,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 709.8107838894401,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 875.5544795160354
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762237192448-7rh2o8om3",
+      "busName": "LCC1-4",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 25.03360752183606,
+        "asymmetricalFaultCurrentKA": 25.033664350768397,
+        "xrRatio": 2.900894983187233,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.09171684461859997,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 4.97629862920444
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762237749042-ka2ade4h2",
+      "busName": "DS04",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 3.6567314824848145,
+        "asymmetricalFaultCurrentKA": 3.6567509761380452,
+        "xrRatio": 3.1048548042464885,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 736.8041464819295,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 892.0473519945473
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762238020265-6d9c812vm",
+      "busName": "LCC2-1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 3.6406360160400477,
+        "asymmetricalFaultCurrentKA": 3.64065228337112,
+        "xrRatio": 3.060363503141038,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 733.5610299247338,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 890.0819694380472
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762238214657-jn6y60d62",
+      "busName": "LCC2-4",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 7.698905088522428,
+        "asymmetricalFaultCurrentKA": 7.698905089068946,
+        "xrRatio": 1.6132425992074528,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.03526544933024576,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 3.0857205510490346
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762239312227-h0jiqs0t1",
+      "busName": "FPMOTOR",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 7.359010669012192,
+        "asymmetricalFaultCurrentKA": 7.359010669249956,
+        "xrRatio": 1.5606737389941399,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.033998056479070615,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 3.029764883509786
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762239349570-emtx06syb",
+      "busName": "OHC1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 7.359010669012192,
+        "asymmetricalFaultCurrentKA": 7.359010669249956,
+        "xrRatio": 1.5606737389941399,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.033998056479070615,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 3.029764883509786
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762239809885-4mmhspxmy",
+      "busName": "OHC2",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 7.359010669012192,
+        "asymmetricalFaultCurrentKA": 7.359010669249956,
+        "xrRatio": 1.5606737389941399,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.033998056479070615,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 3.029764883509786
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762240218716-l58ialyfp",
+      "busName": "LCD1-1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 3.5623759497639123,
+        "asymmetricalFaultCurrentKA": 3.5623847851880783,
+        "xrRatio": 2.9207888248852085,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 717.7922097058032,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 880.4632794627312
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762240918899-u8a9tfs00",
+      "busName": "LCD1-4",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 16.140684522036164,
+        "asymmetricalFaultCurrentKA": 16.140684522036395,
+        "xrRatio": 1.182489071655086,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.06426123416373997,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 4.165397126830741
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762241231132-5w7qb6ado",
+      "busName": "DS05",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 4.220185893968888,
+        "asymmetricalFaultCurrentKA": 4.2225205165393715,
+        "xrRatio": 5.026878240098251,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 850.3360119534667,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 958.3125236110317
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762241264404-ezufmh2j3",
+      "busName": "LCA1-1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 4.215675652495901,
+        "asymmetricalFaultCurrentKA": 4.2178919690407275,
+        "xrRatio": 4.992958470898991,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 849.4272319036193,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 957.8002977948529
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762241300804-9md7p7dah",
+      "busName": "LCA1-4",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 26.08560164186305,
+        "asymmetricalFaultCurrentKA": 26.085795529143983,
+        "xrRatio": 3.1922392914239746,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.09482883118246917,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 5.060018223214882
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762241326460-uaw5du7ox",
+      "busName": "DS06",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 4.151243262052066,
+        "asymmetricalFaultCurrentKA": 4.152546355688954,
+        "xrRatio": 4.673676305205499,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 836.4445853313584,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 950.4526038461189
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762241362676-gkytzgggi",
+      "busName": "LCB1-1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 4.14680325358313,
+        "asymmetricalFaultCurrentKA": 4.148041709807777,
+        "xrRatio": 4.64499127370767,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 835.5499567085028,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 949.944184278836
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762241385308-b9uaf3o6u",
+      "busName": "LCB1-4",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 25.989255276249605,
+        "asymmetricalFaultCurrentKA": 25.989428510126462,
+        "xrRatio": 3.1630625075200554,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.09454482401762555,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 5.052435302382299
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762241422763-z878xuogc",
+      "busName": "LCU1-1",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 4.122238353520759,
+        "asymmetricalFaultCurrentKA": 4.123150599226158,
+        "xrRatio": 4.479517429709088,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 830.6003123852697,
+        "ppeCategory": 4,
+        "arcFlashBoundaryFt": 947.1263576609467
+      },
+      "loadFlow": {
+        "busVoltage": 13200,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762241442195-lysikdgbe",
+      "busName": "LCU1-4",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 36.88785522494879,
+        "asymmetricalFaultCurrentKA": 36.88830938611276,
+        "xrRatio": 3.3347483208790187,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.1255799617231841,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 5.822936515647386
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762327100795-jb6ixcp1d",
+      "busName": "SH1-A16",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 10.477741883353007,
+        "asymmetricalFaultCurrentKA": 10.477741897969068,
+        "xrRatio": 1.84886592027034,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.04527286985617826,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 3.496237243261408
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762331741895-dli3szu7w",
+      "busName": "SH1-B16",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 11.095901134717964,
+        "asymmetricalFaultCurrentKA": 11.095901156968372,
+        "xrRatio": 1.882369095263008,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.047426122460081044,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 3.5784148815113492
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762332194119-q8vq0w1bx",
+      "busName": "SH1-C16",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 12.41207523014704,
+        "asymmetricalFaultCurrentKA": 12.412075283605875,
+        "xrRatio": 1.9570713514999336,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.051937221552670394,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 3.7447362816653733
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    },
+    {
+      "busId": "BUS-1762332856824-l296fb0gl",
+      "busName": "SH1-D16",
+      "shortCircuit": {
+        "symmetricalFaultCurrentKA": 13.041151696863075,
+        "asymmetricalFaultCurrentKA": 13.041151777499524,
+        "xrRatio": 1.9945116286748827,
+        "totalImpedanceMagnitude": 0,
+        "method": "per-unit"
+      },
+      "voltageDrop": {
+        "dropPercent": 0,
+        "dropVolts": 0,
+        "severity": null
+      },
+      "arcFlash": {
+        "incidentEnergyCalCm2": 0.05406091318558779,
+        "ppeCategory": 1,
+        "arcFlashBoundaryFt": 3.82052961775049
+      },
+      "loadFlow": {
+        "busVoltage": 440,
+        "activePowerKW": 0,
+        "reactivePowerKVAR": 0
+      },
+      "rawResultKeys": [
+        "shortCircuit",
+        "systemFault",
+        "motorContribution",
+        "loadFlow",
+        "protection",
+        "voltageDrop",
+        "arcFlash",
+        "baseKVA",
+        "baseVoltage",
+        "baseZ",
+        "baseCurrent",
+        "totalRpu",
+        "totalXpu",
+        "totalZpu",
+        "faultCurrents",
+        "totalImpedance",
+        "xrRatio",
+        "path",
+        "method",
+        "iecCalcType",
+        "calculationDate",
+        "analysisComplete",
+        "analysisTypes",
+        "includesMotorContribution",
+        "motorCount",
+        "demandFactorsEnabled",
+        "demandFactorsAttempted",
+        "arcFlashAnalyzed",
+        "arcFlashStatus",
+        "arcFlashReason"
+      ]
+    }
+  ]
+}
