@@ -1,0 +1,12 @@
+{
+  "name": "pwrsyspro-short-circuit-analyzer",
+  "version": "4.0.0",
+  "description": "PwrSysPro Short Circuit Analyzer - Test Suite",
+  "scripts": {
+    "test": "playwright test",
+    "test:regression": "playwright test tests/e2e/regression.spec.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
