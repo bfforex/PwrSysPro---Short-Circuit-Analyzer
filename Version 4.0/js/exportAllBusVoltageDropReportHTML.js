@@ -524,11 +524,21 @@ tr:nth-child(even) { background:#f5f5f5; }
 
     function downloadVoltageDropA4HTMLReport() {
         try {
-            const blob = new Blob([buildAllBusVoltageDropReportHTML()], { type: 'text/html;charset=utf-8' });
+            const projectName = projectInfo().projectName || 'Project';
+            const cleanProjectName = typeof global.sanitizeExportName === 'function'
+                ? global.sanitizeExportName(projectName, 'Project')
+                : projectName.replace(/[^a-z0-9\-_]+/gi, '_');
+            const fileName = `${cleanProjectName}_VoltageDrop_Cable_Register_A4.html`;
+            const html = buildAllBusVoltageDropReportHTML();
+            if (typeof global.downloadFileContent === 'function') {
+                global.downloadFileContent(html, fileName, 'text/html;charset=utf-8');
+                return;
+            }
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const anchor = document.createElement('a');
             anchor.href = url;
-            anchor.download = (projectInfo().projectName || 'Project').replace(/[^a-z0-9\-_]+/gi, '_') + '_VoltageDrop_Cable_Register_A4.html';
+            anchor.download = fileName;
             document.body.appendChild(anchor);
             anchor.click();
             anchor.remove();

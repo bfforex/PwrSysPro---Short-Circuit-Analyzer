@@ -533,12 +533,21 @@
 
  function downloadAllBusReportText(reportText) {
   const info = getProjectInfo();
-  const cleanProject = info.projectName.replace(/[^a-z0-9\-_]+/gi, '_') || 'Project';
-  const fileTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const cleanProject = typeof global.sanitizeExportName === 'function'
+   ? global.sanitizeExportName(info.projectName, 'Project')
+   : (info.projectName.replace(/[^a-z0-9\-_]+/gi, '_') || 'Project');
+  const fileTimestamp = typeof global.getExportFileTimestamp === 'function'
+   ? global.getExportFileTimestamp()
+   : new Date().toISOString().replace(/[:.]/g, '-');
   const fileName = `${cleanProject}_AllBus_ShortCircuitSteps_${fileTimestamp}.txt`;
 
   if (typeof global.downloadTextFile === 'function') {
    global.downloadTextFile(reportText, fileName);
+   return;
+  }
+
+  if (typeof global.downloadFileContent === 'function') {
+   global.downloadFileContent(reportText, fileName, 'text/plain;charset=utf-8');
    return;
   }
 
