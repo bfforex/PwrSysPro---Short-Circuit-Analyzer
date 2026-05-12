@@ -172,19 +172,6 @@ function initModalClickOutside() {
 }
 
 /**
- * Update session time display
- * Updates the session timestamp every second
- */
-function updateSessionTime() {
-    const sessionDate = document.getElementById('sessionDate');
-    if (sessionDate) {
-        const now = new Date();
-        const formatted = now.toISOString().replace('T', ' ').substring(0, 19);
-        sessionDate.textContent = formatted;
-    }
-}
-
-/**
  * Switch between tabs
  * Handles tab navigation in the main content area
  * 
