@@ -140,7 +140,7 @@ function getNecTable9ResistanceTempFactorFrom75C(material, targetTempC) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SHORT CIRCUIT FOLLOW-UP FIXES v3.2 (inlined from shortCircuitFollowupFixes.js)
+// SHORT CIRCUIT FOLLOW-UP FIXES (v3.2 behavior inlined from shortCircuitFollowupFixes.js)
 // ─────────────────────────────────────────────────────────────────────────────
 function scFollowupSafeNum(value, fallback = 0) {
     const n = Number(value);
@@ -2442,6 +2442,7 @@ window.calculateShortCircuit = calculateShortCircuit;
 window.calculateShortCircuitPointToPoint = calculateShortCircuitPointToPoint;
 window.calculateShortCircuitPerUnit = calculateShortCircuitPerUnit;
 window.generateReferredThroughFaultSupplement = generatePathOnlyReferredThroughFaultSupplement;
+// Keep legacy V3 global alias names for downstream compatibility.
 window.patchShortCircuitFollowupTextV3 = patchShortCircuitFollowupTextV32;
 window.patchShortCircuitResultFollowupV3 = applyShortCircuitFollowupFixesV32;
 window.SHORT_CIRCUIT_CONFIG = SHORT_CIRCUIT_CONFIG;
