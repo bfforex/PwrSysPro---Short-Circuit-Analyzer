@@ -953,84 +953,8 @@ No protection assets created yet.
 <script src="js/protectionDeviceRatings.js"></script>
 
 <script src="js/voltageDropCalc.js"></script>
-<script src="js/voltageDropFormulaDetailsPatch.js"></script>
-<script src="js/voltageDropDisplaySummaryPatch.js"></script>
 <script src="js/exportAllBusVoltageDropReportHTML.js"></script>
 <script src="js/systemWideVdHtmlButtonsPatch.js"></script>
-
-<!-- Deferred Voltage Drop Compatibility Patch
-     This patch is non-destructive and will attempt to wrap the
-     calculateVoltageDrop implementation once it becomes available.
-     Placing here (after voltageDropCalc.js) ensures better chances
-     that the original function is defined before patching.
--->
-<script>
-(function patchVoltageDropCompatibility() {
-    function applyPatch() {
-        try {
-            if (typeof calculateVoltageDrop !== 'function') {
-                return false;
-            }
-
-            if (calculateVoltageDrop.__isCompatibilityPatched) {
-                console.log('✅ Voltage drop compatibility patch already applied');
-                return true;
-            }
-
-            const original = calculateVoltageDrop;
-            function wrappedCalculateVoltageDrop(busId, path, loadFlowData) {
-                const result = original(busId, path, loadFlowData);
-                try {
-                    if (result) {
-                        if (result.totalDropPercent !== undefined && result.cumulativeDropPercent === undefined) {
-                            result.cumulativeDropPercent = result.totalDropPercent;
-                        }
-                        if (result.totalDropVolts !== undefined && result.cumulativeDropVolts === undefined) {
-                            result.cumulativeDropVolts = result.totalDropVolts;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Voltage drop compatibility wrapper internal error', e);
-                }
-                return result;
-            }
-
-            wrappedCalculateVoltageDrop.__isCompatibilityPatched = true;
-            wrappedCalculateVoltageDrop.__original = original;
-
-            try {
-                // eslint-disable-next-line no-global-assign
-                calculateVoltageDrop = wrappedCalculateVoltageDrop;
-            } catch (assignError) {
-                window.calculateVoltageDropWrapped = wrappedCalculateVoltageDrop;
-                console.warn('Could not reassign calculateVoltageDrop; provided alias calculateVoltageDropWrapped instead', assignError);
-            }
-
-            console.log('✅ Voltage drop compatibility patch applied');
-            return true;
-        } catch (err) {
-            console.warn('Voltage drop compatibility patch attempt failed:', err);
-            return false;
-        }
-    }
-
-    if (applyPatch()) {
-        return;
-    }
-
-    const maxAttempts = 50;
-    let attempts = 0;
-    const handle = setInterval(() => {
-        attempts++;
-        if (applyPatch() || attempts >= maxAttempts) {
-            clearInterval(handle);
-            if (attempts >= maxAttempts && typeof calculateVoltageDrop !== 'function') {
-                console.warn('Voltage drop function not found after retries — compatibility patch was not applied.');
-            }
-        }
-    }, 100);
-})();
-</script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- LAYER 7.5: ADVANCED CALCULATIONS (Phase 3) -->
