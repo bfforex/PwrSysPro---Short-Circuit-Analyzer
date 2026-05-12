@@ -39,7 +39,6 @@ function generateUniqueId(prefix = 'item') {
  */ 
 function saveProject() { 
  try { 
- const projectName = document.getElementById('projectName').value || 'Untitled Project'; 
  const engineer = document.getElementById('engineer').value || 'Unknown'; 
  const projectNumber = document.getElementById('projectNumber').value || ''; 
  console.log('💾 Saving project...'); 
