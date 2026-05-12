@@ -503,7 +503,7 @@ function vdAddVoltageDropFormulaDetails(result, path, options = {}) {
             calculatedDropVolts,
             usedDropVolts,
             voltageLevel,
-            dropPercent: voltageLevel > 0 ? usedDropVolts / voltageLevel * 100 : 0,
+            dropPercent: voltageLevel > 0 ? (usedDropVolts / voltageLevel) * 100 : 0,
             impedanceSource,
             formula: 'VD = √3 × I × (R cosθ + X sinθ)'
         });
