@@ -34,10 +34,9 @@ function exportArcFlashReport(busId) {
         console.log('📄 Generating arc flash report...');
         
         // ✅ Issue #1 FIX: Use safeToFixed for safe numeric formatting
-        const safeFormat = typeof safeToFixed === 'function' ? safeToFixed : (v, d, f) => {
-            if (v === undefined || v === null || isNaN(Number(v))) return f || 'N/A';
-            return Number(v).toFixed(d || 2);
-        };
+        const safeFormat = typeof getSafeNumberFormatter === 'function'
+            ? getSafeNumberFormatter()
+            : ((v, d = 2, f = 'N/A') => (v === undefined || v === null || isNaN(Number(v)) ? f : Number(v).toFixed(d)));
         
         // Generate report content
         let report = '';
@@ -250,15 +249,20 @@ function exportArcFlashReport(busId) {
         report += '═'.repeat(80) + '\n';
         
         // Create blob and download
-        const blob = new Blob([report], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ArcFlash_${arcFlashResult.busName}_${new Date().toISOString().split('T')[0]}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const fileName = `ArcFlash_${arcFlashResult.busName}_${new Date().toISOString().split('T')[0]}.txt`;
+        if (typeof downloadFileContent === 'function') {
+            downloadFileContent(report, fileName, 'text/plain');
+        } else {
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
         
         console.log('✅ Arc flash report exported successfully');
         alert('✅ Arc flash report exported successfully!');
@@ -293,10 +297,9 @@ function generateArcFlashLabel(busId) {
         console.log('🏷️ Generating arc flash label...');
         
         // ✅ Issue #1 FIX: Use safeToFixed for safe numeric formatting
-        const safeFormat = typeof safeToFixed === 'function' ? safeToFixed : (v, d, f) => {
-            if (v === undefined || v === null || isNaN(Number(v))) return f || 'N/A';
-            return Number(v).toFixed(d || 2);
-        };
+        const safeFormat = typeof getSafeNumberFormatter === 'function'
+            ? getSafeNumberFormatter()
+            : ((v, d = 2, f = 'N/A') => (v === undefined || v === null || isNaN(Number(v)) ? f : Number(v).toFixed(d)));
         
         // Generate label content
         let label = '';
@@ -322,15 +325,20 @@ function generateArcFlashLabel(busId) {
         label += '═'.repeat(72) + '\n';
         
         // Create blob and download
-        const blob = new Blob([label], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ArcFlashLabel_${arcFlashResult.busName}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const fileName = `ArcFlashLabel_${arcFlashResult.busName}.txt`;
+        if (typeof downloadFileContent === 'function') {
+            downloadFileContent(label, fileName, 'text/plain');
+        } else {
+            const blob = new Blob([label], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
         
         console.log('✅ Arc flash label generated successfully');
         alert('✅ Arc flash label generated successfully!');

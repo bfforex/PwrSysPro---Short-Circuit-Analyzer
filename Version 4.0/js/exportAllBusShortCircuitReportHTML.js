@@ -352,12 +352,19 @@ Peak Current: Ipeak = ${ka(f.peakCrest)} kA</div>`;
   }
 
   function downloadHTML(content, projectName) {
-    const name = (projectName || 'Project').replace(/[^a-z0-9\-_]+/gi, '_');
+    const name = typeof global.sanitizeExportName === 'function'
+      ? global.sanitizeExportName(projectName || 'Project', 'Project')
+      : (projectName || 'Project').replace(/[^a-z0-9\-_]+/gi, '_');
+    const fileName = `${name}_ShortCircuitCalculation_A4.html`;
+    if (typeof global.downloadFileContent === 'function') {
+      global.downloadFileContent(content, fileName, 'text/html;charset=utf-8');
+      return;
+    }
     const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${name}_ShortCircuitCalculation_A4.html`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();

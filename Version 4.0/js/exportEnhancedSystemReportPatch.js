@@ -214,10 +214,14 @@
             const report = global.generateEnhancedSystemReport(global.buses, { scenarioId, mode });
             if (!report) return;
             const projectName = document.getElementById('projectName')?.value || 'Untitled';
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const timestamp = typeof global.getExportFileTimestamp === 'function'
+                ? global.getExportFileTimestamp()
+                : new Date().toISOString().replace(/[:.]/g, '-');
             const fileName = `${projectName.replace(/\s+/g, '_')}_EnhancedSystemReport_NonRedundant_${scenarioId}_${mode}_${timestamp}.txt`;
             if (typeof global.downloadTextFile === 'function') {
                 global.downloadTextFile(report, fileName);
+            } else if (typeof global.downloadFileContent === 'function') {
+                global.downloadFileContent(report, fileName, 'text/plain;charset=utf-8');
             } else {
                 const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);

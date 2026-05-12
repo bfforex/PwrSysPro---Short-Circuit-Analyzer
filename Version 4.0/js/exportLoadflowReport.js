@@ -31,10 +31,9 @@ function exportLoadFlowReport(busId) {
     const downstreamLoad = calculateDownstreamLoad(busId);
     
     // ✅ Issue #1 FIX: Use safeToFixed for safe numeric formatting
-    const safeFormat = typeof safeToFixed === 'function' ? safeToFixed : (v, d, f) => {
-        if (v === undefined || v === null || isNaN(Number(v))) return f || 'N/A';
-        return Number(v).toFixed(d || 2);
-    };
+    const safeFormat = typeof getSafeNumberFormatter === 'function'
+        ? getSafeNumberFormatter()
+        : ((v, d = 2, f = 'N/A') => (v === undefined || v === null || isNaN(Number(v)) ? f : Number(v).toFixed(d)));
     
     let report = `${'='.repeat(100)}\n`;
     report += `LOAD FLOW ANALYSIS REPORT - BUS: ${bus.name}\n`;
@@ -171,7 +170,9 @@ function exportLoadFlowReport(busId) {
     report += `${'='.repeat(100)}\n`;
     
     // Download
-    const fileTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileTimestamp = typeof getExportFileTimestamp === 'function'
+        ? getExportFileTimestamp()
+        : new Date().toISOString().replace(/[:.]/g, '-');
     const fileName = `${bus.name.replace(/\s+/g, '_')}_LoadFlow_${fileTimestamp}.txt`;
     downloadTextFile(report, fileName);
 }
@@ -192,10 +193,9 @@ function exportVoltageDropReport(busId) {
     const vdData = bus.results.voltageDrop;
     
     // ✅ Issue #1 FIX: Use safeToFixed for safe numeric formatting
-    const safeFormat = typeof safeToFixed === 'function' ? safeToFixed : (v, d, f) => {
-        if (v === undefined || v === null || isNaN(Number(v))) return f || 'N/A';
-        return Number(v).toFixed(d || 2);
-    };
+    const safeFormat = typeof getSafeNumberFormatter === 'function'
+        ? getSafeNumberFormatter()
+        : ((v, d = 2, f = 'N/A') => (v === undefined || v === null || isNaN(Number(v)) ? f : Number(v).toFixed(d)));
     
     let report = `${'='.repeat(100)}\n`;
     report += `VOLTAGE DROP ANALYSIS REPORT - BUS: ${bus.name}\n`;
@@ -361,7 +361,9 @@ function exportVoltageDropReport(busId) {
     report += `${'='.repeat(100)}\n`;
     
     // Download
-    const fileTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileTimestamp = typeof getExportFileTimestamp === 'function'
+        ? getExportFileTimestamp()
+        : new Date().toISOString().replace(/[:.]/g, '-');
     const fileName = `${bus.name.replace(/\s+/g, '_')}_VoltageDrop_${fileTimestamp}.txt`;
     downloadTextFile(report, fileName);
 }
@@ -382,10 +384,9 @@ function exportSystemLoadFlowReport() {
     const timestamp = getCalculationTimestamp();
     
     // ✅ Issue #1 FIX: Use safeToFixed for safe numeric formatting
-    const safeFormat = typeof safeToFixed === 'function' ? safeToFixed : (v, d, f) => {
-        if (v === undefined || v === null || isNaN(Number(v))) return f || 'N/A';
-        return Number(v).toFixed(d || 2);
-    };
+    const safeFormat = typeof getSafeNumberFormatter === 'function'
+        ? getSafeNumberFormatter()
+        : ((v, d = 2, f = 'N/A') => (v === undefined || v === null || isNaN(Number(v)) ? f : Number(v).toFixed(d)));
     
     let report = `${'='.repeat(100)}\n`;
     report += `SYSTEM LOAD FLOW ANALYSIS - ALL BUSES\n`;
@@ -429,7 +430,9 @@ function exportSystemLoadFlowReport() {
     report += `${'='.repeat(100)}\n`;
     
     // Download
-    const fileTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileTimestamp = typeof getExportFileTimestamp === 'function'
+        ? getExportFileTimestamp()
+        : new Date().toISOString().replace(/[:.]/g, '-');
     const fileName = `${projectName.replace(/\s+/g, '_')}_SystemLoadFlow_${fileTimestamp}.txt`;
     downloadTextFile(report, fileName);
 }

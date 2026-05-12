@@ -17,12 +17,14 @@
 // This module relies on the safeToFixed() function being loaded from utils.js
 // If utils.js is not loaded, provide a fallback implementation
 // ═══════════════════════════════════════════════════════════════════════════
-const exportSafeFormat = typeof safeToFixed === 'function' ? safeToFixed : (value, decimals = 2, fallback = 'N/A') => {
-    if (value === undefined || value === null || isNaN(Number(value))) {
-        return fallback;
-    }
-    return Number(value).toFixed(decimals);
-};
+const exportSafeFormat = typeof getSafeNumberFormatter === 'function'
+    ? getSafeNumberFormatter()
+    : (typeof safeToFixed === 'function' ? safeToFixed : (value, decimals = 2, fallback = 'N/A') => {
+        if (value === undefined || value === null || isNaN(Number(value))) {
+            return fallback;
+        }
+        return Number(value).toFixed(decimals);
+    });
 
 /**
  * Export detailed bus report with recommendations and demand factors
@@ -1475,6 +1477,10 @@ function exportRecommendationsCSV() {
  */
 function downloadTextFile(content, fileName, mimeType = 'text/plain') {
     try {
+        if (typeof downloadFileContent === 'function') {
+            downloadFileContent(content, fileName, mimeType);
+            return;
+        }
         const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
