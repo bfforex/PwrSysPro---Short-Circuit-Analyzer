@@ -140,6 +140,279 @@ function getNecTable9ResistanceTempFactorFrom75C(material, targetTempC) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SHORT CIRCUIT FOLLOW-UP FIXES (v3.2 behavior inlined from shortCircuitFollowupFixes.js)
+// ─────────────────────────────────────────────────────────────────────────────
+function scFollowupSafeNum(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+}
+
+function asymMultiplierFromXR(xr, t) {
+    if (!(xr > 0)) return 1.0;
+    if (!(SHORT_CIRCUIT_CONFIG.SYSTEM_FREQUENCY > 0)) return 1.0;
+    const tau = xr / (2 * Math.PI * SHORT_CIRCUIT_CONFIG.SYSTEM_FREQUENCY);
+    return Math.sqrt(1 + 2 * Math.exp(-2 * t / tau));
+}
+
+function peakCrestFromXR(symKA, xr) {
+    if (!(symKA > 0)) return 0;
+    if (!(xr > 0)) return Math.SQRT2 * symKA;
+    return Math.SQRT2 * symKA * (1 + Math.exp(-Math.PI / xr));
+}
+
+function getFaultCurrentsFromResultV32(result) {
+    const fc = result?.faultCurrents || {};
+    const xr = scFollowupSafeNum(result?.xrRatio, scFollowupSafeNum(result?.xr, 0));
+
+    const threePhaseSym = scFollowupSafeNum(
+        fc.threePhaseSym,
+        scFollowupSafeNum(result?.faultCurrentKA, scFollowupSafeNum(result?.initialSymmetricalCurrentKA, 0))
+    );
+
+    const threePhaseAsym = scFollowupSafeNum(
+        fc.threePhaseAsym,
+        scFollowupSafeNum(result?.asymFaultCurrentKA, threePhaseSym * asymMultiplierFromXR(xr, SHORT_CIRCUIT_CONFIG.CONTACT_PARTING_TIME))
+    );
+
+    const firstCycleAsym = scFollowupSafeNum(
+        fc.firstCycleAsym,
+        scFollowupSafeNum(result?.firstCycleAsymKA, threePhaseSym * asymMultiplierFromXR(xr, SHORT_CIRCUIT_CONFIG.FIRST_CYCLE_TIME))
+    );
+
+    const peakCrest = scFollowupSafeNum(
+        fc.peakCrest,
+        scFollowupSafeNum(result?.peakCrestKA, peakCrestFromXR(threePhaseSym, xr))
+    );
+
+    return {
+        threePhaseSym,
+        threePhaseAsym,
+        firstCycleAsym,
+        peakCrest,
+        lineToGround: scFollowupSafeNum(fc.lineToGround, scFollowupSafeNum(result?.lineToGroundKA, threePhaseSym * 0.85)),
+        lineToLine: scFollowupSafeNum(fc.lineToLine, scFollowupSafeNum(result?.lineToLineKA, threePhaseSym * 0.866)),
+        doubleLineToGround: scFollowupSafeNum(fc.doubleLineToGround, scFollowupSafeNum(result?.doubleLineToGroundKA, 0))
+    };
+}
+
+function findBusByIdForFollowup(busId) {
+    if (!busId || !Array.isArray(window.buses)) return null;
+    return window.buses.find(bus => String(bus.id) === String(busId)) || null;
+}
+
+function getDeviceVoltageForFollowup(device) {
+    const candidates = [device?.voltage];
+    const fromBus = findBusByIdForFollowup(device?.fromBus);
+    const toBus = findBusByIdForFollowup(device?.toBus);
+    if (fromBus) candidates.push(fromBus.voltage);
+    if (toBus) candidates.push(toBus.voltage);
+    for (const value of candidates) {
+        const n = scFollowupSafeNum(value, 0);
+        if (n > 0) return n;
+    }
+    return 0;
+}
+
+function getDeviceInterruptingKAForFollowup(device) {
+    const candidates = [device?.interruptingRatingSymKA, device?.interruptingRatingKA, device?.interruptingSymKA, device?.interruptingKA, device?.ratingKA];
+    for (const value of candidates) {
+        const n = scFollowupSafeNum(value, 0);
+        if (n > 0) return n;
+    }
+    return 0;
+}
+
+function getDeviceContinuousAForFollowup(device) {
+    const candidates = [device?.continuousAmpRating, device?.ampereRating, device?.rating, device?.continuousA];
+    for (const value of candidates) {
+        const n = scFollowupSafeNum(value, 0);
+        if (n > 0) return n;
+    }
+    return 0;
+}
+
+function getPathBusIdsForFollowup(path) {
+    if (!Array.isArray(path)) return [];
+    return path.map(segment => segment?.bus?.id).filter(Boolean).map(String);
+}
+
+function getPathEdgeSetForFollowup(path) {
+    const ids = getPathBusIdsForFollowup(path);
+    const edges = new Set();
+    for (let i = 1; i < ids.length; i++) {
+        const a = ids[i - 1];
+        const b = ids[i];
+        edges.add(`${a}|${b}`);
+        edges.add(`${b}|${a}`);
+    }
+    return edges;
+}
+
+function isDeviceOnActualPathForFollowup(device, path) {
+    if (!device || !device.fromBus || !device.toBus) return false;
+    return getPathEdgeSetForFollowup(path).has(`${String(device.fromBus)}|${String(device.toBus)}`);
+}
+
+function getTransformersDownstreamOfDeviceOnActualPathForFollowup(device, path) {
+    if (!isDeviceOnActualPathForFollowup(device, path) || !Array.isArray(path)) return [];
+    const ids = getPathBusIdsForFollowup(path);
+    const fromIndex = ids.indexOf(String(device.fromBus));
+    const toIndex = ids.indexOf(String(device.toBus));
+    const deviceIndex = Math.max(fromIndex, toIndex);
+    if (deviceIndex < 0) return [];
+
+    const downstreamTransformers = [];
+    for (let i = deviceIndex + 1; i < path.length; i++) {
+        const comp = path[i]?.component;
+        if (comp?.type === 'transformer') downstreamTransformers.push(comp);
+    }
+    return downstreamTransformers;
+}
+
+function generatePathOnlyReferredThroughFaultSupplement(result) {
+    const path = result?.path;
+    const targetBus = Array.isArray(path) ? path[path.length - 1]?.bus : null;
+    const targetVoltage = scFollowupSafeNum(targetBus?.voltage, 0);
+    const faultCurrents = getFaultCurrentsFromResultV32(result);
+    const targetFaultKA = faultCurrents.threePhaseSym;
+
+    if (!Array.isArray(path) || !targetBus || targetVoltage <= 0 || targetFaultKA <= 0 || !Array.isArray(window.components)) return '';
+
+    const pathDevices = window.components.filter(device => device && (device.type === 'breaker' || device.type === 'fuse') && isDeviceOnActualPathForFollowup(device, path));
+    const rows = [];
+
+    pathDevices.forEach(device => {
+        const downstreamTransformers = getTransformersDownstreamOfDeviceOnActualPathForFollowup(device, path);
+        if (downstreamTransformers.length === 0) return;
+
+        const deviceVoltage = getDeviceVoltageForFollowup(device);
+        if (deviceVoltage <= 0) return;
+
+        const referredKA = targetFaultKA * (targetVoltage / deviceVoltage);
+        const interruptingKA = getDeviceInterruptingKAForFollowup(device);
+        const continuousA = getDeviceContinuousAForFollowup(device);
+        const utilization = interruptingKA > 0 ? (referredKA / interruptingKA) * 100 : null;
+        const resultText = interruptingKA > 0 ? (referredKA <= interruptingKA ? 'PASS' : 'FAIL') : 'CHECK REQUIRED';
+        rows.push({ device, downstreamTransformers, deviceVoltage, referredKA, interruptingKA, continuousA, utilization, resultText });
+    });
+
+    if (rows.length === 0) return '';
+
+    let text = '';
+    text += '════════════════════════════════════════════════════════════════════════════════\n';
+    text += 'REFERRED THROUGH-FAULT CHECKS ACROSS TRANSFORMERS — ACTUAL PATH ONLY\n';
+    text += '════════════════════════════════════════════════════════════════════════════════\n';
+    text += `Target Bus: ${targetBus.name || targetBus.id} (${targetVoltage} V)\n`;
+    text += `Target 3φ Fault Current: ${targetFaultKA.toFixed(3)} kA\n`;
+    text += 'Basis: I_referred = I_target × (V_target / V_device). Only protective devices located on the traced fault-current path are listed. Direct device duty is evaluated by referred current when a transformer is between the device and the target bus.\n\n';
+
+    rows.forEach((row, index) => {
+        const device = row.device;
+        const deviceName = device.tag || device.name || `${device.type || 'Device'} ${index + 1}`;
+        const transformerTags = row.downstreamTransformers.map(t => t.tag || t.name || t.id || 'Transformer').join(', ');
+        text += `${index + 1}. ${String(device.type || 'device').toUpperCase()} ${deviceName}\n`;
+        text += `   From Bus: ${device.fromBusName || device.fromBus}\n`;
+        text += `   To Bus: ${device.toBusName || device.toBus}\n`;
+        text += `   Downstream transformer boundary: ${transformerTags}\n`;
+        text += `   Device voltage basis: ${row.deviceVoltage.toFixed(0)} V\n`;
+        text += `   Referred through-fault current: ${row.referredKA.toFixed(3)} kA\n`;
+        text += `   Formula: ${targetFaultKA.toFixed(3)} × (${targetVoltage.toFixed(0)} / ${row.deviceVoltage.toFixed(0)}) = ${row.referredKA.toFixed(3)} kA\n`;
+        if (row.continuousA > 0) text += `   Existing continuous rating: ${row.continuousA.toFixed(2)} A\n`;
+        if (row.interruptingKA > 0) {
+            text += `   Existing interrupting rating: ${row.interruptingKA.toFixed(3)} kA\n`;
+            text += `   Interrupting utilization: ${row.utilization.toFixed(2)}%\n`;
+        } else {
+            text += '   Existing interrupting rating: Not entered\n';
+        }
+        text += `   Referred through-fault result: ${row.resultText}\n\n`;
+    });
+    return text;
+}
+
+function stripExistingReferredThroughFaultSection(text) {
+    return String(text || '').replace(/════════════════════════════════════════════════════════════════════════════════\nREFERRED THROUGH-FAULT CHECKS ACROSS TRANSFORMERS[\s\S]*$/, '');
+}
+
+function patchNoNotApplicableWording(text) {
+    let patched = String(text || '');
+    patched = patched.replace(/\(upstream of transformer - reference\)/g, '(upstream across transformer boundary - referred check below)');
+    patched = patched.replace(/Direct interrupting check at target bus: NOT APPLIED across transformer/g, 'Direct interrupting check at target bus: Deferred across transformer boundary');
+    patched = patched.replace(/Adequacy result: NOT-APPLICABLE/g, 'Adequacy result: REFERRED-CHECK');
+    patched = patched.replace(/Overall protection adequacy status: NOT-APPLICABLE/g, 'Overall protection adequacy status: SEE REFERRED THROUGH-FAULT CHECKS');
+    patched = patched.replace(/NOT-APPLICABLE/g, 'REFERRED-CHECK');
+    patched = patched.replace(/NOT APPLICABLE/g, 'REFERRED CHECK');
+    patched = patched.replace(/not applicable/g, 'evaluated by referred check');
+    return patched;
+}
+
+function patchLvZ0Note(text) {
+    return String(text || '').replace(/ℹ️ For MV shielded cables, Z0 depends on shield bonding and earth return\./g, 'ℹ️ Z0 is estimated from installation method; actual return impedance depends on raceway, bonding, grounding conductor, and return path.');
+}
+
+function patchProtectionMomentaryBasisText(text, result) {
+    const faultCurrents = getFaultCurrentsFromResultV32(result);
+    if (!(faultCurrents.threePhaseAsym > 0) && !(faultCurrents.firstCycleAsym > 0) && !(faultCurrents.peakCrest > 0)) return text;
+
+    const replacement =
+        `Basis Peak / Momentary:\n` +
+        `   Asym RMS @ 50ms (interrupting):    ${faultCurrents.threePhaseAsym.toFixed(3)} kA  [K=√(1+2e^(-2t/τ)), t=50ms]\n` +
+        `   1st-Cycle Asym RMS (momentary):    ${faultCurrents.firstCycleAsym.toFixed(3)} kA  [K=√(1+2e^(-2t/τ)), t=8.333ms]\n` +
+        `   Peak Crest (instantaneous):        ${faultCurrents.peakCrest.toFixed(3)} kA  [√2·I_sym·(1+e^(-π/(X/R)))]`;
+
+    return String(text || '')
+        .replace(/Basis Peak \/ Momentary:\s*[\d.]+\s*kA[^\n]*/g, replacement)
+        .replace(/Basis Peak \/ Momentary:\s*0\.000 kA[^\n]*/g, replacement);
+}
+
+function patchShortCircuitFollowupTextV32(text, result) {
+    let patched = String(text || '');
+    patched = patchProtectionMomentaryBasisText(patched, result);
+    patched = patchLvZ0Note(patched);
+    patched = patchNoNotApplicableWording(patched);
+    patched = stripExistingReferredThroughFaultSection(patched);
+    const referred = generatePathOnlyReferredThroughFaultSupplement(result);
+    if (referred) {
+        if (!patched.endsWith('\n')) patched += '\n';
+        patched += referred;
+    }
+    return patched;
+}
+
+function applyShortCircuitFollowupFixesV32(result) {
+    if (!result || typeof result !== 'object') return result;
+
+    const faultCurrents = getFaultCurrentsFromResultV32(result);
+
+    result.faultCurrents = Object.assign({}, result.faultCurrents || {}, {
+        threePhaseSym: faultCurrents.threePhaseSym,
+        threePhaseAsym: faultCurrents.threePhaseAsym,
+        firstCycleAsym: faultCurrents.firstCycleAsym,
+        peakCrest: faultCurrents.peakCrest,
+        lineToGround: faultCurrents.lineToGround,
+        lineToLine: faultCurrents.lineToLine,
+        doubleLineToGround: faultCurrents.doubleLineToGround,
+        peakMomentary: faultCurrents.firstCycleAsym,
+        peakMomentaryKA: faultCurrents.firstCycleAsym
+    });
+
+    result.faultCurrentKA = scFollowupSafeNum(result.faultCurrentKA, faultCurrents.threePhaseSym);
+    result.asymFaultCurrentKA = scFollowupSafeNum(result.asymFaultCurrentKA, faultCurrents.threePhaseAsym);
+    result.firstCycleAsymKA = scFollowupSafeNum(result.firstCycleAsymKA, faultCurrents.firstCycleAsym);
+    result.peakCrestKA = scFollowupSafeNum(result.peakCrestKA, faultCurrents.peakCrest);
+    result.peakMomentaryKA = scFollowupSafeNum(result.peakMomentaryKA, faultCurrents.firstCycleAsym);
+    result.lineToGroundKA = scFollowupSafeNum(result.lineToGroundKA, faultCurrents.lineToGround);
+    result.lineToLineKA = scFollowupSafeNum(result.lineToLineKA, faultCurrents.lineToLine);
+    result.doubleLineToGroundKA = scFollowupSafeNum(result.doubleLineToGroundKA, faultCurrents.doubleLineToGround);
+
+    const currentText = result.calculationSteps || result.steps || '';
+    const patchedText = patchShortCircuitFollowupTextV32(currentText, result);
+    result.calculationSteps = patchedText;
+    result.steps = patchedText;
+
+    return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SHORT CIRCUIT RESULT NORMALIZATION (Unified Schema v3.3)
 // ─────────────────────────────────────────────────────────────────────────────
 function normalizeShortCircuitToSchema(bus, raw = {}, context = {}) {
@@ -627,7 +900,7 @@ function calculateShortCircuit(busId, method = 'point-to-point', options = {}) {
     console.log(`   X/R Ratio: ${(normalized.impedance?.xrRatio || 0).toFixed(2)}`);
     console.log('');
 
-    return normalized;
+    return applyShortCircuitFollowupFixesV32(normalized);
 
   } catch (error) {
     console.error('❌ Calculation error:', error);
@@ -1415,7 +1688,7 @@ function calculateShortCircuitPointToPoint(path) {
         }, null, 'mid-range');
     }
   
-    return {
+    return applyShortCircuitFollowupFixesV32({
         lineToLineKA: lineToLineKA,
         doubleLineToGroundKA: doubleLineToGroundKA,
         totalR: totalR,
@@ -1440,7 +1713,7 @@ function calculateShortCircuitPointToPoint(path) {
         steps: steps,
         path: path,
         method: 'Point-to-Point'
-    };
+    });
 }
 
 /**
@@ -2123,7 +2396,7 @@ function calculateShortCircuitPerUnit(path) {
         }, null, 'mid-range');
     }
 
-    return {
+    return applyShortCircuitFollowupFixesV32({
         doubleLineToGroundKA: doubleLineToGroundKA,
         lineToLineKA: lineToLineKA,
         totalR: totalR_ohms,
@@ -2158,7 +2431,7 @@ function calculateShortCircuitPerUnit(path) {
         steps: steps,
         path: path,
         method: 'Per-Unit'
-    };
+    });
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -2168,6 +2441,10 @@ function calculateShortCircuitPerUnit(path) {
 window.calculateShortCircuit = calculateShortCircuit;
 window.calculateShortCircuitPointToPoint = calculateShortCircuitPointToPoint;
 window.calculateShortCircuitPerUnit = calculateShortCircuitPerUnit;
+window.generateReferredThroughFaultSupplement = generatePathOnlyReferredThroughFaultSupplement;
+// Keep legacy V3 global alias names for downstream compatibility.
+window.patchShortCircuitFollowupTextV3 = patchShortCircuitFollowupTextV32;
+window.patchShortCircuitResultFollowupV3 = applyShortCircuitFollowupFixesV32;
 window.SHORT_CIRCUIT_CONFIG = SHORT_CIRCUIT_CONFIG;
 
 console.log('✅ Short Circuit Calculation module v1.6.0 loaded');
