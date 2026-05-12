@@ -331,6 +331,192 @@ function getCableImpedanceForVoltageDrop(comp, temperature) {
     };
 }
 
+function vdClamp01(value, fallback = 0.9) {
+    const n = vdSafeNumber(value, fallback);
+    return Math.min(1, Math.max(0, n));
+}
+
+function vdGetFormulaDetailsSqrt3() {
+    if (typeof window !== 'undefined' && typeof window.SQRT3 === 'number') return window.SQRT3;
+    if (typeof globalThis !== 'undefined' && typeof globalThis.SQRT3 === 'number') return globalThis.SQRT3;
+    return Math.sqrt(3);
+}
+
+function vdGetFormulaDetailsTemperature(temperature) {
+    if (Number.isFinite(Number(temperature))) return Number(temperature);
+    const tempEl = (typeof document !== 'undefined') ? document.getElementById('temperature') : null;
+    if (tempEl && Number.isFinite(Number(tempEl.value))) return Number(tempEl.value);
+    return VOLTAGE_DROP_CONFIG.DEFAULT_TEMPERATURE;
+}
+
+function vdGetFormulaDetailComponentLabel(component) {
+    return component?.tag || component?.name || component?.id || 'Component';
+}
+
+function vdFindMatchingResultComponent(component, resultComponents, fallbackIndex) {
+    if (!component || !Array.isArray(resultComponents)) return {};
+
+    const label = vdGetFormulaDetailComponentLabel(component);
+
+    const matched = resultComponents.find(function (candidate) {
+        return candidate === component ||
+            candidate?.tag === component.tag ||
+            candidate?.name === component.name ||
+            candidate?.id === component.id ||
+            candidate?.tag === label ||
+            candidate?.name === label;
+    });
+
+    return matched ||
+        resultComponents[fallbackIndex - 1] ||
+        resultComponents[fallbackIndex] ||
+        {};
+}
+
+function vdAddVoltageDropFormulaDetails(result, path, options = {}) {
+    if (!result || !Array.isArray(path)) return result;
+
+    const resultComponents = Array.isArray(result.components) ? result.components : [];
+    const details = [];
+    const sqrt3 = vdGetFormulaDetailsSqrt3();
+    const defaultPowerFactor = vdClamp01(options.powerFactor, VOLTAGE_DROP_CONFIG.DEFAULT_POWER_FACTOR);
+    const temperature = vdGetFormulaDetailsTemperature(options.temperature);
+    const loadFlowData = options.loadFlowData || null;
+    const fallbackCurrent = vdSafeNumber(options.fallbackCurrent, 100);
+
+    path.forEach(function (segment, index) {
+        const component = segment?.component;
+        if (!component) return;
+
+        const resultComponent = vdFindMatchingResultComponent(component, resultComponents, index);
+        const componentType = String(component?.type || resultComponent?.type || '').toLowerCase();
+
+        if (componentType === 'transformer') {
+            const tapPercent = vdSafeNumber(
+                component?.tapPercent ??
+                component?.tapSettingPercent ??
+                component?.tapSetting ??
+                component?.tap ??
+                resultComponent?.tapPercent,
+                0
+            );
+
+            details.push({
+                step: index,
+                type: 'transformer',
+                component: vdGetFormulaDetailComponentLabel(component),
+                tapPercent,
+                dropVolts: vdSafeNumber(resultComponent?.dropVolts, 0),
+                dropPercent: vdSafeNumber(resultComponent?.dropPercent, 0),
+                note: 'Transformer regulation/tap shown separately; conductor voltage-drop compliance excludes transformer internal regulation.'
+            });
+            return;
+        }
+
+        if (componentType !== 'cable') {
+            return;
+        }
+
+        const currentInfo = getVoltageDropCurrentForComponent(component, segment, loadFlowData, {
+            busId: component?.toBus || segment?.bus?.id || result?.busId,
+            fallbackCurrent
+        });
+
+        const currentA = vdSafeNumber(
+            resultComponent?.current ??
+            resultComponent?.currentA ??
+            component?.current ??
+            component?.loadCurrent ??
+            component?.designCurrent,
+            vdSafeNumber(currentInfo?.current ?? result?.loadCurrent, 0)
+        );
+
+        const powerFactor = vdClamp01(
+            resultComponent?.powerFactor ??
+            component?.powerFactor ??
+            component?.pf,
+            defaultPowerFactor
+        );
+        const sinTheta = Math.sqrt(Math.max(0, 1 - powerFactor * powerFactor));
+
+        let resistance = vdSafeNumber(
+            resultComponent?.rOhms ??
+            resultComponent?.resistanceOhms ??
+            resultComponent?.resistance ??
+            component?.rOhms ??
+            component?.resistanceOhms ??
+            component?.resistance,
+            NaN
+        );
+
+        let reactance = vdSafeNumber(
+            resultComponent?.xOhms ??
+            resultComponent?.reactanceOhms ??
+            resultComponent?.reactance ??
+            component?.xOhms ??
+            component?.reactanceOhms ??
+            component?.reactance,
+            NaN
+        );
+
+        let impedanceSource = resultComponent?.impedanceSource || component?.impedanceSource || 'component/result';
+        const impedance = getCableImpedanceForVoltageDrop(component, temperature);
+
+        if (!Number.isFinite(resistance)) {
+            resistance = vdSafeNumber(impedance?.rOhms, 0);
+        }
+        if (!Number.isFinite(reactance)) {
+            reactance = vdSafeNumber(impedance?.xOhms, 0);
+        }
+        if (impedance?.source === 'manufacturer') {
+            impedanceSource = 'manufacturerCableData.js';
+        } else if (!resultComponent?.impedanceSource && !component?.impedanceSource && impedance?.sourceLabel) {
+            impedanceSource = impedance.sourceLabel;
+        }
+
+        const calculatedDropVolts = sqrt3 * currentA * ((resistance * powerFactor) + (reactance * sinTheta));
+        const usedDropVolts = vdSafeNumber(
+            resultComponent?.dropVolts ??
+            resultComponent?.voltageDropVolts,
+            calculatedDropVolts
+        );
+
+        const voltageLevel = vdSafeNumber(
+            resultComponent?.voltageLevel ??
+            resultComponent?.nominalVoltage ??
+            component?.voltage ??
+            segment?.bus?.voltage ??
+            result?.busVoltage ??
+            result?.loadVoltage,
+            0
+        );
+
+        details.push({
+            step: index,
+            type: 'cable',
+            component: vdGetFormulaDetailComponentLabel(component),
+            currentA,
+            rOhms: resistance,
+            xOhms: reactance,
+            powerFactor,
+            sinTheta,
+            calculatedDropVolts,
+            usedDropVolts,
+            voltageLevel,
+            dropPercent: voltageLevel > 0 ? usedDropVolts / voltageLevel * 100 : 0,
+            impedanceSource,
+            formula: 'VD = √3 × I × (R cosθ + X sinθ)'
+        });
+    });
+
+    result.voltageDropFormulaDetails = details;
+    return result;
+}
+
+function addVoltageDropFormulaDetails(result, path, options = {}) {
+    return vdAddVoltageDropFormulaDetails(result, path, options);
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // MAIN VOLTAGE DROP CALCULATION FUNCTION (ENHANCED)
 // ════════════════════════════════════════════════════════════════════════════════
@@ -1217,6 +1403,13 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
   console.log(`   Compliance: ${vdData.compliance.status}`);
   console.log('');
 
+  vdAddVoltageDropFormulaDetails(vdData, path, {
+    powerFactor,
+    temperature,
+    loadFlowData,
+    fallbackCurrent: 100
+  });
+
   return vdData;
 }
 
@@ -1229,6 +1422,7 @@ if (typeof window !== 'undefined') {
     window.calculateLoadCurrentFromKVA = calculateLoadCurrentFromKVA;
     window.calculateLoadCurrentFromKW = calculateLoadCurrentFromKW;
     window.calculateMotorLoadCurrent = calculateMotorLoadCurrent;
+    window.addVoltageDropFormulaDetails = addVoltageDropFormulaDetails;
     window.VOLTAGE_DROP_CONFIG = VOLTAGE_DROP_CONFIG;
 }
 
