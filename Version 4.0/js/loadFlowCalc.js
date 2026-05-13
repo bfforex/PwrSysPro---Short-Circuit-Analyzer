@@ -74,537 +74,474 @@ const LOAD_FLOW_CONFIG = {
  * @param {String} busId - Bus identifier
  * @returns {Object} Load flow results with detailed breakdown
  */
+const LOAD_FLOW_PASSTHROUGH = {
+    SQRT3: Math.sqrt(3),
+    PASS_THROUGH_TYPES: new Set([
+        'breaker',
+        'fuse',
+        'switch',
+        'isolator',
+        'disconnect',
+        'contactor',
+        'relay',
+        'busbar',
+        'tie',
+        'bus_tie',
+        'protective_device'
+    ]),
+    CABLE_TYPES: new Set(['cable', 'conductor', 'feeder']),
+    TRANSFORMER_TYPES: new Set(['transformer', 'xfmr']),
+    LOAD_TYPES: new Set(['load', 'directload', 'direct_load', 'panel', 'equipment', 'other_load']),
+    MOTOR_TYPES: new Set(['motor']),
+    GENERATOR_TYPES: new Set(['generator', 'source_generator'])
+};
+
+function loadFlowSafeNum(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+}
+
+function loadFlowNormalizeType(type) {
+    return String(type || '').trim().toLowerCase();
+}
+
+function loadFlowGetBusById(busId) {
+    if (!Array.isArray(buses)) return null;
+    return buses.find(bus => String(bus.id) === String(busId)) || null;
+}
+
+function loadFlowGetOutgoingComponents(busId) {
+    if (!Array.isArray(components)) return [];
+    return components.filter(comp => String(comp.fromBus) === String(busId));
+}
+
+function loadFlowGetComponentLabel(comp) {
+    return comp?.tag || comp?.name || comp?.description || comp?.id || 'Unnamed Component';
+}
+
+function loadFlowGetPowerFactor() {
+    const pf = loadFlowSafeNum(document.getElementById('powerFactor')?.value, 0.87);
+    return pf > 0 && pf <= 1 ? pf : 0.87;
+}
+
+function loadFlowGetTimestamp() {
+    if (typeof getCalculationTimestamp === 'function') {
+        try {
+            return getCalculationTimestamp();
+        } catch (_) {}
+    }
+    return new Date().toISOString();
+}
+
+function loadFlowCurrentToKVA(currentA, voltageV) {
+    return loadFlowSafeNum(currentA, 0) * loadFlowSafeNum(voltageV, 0) * LOAD_FLOW_PASSTHROUGH.SQRT3 / 1000;
+}
+
+function loadFlowKvaToCurrent(kva, voltageV) {
+    const v = loadFlowSafeNum(voltageV, 0);
+    return v > 0 ? loadFlowSafeNum(kva, 0) * 1000 / (LOAD_FLOW_PASSTHROUGH.SQRT3 * v) : 0;
+}
+
+function loadFlowGetManualBusLoad(bus) {
+    if (!bus) return 0;
+    // Keep display-only calculated cache excluded to prevent accumulation
+    const candidates = [
+        bus.loadCurrent,
+        bus.manualLoadCurrent,
+        bus.connectedLoadA
+    ];
+
+    for (const value of candidates) {
+        const n = loadFlowSafeNum(value, 0);
+        if (n > 0) return n;
+    }
+    return 0;
+}
+
+function loadFlowGetComponentLoadCurrent(comp, busVoltage) {
+    const candidates = [
+        comp.current,
+        comp.loadCurrent,
+        comp.fullLoadCurrent,
+        comp.fla,
+        comp.flc,
+        comp.ratedCurrent
+    ];
+
+    for (const value of candidates) {
+        const n = loadFlowSafeNum(value, 0);
+        if (n > 0) return n;
+    }
+
+    const kva = loadFlowSafeNum(comp.kva, loadFlowSafeNum(comp.kVA, loadFlowSafeNum(comp.ratingKVA, 0)));
+    if (kva > 0) return loadFlowKvaToCurrent(kva, busVoltage);
+
+    const hp = loadFlowSafeNum(comp.hp, loadFlowSafeNum(comp.motorHP, 0));
+    if (hp > 0) {
+        const efficiency = loadFlowSafeNum(comp.efficiency, 0.9);
+        const pf = loadFlowSafeNum(comp.powerFactor, loadFlowGetPowerFactor());
+        const voltage = loadFlowSafeNum(comp.voltage, busVoltage);
+        return hp * 746 / (LOAD_FLOW_PASSTHROUGH.SQRT3 * voltage * efficiency * pf);
+    }
+
+    return 0;
+}
+
+function loadFlowGetTransformerRatingKVA(comp) {
+    return loadFlowSafeNum(comp?.rating, loadFlowSafeNum(comp?.ratingKVA, loadFlowSafeNum(comp?.kva, loadFlowSafeNum(comp?.kVA, 0))));
+}
+
+function loadFlowGetTransformerPrimaryVoltage(comp, fromBus) {
+    return loadFlowSafeNum(comp?.primaryVoltage,
+        loadFlowSafeNum(comp?.primaryV,
+            loadFlowSafeNum(comp?.primary,
+                loadFlowSafeNum(fromBus?.voltage, 0))));
+}
+
+function loadFlowGetTransformerSecondaryVoltage(comp, toBus) {
+    return loadFlowSafeNum(comp?.secondaryVoltage,
+        loadFlowSafeNum(comp?.secondaryV,
+            loadFlowSafeNum(comp?.secondary,
+                loadFlowSafeNum(toBus?.voltage, 0))));
+}
+
+function loadFlowFormatIndent(depth) {
+    return '  '.repeat(Math.max(0, depth));
+}
+
 function calculateLoadFlow(busId) {
-    const bus = buses.find(b => b.id === busId);
-    if (!bus) {
+    const targetBus = loadFlowGetBusById(busId);
+    if (!targetBus) {
         throw new Error(`Bus ${busId} not found`);
     }
-    
-    console.log('\n' + '═'.repeat(80));
-    console.log('LOAD FLOW ANALYSIS - ENHANCED v2.2.1');
-    console.log('═'.repeat(80));
-    console.log(`Bus: ${bus.name} (${bus.voltage}V)`);
-    console.log('═'.repeat(80) + '\n');
-    
+
+    const pf = loadFlowGetPowerFactor();
     const loadData = {
-        busId: bus.id,
-        busName: bus.name,
-        busVoltage: bus.voltage,
+        busId: targetBus.id,
+        busName: targetBus.name,
+        busVoltage: targetBus.voltage,
         totalLoad: 0,
         breakdown: {
             motors: [],
             transformers: [],
             cables: [],
             directLoads: [],
-            generators: []
+            generators: [],
+            passThrough: []
         },
         summary: {
             totalCurrent: 0,
             totalPowerKVA: 0,
             totalPowerKW: 0,
-            powerFactor: parseFloat(document.getElementById('powerFactor')?.value) || LOAD_FLOW_CONFIG.DEFAULT_POWER_FACTOR,
+            powerFactor: pf,
             connectedCurrent: 0
         },
         pathTrace: [],
         calculationSteps: '',
-        calculationDate: getCalculationTimestamp()
+        calculationDate: loadFlowGetTimestamp(),
+        traversalFix: 'breaker-fuse-pass-through-v1'
     };
-    
-    // ══════════════════════════════════════════════════════════════════════════════
-    // ENHANCED CALCULATION STEPS HEADER
-    // ══════════════════════════════════════════════════════════════════════════════
-    
-    let steps = '═'.repeat(80) + '\n';
+
+    let steps = '';
+    let componentCount = 0;
+    const visitedEdges = new Set();
+    const activeStack = new Set();
+
+    steps += '═'.repeat(80) + '\n';
     steps += 'LOAD FLOW CALCULATION - ENHANCED\n';
     steps += '═'.repeat(80) + '\n\n';
-    
-    steps += `📋 CALCULATION INFORMATION\n`;
+    steps += '📋 CALCULATION INFORMATION\n';
     steps += '─'.repeat(80) + '\n';
-    steps += `Date/Time:           ${loadData.calculationDate}\n`;
-    steps += `Engineer:            ${document.getElementById('engineer')?.value || 'Unknown'}\n`;
-    steps += `Target Bus:          ${bus.tag || bus.name} (${bus.name})\n`;
-    steps += `Bus Voltage:         ${bus.voltage}V\n`;
-    steps += `Power Factor:        ${loadData.summary.powerFactor}\n`;
-    steps += `Method:              Recursive Downstream Load Traversal\n\n`;
-    
-    steps += `📖 CALCULATION METHODOLOGY\n`;
+    steps += `Date/Time: ${loadData.calculationDate}\n`;
+    steps += `Engineer: ${document.getElementById('engineer')?.value || 'Unknown'}\n`;
+    steps += `Target Bus: ${targetBus.tag || targetBus.name} (${targetBus.name})\n`;
+    steps += `Bus Voltage: ${targetBus.voltage}V\n`;
+    steps += `Power Factor: ${pf}\n`;
+    steps += 'Method: Recursive Downstream Load Traversal with breaker/fuse pass-through\n\n';
+    steps += '📖 CALCULATION METHODOLOGY\n';
     steps += '─'.repeat(80) + '\n';
-    steps += `• Traces all downstream components from target bus\n`;
-    steps += `• Calculates load at each voltage level\n`;
-    steps += `• Refers transformer secondary loads to primary side\n`;
-    steps += `• Sums total current and power requirements\n`;
-    steps += `• Component tags displayed for full traceability\n\n`;
-    
-    // ══════════════════════════════════════════════════════════════════════════════
-    // RECURSIVE LOAD CALCULATION (ENHANCED)
-    // ══════════════════════════════════════════════════════════════════════════════
-    
-    const visited = new Set();
-    let componentCount = 0;
-    
-    function traverseDownstream(currentBusId, depth = 0) {
-        if (visited.has(currentBusId)) return 0;
-        visited.add(currentBusId);
-        
-        const indent = '  '.repeat(depth);
-        let branchLoad = 0;
-        
-        const currentBus = buses.find(b => b.id === currentBusId);
-        if (!currentBus) return 0;
-        
-        steps += `${indent}${LOAD_FLOW_CONFIG.ICONS.bus} ${currentBus.tag || currentBus.name} (${currentBus.name}) - ${currentBus.voltage}V\n`;
-        
-        loadData.pathTrace.push({
-            depth: depth,
-            bus: currentBus.name,
-            busTag: currentBus.tag,
-            voltage: currentBus.voltage,
-            loads: []
-        });
-        
-        // ════════════════════════════════════════════════════════════════════════════
-        // DIRECT BUS LOAD
-        // ✅ FIXED: Skip auto-calculated loads to prevent double-counting
-        // Added: 2025-12-01 by bfforex
-        // ════════════════════════════════════════════════════════════════════════════
-        const busLoad = parseFloat(currentBus.loadCurrent) || 0;
-        
-        // ✅ CRITICAL: Only include if it's a MANUAL load (not auto-calculated)
-        if (busLoad > 0 && !currentBus.loadCurrentAutoCalculated) {
-            branchLoad += busLoad;
-            
-            const powerKVA = (busLoad * currentBus.voltage * Math.sqrt(3)) / 1000;
-            
-            loadData.breakdown.directLoads.push({
-                bus: currentBus.name,
-                busTag: currentBus.tag,
-                current: busLoad,
-                powerKVA: powerKVA,
-                source: 'manual'
-            });
-            
-            steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.load} Direct Load: ${busLoad.toFixed(2)} A (${powerKVA.toFixed(2)} kVA) [USER-SPECIFIED]\n`;
-        } else if (busLoad > 0 && currentBus.loadCurrentAutoCalculated) {
-            // ✅ Log but DON'T add (already counted via downstream components)
-            console.log(`${indent}ℹ️ Skipping auto-calculated load on ${currentBus.name} (${busLoad.toFixed(2)} A) - prevents double-count`);
-        }
-        
-        // ════════════════════════════════════════════════════════════════════════════
-        // DOWNSTREAM COMPONENTS
-        // ════════════════════════════════════════════════════════════════════════════
-        const downstreamComponents = components.filter(c => c && c.fromBus === currentBusId);
-        
-        downstreamComponents.forEach((comp, index) => {
-            componentCount++;
-            const isLast = index === downstreamComponents.length - 1;
-            const connector = isLast ? '└─' : '├─';
-            
-            const toBus = buses.find(b => b.id === comp.toBus);
-            if (!toBus) return;
-            
-            switch(comp.type) {
-                // ════════════════════════════════════════════════════════════════════
-                // MOTOR PROCESSING (ENHANCED)
-                // ════════════════════════════════════════════════════════════════════
-                case 'motor':
-                    steps += '\n' + indent + '  ' + '─'.repeat(76 - depth * 2) + '\n';
-                    steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.motor} MOTOR`;
-                    if (comp.tag) steps += ` - ${comp.tag}`;
-                    steps += `\n`;
-                    steps += indent + '  ' + '─'.repeat(76 - depth * 2) + '\n';
-                    
-                    const motorCurrent = calculateMotorCurrent(comp.hp, toBus.voltage);
-                    branchLoad += motorCurrent;
-                    
-                    const motorPowerKVA = (motorCurrent * toBus.voltage * Math.sqrt(3)) / 1000;
-                    const motorPowerKW = motorPowerKVA * loadData.summary.powerFactor;
-                    
-                    loadData.breakdown.motors.push({
-                        name: `${comp.hp} HP ${comp.motorType || 'Motor'}`,
-                        tag: comp.tag || 'N/A',
-                        location: toBus.name,
-                        locationTag: toBus.tag,
-                        hp: comp.hp,
-                        voltage: toBus.voltage,
-                        current: motorCurrent,
-                        powerKVA: motorPowerKVA,
-                        powerKW: motorPowerKW,
-                        fromBus: currentBus.name,
-                        toBus: toBus.name
-                    });
-                    
-                    steps += `${indent}  Component Tag:       ${comp.tag || 'N/A'}\n`;
-                    steps += `${indent}  Component Type:      MOTOR\n`;
-                    steps += `${indent}  Horsepower:          ${comp.hp} HP\n`;
-                    steps += `${indent}  Motor Type:          ${comp.motorType || 'Standard'}\n`;
-                    steps += `${indent}  From Bus:            ${currentBus.tag || currentBus.name} (${currentBus.name})\n`;
-                    steps += `${indent}  To Bus:              ${toBus.tag || toBus.name} (${toBus.name})\n`;
-                    steps += `${indent}  Voltage:             ${toBus.voltage}V\n\n`;
-                    
-                    steps += `${indent}  📊 LOAD CALCULATION\n`;
-                    steps += `${indent}  Formula:  I = HP × 746 / (√3 × V × η × PF)\n`;
-                    steps += `${indent}  Current:  ${motorCurrent.toFixed(2)} A\n`;
-                    steps += `${indent}  Power:    ${motorPowerKVA.toFixed(2)} kVA (${motorPowerKW.toFixed(2)} kW)\n`;
-                    steps += `${indent}  PF:       ${loadData.summary.powerFactor}\n\n`;
-                    break;
-                    
-                // ════════════════════════════════════════════════════════════════════
-                // TRANSFORMER PROCESSING (ENHANCED)
-                // ════════════════════════════════════════════════════════════════════
-                case 'transformer':
-                    steps += '\n' + indent + '  ' + '─'.repeat(76 - depth * 2) + '\n';
-                    steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.transformer} TRANSFORMER`;
-                    if (comp.tag) steps += ` - ${comp.tag}`;
-                    steps += `\n`;
-                    steps += indent + '  ' + '─'.repeat(76 - depth * 2) + '\n';
-                    
-                    const xfmrDownstream = traverseDownstream(comp.toBus, depth + 2);
-                    
-                    if (xfmrDownstream > 0) {
-                        const turnsRatio = comp.primary / comp.secondary;
-                        const primaryCurrent = xfmrDownstream / turnsRatio;
-                        branchLoad += primaryCurrent;
-                        
-                        const loading = (xfmrDownstream * comp.secondary * Math.sqrt(3) / (comp.rating * 1000)) * 100;
-                        const powerKVA = (primaryCurrent * comp.primary * Math.sqrt(3)) / 1000;
-                        
-                        loadData.breakdown.transformers.push({
-                            name: `${comp.rating} kVA Transformer`,
-                            tag: comp.tag || 'N/A',
-                            location: `${currentBus.name} → ${toBus.name}`,
-                            rating: comp.rating,
-                            primaryVoltage: comp.primary,
-                            secondaryVoltage: comp.secondary,
-                            secondaryCurrent: xfmrDownstream,
-                            primaryCurrent: primaryCurrent,
-                            loading: loading,
-                            powerKVA: powerKVA,
-                            fromBus: currentBus.name,
-                            toBus: toBus.name
-                        });
-                        
-                        steps += `${indent}  Component Tag:       ${comp.tag || 'N/A'}\n`;
-                        steps += `${indent}  Component Type:      TRANSFORMER\n`;
-                        steps += `${indent}  Rating:              ${comp.rating} kVA\n`;
-                        steps += `${indent}  Voltage Ratio:       ${comp.primary}V / ${comp.secondary}V\n`;
-                        steps += `${indent}  Turns Ratio:         ${turnsRatio.toFixed(4)}:1\n`;
-                        steps += `${indent}  From Bus:            ${currentBus.tag || currentBus.name} (${currentBus.name})\n`;
-                        steps += `${indent}  To Bus:              ${toBus.tag || toBus.name} (${toBus.name})\n\n`;
-                        
-                        steps += `${indent}  📊 LOADING ANALYSIS\n`;
-                        steps += `${indent}  ` + '─'.repeat(76 - indent.length) + '\n';
-                        steps += `${indent}  SECONDARY SIDE (${comp.secondary}V):\n`;
-                        steps += `${indent}    Current:           ${xfmrDownstream.toFixed(2)} A\n`;
-                        steps += `${indent}    Full Load:         ${((comp.rating * 1000) / (Math.sqrt(3) * comp.secondary)).toFixed(2)} A\n`;
-                        steps += `${indent}    Loading:           ${loading.toFixed(1)}% ${loading > 100 ? '❌ OVERLOAD' : loading > 80 ? '⚠️' : '✅'}\n\n`;
-                        
-                        steps += `${indent}  PRIMARY SIDE (${comp.primary}V):\n`;
-                        steps += `${indent}    Formula:           I_pri = I_sec / (V_pri / V_sec)\n`;
-                        steps += `${indent}    Current:           ${primaryCurrent.toFixed(2)} A\n`;
-                        steps += `${indent}    Power:             ${powerKVA.toFixed(2)} kVA\n\n`;
-                        
-                        if (loading > 100) {
-                            steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.fail} CRITICAL: Transformer OVERLOADED!\n`;
-                            steps += `${indent}    Recommendations:\n`;
-                            steps += `${indent}    • Install larger transformer (min ${Math.ceil(comp.rating * loading / 80)} kVA)\n`;
-                            steps += `${indent}    • Reduce downstream load\n`;
-                            steps += `${indent}    • Add parallel transformer\n\n`;
-                        } else if (loading > 80) {
-                            steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.warning} WARNING: High loading (>${loading.toFixed(0)}%)\n\n`;
-                        }
-                        
-                    } else {
-                        // Default to 80% loading
-                        const xfmrCurrent = calculateTransformerCurrent(comp.rating, comp.primary, LOAD_FLOW_CONFIG.DEFAULT_TRANSFORMER_LOADING);
-                        branchLoad += xfmrCurrent;
-                        
-                        const powerKVA = (xfmrCurrent * comp.primary * Math.sqrt(3)) / 1000;
-                        
-                        loadData.breakdown.transformers.push({
-                            name: `${comp.rating} kVA Transformer`,
-                            tag: comp.tag || 'N/A',
-                            location: `${currentBus.name} → ${toBus.name}`,
-                            rating: comp.rating,
-                            primaryVoltage: comp.primary,
-                            secondaryVoltage: comp.secondary,
-                            primaryCurrent: xfmrCurrent,
-                            loading: 80,
-                            powerKVA: powerKVA,
-                            fromBus: currentBus.name,
-                            toBus: toBus.name
-                        });
-                        
-                        steps += `${indent}  Component Tag:       ${comp.tag || 'N/A'}\n`;
-                        steps += `${indent}  Component Type:      TRANSFORMER\n`;
-                        steps += `${indent}  Rating:              ${comp.rating} kVA\n`;
-                        steps += `${indent}  From Bus:            ${currentBus.tag || currentBus.name}\n`;
-                        steps += `${indent}  To Bus:              ${toBus.tag || toBus.name}\n\n`;
-                        steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.info} No downstream load detected\n`;
-                        steps += `${indent}  Using ${(LOAD_FLOW_CONFIG.DEFAULT_TRANSFORMER_LOADING * 100).toFixed(0)}% of rating as default\n`;
-                        steps += `${indent}  Current: ${xfmrCurrent.toFixed(2)} A\n\n`;
-                    }
-                    break;
-                    
-                // ════════════════════════════════════════════════════════════════════
-                // CABLE PROCESSING (ENHANCED)
-                // ════════════════════════════════════════════════════════════════════
-                case 'cable':
-                    if (comp.loadCurrent && comp.loadCurrent > 0) {
-                        steps += '\n' + indent + '  ' + '─'.repeat(76 - depth * 2) + '\n';
-                        steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.cable} CABLE`;
-                        if (comp.tag) steps += ` - ${comp.tag}`;
-                        steps += `\n`;
-                        steps += indent + '  ' + '─'.repeat(76 - depth * 2) + '\n';
-                        
-                        branchLoad += comp.loadCurrent;
-                        
-                        const cablePowerKVA = (comp.loadCurrent * currentBus.voltage * Math.sqrt(3)) / 1000;
-                        
-                        loadData.breakdown.cables.push({
-                            name: `${comp.size} ${comp.material.toUpperCase()} - ${comp.length}ft`,
-                            tag: comp.tag || 'N/A',
-                            location: `${currentBus.name} → ${toBus.name}`,
-                            size: comp.size,
-                            material: comp.material,
-                            length: comp.length,
-                            parallel: comp.parallel || 1,
-                            current: comp.loadCurrent,
-                            powerKVA: cablePowerKVA,
-                            fromBus: currentBus.name,
-                            toBus: toBus.name
-                        });
-                        
-                        steps += `${indent}  Component Tag:       ${comp.tag || 'N/A'}\n`;
-                        steps += `${indent}  Component Type:      CABLE\n`;
-                        steps += `${indent}  Size:                ${comp.size}\n`;
-                        steps += `${indent}  Material:            ${comp.material.toUpperCase()}\n`;
-                        steps += `${indent}  Length:              ${comp.length} ft\n`;
-                        if (comp.parallel > 1) {
-                            steps += `${indent}  Parallel:            ${comp.parallel} cables\n`;
-                        }
-                        steps += `${indent}  From Bus:            ${currentBus.tag || currentBus.name} (${currentBus.name})\n`;
-                        steps += `${indent}  To Bus:              ${toBus.tag || toBus.name} (${toBus.name})\n\n`;
-                        
-                        steps += `${indent}  📊 LOAD INFORMATION\n`;
-                        steps += `${indent}  Specified Load:      ${comp.loadCurrent.toFixed(2)} A\n`;
-                        steps += `${indent}  Power:               ${cablePowerKVA.toFixed(2)} kVA\n\n`;
-                        
-                    } else {
-                        const cableDownstream = traverseDownstream(comp.toBus, depth + 2);
-                        branchLoad += cableDownstream;
-                        
-                        if (cableDownstream > 0) {
-                            const cablePowerKVA = (cableDownstream * currentBus.voltage * Math.sqrt(3)) / 1000;
-                            
-                            loadData.breakdown.cables.push({
-                                name: `${comp.size} ${comp.material.toUpperCase()} - ${comp.length}ft`,
-                                tag: comp.tag || 'N/A',
-                                location: `${currentBus.name} → ${toBus.name}`,
-                                size: comp.size,
-                                material: comp.material,
-                                length: comp.length,
-                                parallel: comp.parallel || 1,
-                                current: cableDownstream,
-                                powerKVA: cablePowerKVA,
-                                fromBus: currentBus.name,
-                                toBus: toBus.name
-                            });
-                            
-                            steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.cable} Cable ${comp.tag || comp.size}: ${cableDownstream.toFixed(2)} A (${cablePowerKVA.toFixed(2)} kVA)\n`;
-                        }
-                    }
-                    break;
-                    
-                // ════════════════════════════════════════════════════════════════════
-                // GENERATOR PROCESSING (ENHANCED)
-                // ════════════════════════════════════════════════════════════════════
-                case 'generator':
-                    steps += '\n' + indent + '  ' + '─'.repeat(76 - depth * 2) + '\n';
-                    steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.generator} GENERATOR`;
-                    if (comp.tag) steps += ` - ${comp.tag}`;
-                    steps += `\n`;
-                    steps += indent + '  ' + '─'.repeat(76 - depth * 2) + '\n';
-                    
-                    loadData.breakdown.generators.push({
-                        name: `${comp.rating} kVA Generator`,
-                        tag: comp.tag || 'N/A',
-                        location: toBus.name,
-                        rating: comp.rating,
-                        voltage: comp.voltage,
-                        type: 'Source (not a load)',
-                        fromBus: currentBus.name,
-                        toBus: toBus.name
-                    });
-                    
-                    steps += `${indent}  Component Tag:       ${comp.tag || 'N/A'}\n`;
-                    steps += `${indent}  Component Type:      GENERATOR (SOURCE)\n`;
-                    steps += `${indent}  Rating:              ${comp.rating} kVA\n`;
-                    steps += `${indent}  Voltage:             ${comp.voltage}V\n`;
-                    steps += `${indent}  Location:            ${toBus.tag || toBus.name}\n`;
-                    steps += `${indent}  ${LOAD_FLOW_CONFIG.ICONS.info} Generator is a source, not counted as load\n\n`;
-                    break;
-            }
-        });
-        
-        // ════════════════════════════════════════════════════════════════════════════
-        // BRANCH SUBTOTAL
-        // ════════════════════════════════════════════════════════════════════════════
-        if (branchLoad > 0) {
-            const branchPowerKVA = (branchLoad * currentBus.voltage * Math.sqrt(3)) / 1000;
-            steps += `${indent}  ├─ ${LOAD_FLOW_CONFIG.ICONS.analysis} Subtotal: ${branchLoad.toFixed(2)} A (${branchPowerKVA.toFixed(2)} kVA)\n\n`;
-        }
-        
-        return branchLoad;
-    }
-    
-    // ══════════════════════════════════════════════════════════════════════════════
-    // EXECUTE TRAVERSAL
-    // ══════════════════════════════════════════════════════════════════════════════
-    
+    steps += '• Traces all downstream components from target bus\n';
+    steps += '• Treats breakers, fuses, switches, and isolators as pass-through components\n';
+    steps += '• Cables convey current but are not counted as loads\n';
+    steps += '• Refers transformer secondary loads to primary side by kVA conservation\n';
+    steps += '• Sums total current and power requirements at the target bus voltage\n\n';
     steps += '═'.repeat(80) + '\n';
     steps += 'LOAD FLOW TRAVERSAL\n';
     steps += '═'.repeat(80) + '\n\n';
-    
-    loadData.totalLoad = traverseDownstream(busId);
-    
-    // ══════════════════════════════════════════════════════════════════════════════
-    // CALCULATE SUMMARY
-    // ══════════════════════════════════════════════════════════════════════════════
-    
+
+    function addPathTrace(bus, depth, note) {
+        loadData.pathTrace.push({
+            busId: bus?.id || null,
+            busName: bus?.name || 'Unknown',
+            voltage: loadFlowSafeNum(bus?.voltage, 0),
+            type: bus?.type || 'unknown',
+            depth,
+            note: note || ''
+        });
+    }
+
+    function traverseDownstream(currentBusId, depth = 0) {
+        const currentBus = loadFlowGetBusById(currentBusId);
+        const indent = loadFlowFormatIndent(depth);
+
+        if (!currentBus) {
+            steps += `${indent}⚠️ Unknown bus ID: ${currentBusId}\n`;
+            return 0;
+        }
+
+        if (activeStack.has(String(currentBusId))) {
+            steps += `${indent}⚠️ Circular path detected at ${currentBus.name}; branch skipped.\n`;
+            return 0;
+        }
+
+        activeStack.add(String(currentBusId));
+        addPathTrace(currentBus, depth, 'visited');
+
+        steps += `${indent}📍 ${currentBus.tag || currentBus.name} (${currentBus.name}) - ${currentBus.voltage}V\n`;
+
+        let totalCurrentAtBus = 0;
+        const directLoad = loadFlowGetManualBusLoad(currentBus);
+        if (directLoad > 0) {
+            const kva = loadFlowCurrentToKVA(directLoad, currentBus.voltage);
+            totalCurrentAtBus += directLoad;
+            loadData.breakdown.directLoads.push({
+                bus: currentBus.name,
+                busTag: currentBus.tag || currentBus.name,
+                current: directLoad,
+                powerKVA: kva,
+                voltage: currentBus.voltage
+            });
+            steps += `${indent}  💡 Direct Bus Load: ${directLoad.toFixed(2)} A (${kva.toFixed(2)} kVA)\n`;
+        }
+
+        const outgoing = loadFlowGetOutgoingComponents(currentBusId);
+        if (outgoing.length === 0) {
+            steps += `${indent}  ℹ️ No downstream components.\n`;
+            activeStack.delete(String(currentBusId));
+            return totalCurrentAtBus;
+        }
+
+        outgoing.forEach(comp => {
+            const type = loadFlowNormalizeType(comp.type);
+            const toBus = loadFlowGetBusById(comp.toBus);
+            const edgeKey = `${comp.id || loadFlowGetComponentLabel(comp)}|${comp.fromBus}|${comp.toBus}`;
+
+            if (visitedEdges.has(edgeKey)) return;
+            visitedEdges.add(edgeKey);
+            componentCount += 1;
+
+            const label = loadFlowGetComponentLabel(comp);
+            const toBusName = toBus?.name || comp.toBusName || comp.toBus || 'Unknown';
+
+            if (LOAD_FLOW_PASSTHROUGH.PASS_THROUGH_TYPES.has(type)) {
+                steps += `${indent}  🛡️ ${type.toUpperCase()} ${label}: pass-through to ${toBusName}\n`;
+                loadData.breakdown.passThrough.push({
+                    type,
+                    tag: label,
+                    fromBus: currentBus.name,
+                    toBus: toBusName
+                });
+
+                const downstreamCurrentAtToBus = toBus ? traverseDownstream(toBus.id, depth + 1) : 0;
+                const downstreamKVA = loadFlowCurrentToKVA(downstreamCurrentAtToBus, toBus?.voltage || currentBus.voltage);
+                const referredCurrent = loadFlowKvaToCurrent(downstreamKVA, currentBus.voltage);
+                totalCurrentAtBus += referredCurrent;
+                steps += `${indent}     ↳ Referred through ${label}: ${referredCurrent.toFixed(2)} A at ${currentBus.voltage}V (${downstreamKVA.toFixed(2)} kVA)\n`;
+                return;
+            }
+
+            if (LOAD_FLOW_PASSTHROUGH.CABLE_TYPES.has(type)) {
+                steps += `${indent}  🔌 CABLE ${label}: pass-through to ${toBusName}\n`;
+                const downstreamCurrentAtToBus = toBus ? traverseDownstream(toBus.id, depth + 1) : 0;
+                const downstreamKVA = loadFlowCurrentToKVA(downstreamCurrentAtToBus, toBus?.voltage || currentBus.voltage);
+                const referredCurrent = loadFlowKvaToCurrent(downstreamKVA, currentBus.voltage);
+                totalCurrentAtBus += referredCurrent;
+                loadData.breakdown.cables.push({
+                    tag: label,
+                    fromBus: currentBus.name,
+                    toBus: toBusName,
+                    current: referredCurrent,
+                    powerKVA: downstreamKVA,
+                    voltage: currentBus.voltage,
+                    length: comp.length,
+                    size: comp.size,
+                    material: comp.material
+                });
+                steps += `${indent}     ↳ Cable carried load: ${referredCurrent.toFixed(2)} A at ${currentBus.voltage}V (${downstreamKVA.toFixed(2)} kVA)\n`;
+                return;
+            }
+
+            if (LOAD_FLOW_PASSTHROUGH.TRANSFORMER_TYPES.has(type)) {
+                const primaryVoltage = loadFlowGetTransformerPrimaryVoltage(comp, currentBus);
+                const secondaryVoltage = loadFlowGetTransformerSecondaryVoltage(comp, toBus);
+                steps += `${indent}  🔧 TRANSFORMER ${label}: ${primaryVoltage}V → ${secondaryVoltage}V\n`;
+                const secondaryCurrent = toBus ? traverseDownstream(toBus.id, depth + 1) : 0;
+                const secondaryKVA = loadFlowCurrentToKVA(secondaryCurrent, secondaryVoltage || toBus?.voltage || currentBus.voltage);
+                const primaryCurrent = loadFlowKvaToCurrent(secondaryKVA, primaryVoltage || currentBus.voltage);
+                const ratingKVA = loadFlowGetTransformerRatingKVA(comp);
+                const loadingPercent = ratingKVA > 0 ? secondaryKVA / ratingKVA * 100 : 0;
+
+                totalCurrentAtBus += primaryCurrent;
+                loadData.breakdown.transformers.push({
+                    tag: label,
+                    name: label,
+                    fromBus: currentBus.name,
+                    toBus: toBusName,
+                    primaryVoltage,
+                    secondaryVoltage,
+                    primaryCurrent,
+                    secondaryCurrent,
+                    powerKVA: secondaryKVA,
+                    rating: ratingKVA,
+                    loading: loadingPercent
+                });
+                steps += `${indent}     Secondary load: ${secondaryCurrent.toFixed(2)} A at ${secondaryVoltage}V = ${secondaryKVA.toFixed(2)} kVA\n`;
+                steps += `${indent}     Primary current: ${secondaryKVA.toFixed(2)} kVA / (√3 × ${primaryVoltage}V) = ${primaryCurrent.toFixed(2)} A\n`;
+                if (ratingKVA > 0) steps += `${indent}     Transformer loading: ${loadingPercent.toFixed(1)}% of ${ratingKVA} kVA\n`;
+                return;
+            }
+
+            if (LOAD_FLOW_PASSTHROUGH.MOTOR_TYPES.has(type)) {
+                const current = loadFlowGetComponentLoadCurrent(comp, currentBus.voltage);
+                const kva = loadFlowCurrentToKVA(current, currentBus.voltage);
+                totalCurrentAtBus += current;
+                loadData.breakdown.motors.push({
+                    tag: label,
+                    name: comp.name || label,
+                    fromBus: currentBus.name,
+                    toBus: toBusName,
+                    location: currentBus.name,
+                    hp: comp.hp || comp.motorHP,
+                    current,
+                    powerKVA: kva,
+                    powerKW: kva * pf,
+                    voltage: currentBus.voltage
+                });
+                steps += `${indent}  ⚙️ MOTOR ${label}: ${current.toFixed(2)} A (${kva.toFixed(2)} kVA)\n`;
+                return;
+            }
+
+            if (LOAD_FLOW_PASSTHROUGH.LOAD_TYPES.has(type)) {
+                const current = loadFlowGetComponentLoadCurrent(comp, toBus?.voltage || currentBus.voltage);
+                const kvaAtLoad = loadFlowCurrentToKVA(current, toBus?.voltage || currentBus.voltage);
+                const referredCurrent = loadFlowKvaToCurrent(kvaAtLoad, currentBus.voltage);
+                totalCurrentAtBus += referredCurrent;
+                loadData.breakdown.directLoads.push({
+                    tag: label,
+                    bus: toBusName,
+                    busTag: toBus?.tag || toBusName,
+                    fromBus: currentBus.name,
+                    toBus: toBusName,
+                    current: referredCurrent,
+                    loadCurrent: current,
+                    powerKVA: kvaAtLoad,
+                    voltage: currentBus.voltage
+                });
+                steps += `${indent}  💡 LOAD ${label}: ${referredCurrent.toFixed(2)} A at ${currentBus.voltage}V (${kvaAtLoad.toFixed(2)} kVA)\n`;
+                return;
+            }
+
+            if (LOAD_FLOW_PASSTHROUGH.GENERATOR_TYPES.has(type)) {
+                loadData.breakdown.generators.push({
+                    tag: label,
+                    name: label,
+                    fromBus: currentBus.name,
+                    toBus: toBusName,
+                    location: toBusName
+                });
+                steps += `${indent}  ⚡ GENERATOR ${label}: source, not counted as load\n`;
+                return;
+            }
+
+            if (toBus) {
+                steps += `${indent}  ℹ️ ${type || 'component'} ${label}: treated as pass-through to ${toBusName}\n`;
+                const downstreamCurrent = traverseDownstream(toBus.id, depth + 1);
+                const downstreamKVA = loadFlowCurrentToKVA(downstreamCurrent, toBus.voltage || currentBus.voltage);
+                const referredCurrent = loadFlowKvaToCurrent(downstreamKVA, currentBus.voltage);
+                totalCurrentAtBus += referredCurrent;
+                steps += `${indent}     ↳ Referred load: ${referredCurrent.toFixed(2)} A at ${currentBus.voltage}V (${downstreamKVA.toFixed(2)} kVA)\n`;
+            } else {
+                steps += `${indent}  ⚠️ ${type || 'component'} ${label}: no valid toBus, skipped\n`;
+            }
+        });
+
+        steps += `${indent}  ✅ Total at ${currentBus.name}: ${totalCurrentAtBus.toFixed(2)} A\n`;
+        activeStack.delete(String(currentBusId));
+        return totalCurrentAtBus;
+    }
+
+    loadData.totalLoad = traverseDownstream(busId, 0);
     loadData.summary.totalCurrent = loadData.totalLoad;
     loadData.summary.connectedCurrent = loadData.totalLoad;
-    loadData.summary.totalPowerKVA = (loadData.totalLoad * bus.voltage * Math.sqrt(3)) / 1000;
-    loadData.summary.totalPowerKW = loadData.summary.totalPowerKVA * loadData.summary.powerFactor;
-    
-    // ══════════════════════════════════════════════════════════════════════════════
-    // ENHANCED SUMMARY SECTION
-    // ══════════════════════════════════════════════════════════════════════════════
-    
+    loadData.summary.totalPowerKVA = loadFlowCurrentToKVA(loadData.totalLoad, targetBus.voltage);
+    loadData.summary.totalPowerKW = loadData.summary.totalPowerKVA * pf;
+
+    const motorsAtLevel = loadData.breakdown.motors.filter(m => m.voltage === targetBus.voltage);
+    const motorTotal = motorsAtLevel.reduce((sum, m) => sum + m.current, 0);
+    const motorPower = motorsAtLevel.reduce((sum, m) => sum + m.powerKVA, 0);
+    const directLoadsAtThisBus = loadData.breakdown.directLoads.filter(d => d.bus === targetBus.name || d.toBus === targetBus.name);
+    const directTotal = directLoadsAtThisBus.reduce((sum, d) => sum + d.current, 0);
+    const directPower = directLoadsAtThisBus.reduce((sum, d) => sum + d.powerKVA, 0);
+    const xfmrTotal = loadData.breakdown.transformers.reduce((sum, t) => sum + (t.primaryCurrent || 0), 0);
+    const xfmrPower = loadData.breakdown.transformers.reduce((sum, t) => sum + (t.powerKVA || 0), 0);
+    const totalAtThisLevel = motorTotal + directTotal + xfmrTotal;
+
+    steps += '\n';
     steps += '═'.repeat(80) + '\n';
     steps += 'LOAD FLOW SUMMARY\n';
     steps += '═'.repeat(80) + '\n\n';
-    
-    steps += `📊 TOTAL LOAD AT ${bus.name}\n`;
+    steps += `📊 TOTAL LOAD AT ${targetBus.name}\n`;
     steps += '─'.repeat(80) + '\n';
-    steps += `Total Load Current:      ${loadData.summary.totalCurrent.toFixed(2)} A\n`;
-    steps += `Total Apparent Power:    ${loadData.summary.totalPowerKVA.toFixed(2)} kVA\n`;
-    steps += `Total Active Power:      ${loadData.summary.totalPowerKW.toFixed(2)} kW\n`;
-    steps += `Power Factor:            ${loadData.summary.powerFactor}\n`;
-    steps += `Components Analyzed:     ${componentCount}\n\n`;
-    
-// ══════════════════════════════════════════════════════════════════════════════
-// BREAKDOWN BY TYPE (CORRECTED - NO DOUBLE COUNTING)
-// Fixed: 2025-11-03 14:47:15 UTC by bfforex
-// Priority 1: Accurate load breakdown without double counting
-// 
-// Key Fixes:
-// 1. Cables are pass-through (not counted in totals)
-// 2. Direct loads filtered to THIS bus only (no downstream)
-// 3. Motors separated by voltage level
-// 4. Percentages based on actual consumed load at this level
-// ══════════════════════════════════════════════════════════════════════════════
+    steps += `Total Load Current: ${loadData.summary.totalCurrent.toFixed(2)} A\n`;
+    steps += `Total Apparent Power: ${loadData.summary.totalPowerKVA.toFixed(2)} kVA\n`;
+    steps += `Total Active Power: ${loadData.summary.totalPowerKW.toFixed(2)} kW\n`;
+    steps += `Power Factor: ${pf}\n`;
+    steps += `Components Analyzed: ${componentCount}\n\n`;
+    steps += `📋 BREAKDOWN BY COMPONENT TYPE (AT ${targetBus.voltage}V LEVEL)\n`;
+    steps += '─'.repeat(80) + '\n';
+    steps += 'Type Count Current (A) Power (kVA) Percentage Note\n';
+    steps += '─'.repeat(80) + '\n';
 
-// Separate motors by voltage level
-const motorsAtThisLevel = loadData.breakdown.motors.filter(m => m.voltage === bus.voltage);
-const motorsAtOtherLevels = loadData.breakdown.motors.filter(m => m.voltage !== bus.voltage);
+    if (directLoadsAtThisBus.length > 0) {
+        const pct = totalAtThisLevel > 0 ? directTotal / totalAtThisLevel * 100 : 0;
+        steps += `Direct Load ${String(directLoadsAtThisBus.length).padStart(5)} ${directTotal.toFixed(2).padStart(11)} ${directPower.toFixed(2).padStart(11)} ${pct.toFixed(1).padStart(10)}% At this bus\n`;
+    }
 
-// Calculate motor totals AT THIS VOLTAGE LEVEL
-const motorTotal = motorsAtThisLevel.reduce((sum, m) => sum + m.current, 0);
-const motorPower = motorsAtThisLevel.reduce((sum, m) => sum + m.powerKVA, 0);
+    if (loadData.breakdown.transformers.length > 0) {
+        const pct = totalAtThisLevel > 0 ? xfmrTotal / totalAtThisLevel * 100 : 0;
+        steps += `Transformers ${String(loadData.breakdown.transformers.length).padStart(5)} ${xfmrTotal.toFixed(2).padStart(11)} ${xfmrPower.toFixed(2).padStart(11)} ${pct.toFixed(1).padStart(10)}% Reflected from secondary\n`;
+    }
 
-// Direct loads ONLY at THIS bus (not downstream)
-const directLoadsAtThisBus = loadData.breakdown.directLoads.filter(d => d.bus === bus.name);
-const directTotal = directLoadsAtThisBus.reduce((sum, d) => sum + d.current, 0);
-const directPower = directLoadsAtThisBus.reduce((sum, d) => sum + d.powerKVA, 0);
+    if (motorTotal > 0) {
+        const pct = totalAtThisLevel > 0 ? motorTotal / totalAtThisLevel * 100 : 0;
+        steps += `Motors (${targetBus.voltage}V) ${String(motorsAtLevel.length).padStart(2)} ${motorTotal.toFixed(2).padStart(11)} ${motorPower.toFixed(2).padStart(11)} ${pct.toFixed(1).padStart(10)}% At this level\n`;
+    }
 
-// Transformers (reflected from downstream voltage levels)
-const xfmrTotal = loadData.breakdown.transformers.reduce((sum, t) => sum + (t.primaryCurrent || 0), 0);
-const xfmrPower = loadData.breakdown.transformers.reduce((sum, t) => sum + t.powerKVA, 0);
+    if (loadData.breakdown.cables.length > 0) {
+        steps += `Cables ${String(loadData.breakdown.cables.length).padStart(5)} (conveyance) - - Pass-through only\n`;
+    }
 
-// Cables are pass-through (counted for reference, not in totals)
-const cableCount = loadData.breakdown.cables.length;
+    if (loadData.breakdown.passThrough.length > 0) {
+        steps += `Breakers/Fuses ${String(loadData.breakdown.passThrough.length).padStart(5)} (conveyance) - - Pass-through only\n`;
+    }
 
-// Total ACTUAL load at this voltage level (motors + direct + reflected transformers)
-const totalAtThisLevel = motorTotal + directTotal + xfmrTotal;
-
-// Build breakdown display
-steps += `📋 BREAKDOWN BY COMPONENT TYPE (AT ${bus.voltage}V LEVEL)\n`;
-steps += '─'.repeat(80) + '\n';
-steps += `Type          Count  Current (A)  Power (kVA)  Percentage  Note\n`;
-steps += '─'.repeat(80) + '\n';
-
-// Direct loads at this bus
-if (directLoadsAtThisBus.length > 0) {
-    const directPct = totalAtThisLevel > 0 ? (directTotal / totalAtThisLevel * 100) : 0;
-    steps += `Direct Load   ${directLoadsAtThisBus.length.toString().padStart(5)}  ${directTotal.toFixed(2).padStart(11)}  ${directPower.toFixed(2).padStart(11)}  ${directPct.toFixed(1).padStart(10)}%  At this bus\n`;
-}
-
-// Transformers (reflected loads)
-if (loadData.breakdown.transformers.length > 0) {
-    const xfmrPct = totalAtThisLevel > 0 ? (xfmrTotal / totalAtThisLevel * 100) : 0;
-    steps += `Transformers  ${loadData.breakdown.transformers.length.toString().padStart(5)}  ${xfmrTotal.toFixed(2).padStart(11)}  ${xfmrPower.toFixed(2).padStart(11)}  ${xfmrPct.toFixed(1).padStart(10)}%  Reflected from secondary\n`;
-    
-    // Show detail for each transformer
-    loadData.breakdown.transformers.forEach(xfmr => {
-        const xfmrCurrent = xfmr.primaryCurrent || 0;
-        const xfmrPercent = totalAtThisLevel > 0 ? (xfmrCurrent / totalAtThisLevel * 100) : 0;
-        steps += `  └─ ${(xfmr.tag || xfmr.name).padEnd(14)}  ${xfmrCurrent.toFixed(2).padStart(11)}  ${xfmr.powerKVA.toFixed(2).padStart(11)}  ${xfmrPercent.toFixed(1).padStart(10)}%  ${xfmr.primaryVoltage}V → ${xfmr.secondaryVoltage}V\n`;
-    });
-}
-
-// Motors at this voltage level
-if (motorsAtThisLevel.length > 0) {
-    const motorPct = totalAtThisLevel > 0 ? (motorTotal / totalAtThisLevel * 100) : 0;
-    steps += `Motors (${bus.voltage}V) ${motorsAtThisLevel.length.toString().padStart(2)}  ${motorTotal.toFixed(2).padStart(11)}  ${motorPower.toFixed(2).padStart(11)}  ${motorPct.toFixed(1).padStart(10)}%  At this level\n`;
-}
-
-// Motors at other voltage levels (via transformers)
-if (motorsAtOtherLevels.length > 0) {
-    motorsAtOtherLevels.forEach(motor => {
-        // Find which transformer serves this motor
-        const xfmr = loadData.breakdown.transformers.find(t => t.secondaryVoltage === motor.voltage);
-        const xfmrTag = xfmr ? (xfmr.tag || xfmr.name) : 'transformer';
-        steps += `Motors (${motor.voltage}V)  ${' '.repeat(4)}1  ${motor.current.toFixed(2).padStart(11)}  ${motor.powerKVA.toFixed(2).padStart(11)}  ${' '.repeat(10)}-  Via ${xfmrTag}\n`;
-    });
-}
-
-// Cables (pass-through only, not counted in percentages)
-if (cableCount > 0) {
-    steps += `Cables        ${cableCount.toString().padStart(5)}  (conveyance)        -         -  Pass-through only\n`;
-}
-
-// Generators (sources, not loads)
-if (loadData.breakdown.generators.length > 0) {
-    steps += `Generators    ${loadData.breakdown.generators.length.toString().padStart(5)}  (Sources)    N/A          N/A  Sources only\n`;
-}
-
-steps += '─'.repeat(80) + '\n';
-steps += `TOTAL AT ${bus.voltage}V  ${' '.repeat(5)}  ${loadData.summary.totalCurrent.toFixed(2).padStart(11)}  ${loadData.summary.totalPowerKVA.toFixed(2).padStart(11)}  ${' '.repeat(10)}100.0%\n`;
-steps += '─'.repeat(80) + '\n\n';
-
-// Explanatory note
-steps += `${LOAD_FLOW_CONFIG.ICONS.info} Note:\n`;
-steps += `   • Direct load of ${directTotal.toFixed(2)}A is specified at this bus (${bus.voltage}V)\n`;
-if (motorsAtOtherLevels.length > 0) {
-    steps += `   • ${motorsAtOtherLevels.length} motor(s) at other voltage levels are reflected via transformers\n`;
-}
-steps += `   • Cables convey power but are not loads (not counted in percentages)\n`;
-steps += `   • Transformers show primary current (reflected from secondary loads)\n`;
-steps += `   • Total represents all downstream loads referred to ${bus.voltage}V\n`;
-steps += `   • Percentages are of ACTUAL consumed load (${totalAtThisLevel.toFixed(2)}A)\n\n`;
-    
+    steps += '─'.repeat(80) + '\n';
+    steps += `TOTAL AT ${targetBus.voltage}V ${' '.repeat(5)} ${loadData.summary.totalCurrent.toFixed(2).padStart(11)} ${loadData.summary.totalPowerKVA.toFixed(2).padStart(11)} ${' '.repeat(10)}100.0%\n`;
+    steps += '─'.repeat(80) + '\n\n';
+    steps += 'ℹ️ Note:\n';
+    steps += ` • Direct load of ${directTotal.toFixed(2)}A is specified at this bus (${targetBus.voltage}V)\n`;
+    steps += ' • Breakers, fuses, switches, and isolators are pass-through devices and are not counted as loads\n';
+    steps += ' • Cables convey power but are not loads (not counted in percentages)\n';
+    steps += ' • Transformers show primary current (reflected from secondary loads)\n';
+    steps += ` • Total represents all downstream loads referred to ${targetBus.voltage}V\n`;
+    steps += ` • Percentages are of ACTUAL consumed load (${totalAtThisLevel.toFixed(2)}A)\n\n`;
     steps += '═'.repeat(80) + '\n';
     steps += 'END OF LOAD FLOW CALCULATION\n';
     steps += '═'.repeat(80) + '\n';
-    
+
     loadData.calculationSteps = steps;
-    
-    console.log('✅ Load Flow Analysis Complete (v2.2.1)');
-    console.log(`   Total Load: ${loadData.summary.totalCurrent.toFixed(2)} A`);
-    console.log(`   Total Power: ${loadData.summary.totalPowerKVA.toFixed(2)} kVA`);
-    console.log(`   Components: ${componentCount}`);
-    console.log('');
-    
+
+    console.log(`✅ Load flow pass-through fixed result for ${targetBus.name}: ${loadData.summary.totalCurrent.toFixed(2)} A, ${loadData.summary.totalPowerKVA.toFixed(2)} kVA`);
     return loadData;
 }
 
@@ -960,8 +897,20 @@ function getDiversityFactorForBus(busId) {
  */
 function calculateLoadFlowWithDemand(busId) {
     const standardLoadFlow = calculateLoadFlow(busId);
-    const enhancedLoadFlow = applyDemandFactorsToLoadFlow(standardLoadFlow);
-    return enhancedLoadFlow;
+    if (typeof applyDemandFactorsToLoadFlow === 'function') {
+        return applyDemandFactorsToLoadFlow(standardLoadFlow);
+    }
+    return standardLoadFlow;
+}
+
+function calculateDownstreamLoad(busId) {
+    try {
+        const lf = calculateLoadFlow(busId);
+        return lf?.summary?.totalCurrent || 0;
+    } catch (error) {
+        console.warn('⚠️ calculateDownstreamLoad failed:', error?.message || error);
+        return 0;
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -1724,6 +1673,405 @@ function generateLoadFlowBreakdownEnhanced(loadFlow) {
     return breakdown;
 }
 
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INLINE CONSOLIDATION: LOAD FLOW ANALYSIS FUNCTIONS
+// Source: loadFlowAnalysis.js
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function generateLoadFlowAnalysis(buses, analytics) {
+    let report = `${'='.repeat(100)}
+2.2 LOAD FLOW ANALYSIS
+${'='.repeat(100)}
+
+This section provides a comprehensive power flow analysis throughout the electrical system.
+Load Flow Analysis shows how power is distributed from source to end loads, identifying
+transformer loading, voltage levels, and system balance.
+
+`;
+
+    // 2.2.1 Primary Distribution
+    report += generatePrimaryDistributionAnalysis(buses, analytics);
+    
+    // 2.2.2 Transformer Loading
+    report += generateTransformerLoadingAnalysis(buses);
+    
+    // 2.2.3 Secondary Distribution
+    report += generateSecondaryDistributionAnalysis(buses);
+    
+    // 2.2.4 Load Balance
+    report += generateLoadBalanceAnalysis(buses);
+    
+    // 2.2.5 Summary
+    report += generateLoadFlowSummary(buses);
+
+    return report;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2.2.1 PRIMARY DISTRIBUTION (13.2kV feeders)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate Primary Distribution analysis for medium voltage feeders (>= 1000V)
+ * 
+ * @param {Array} buses - Array of all buses
+ * @param {Object} analytics - ReportAnalytics instance
+ * @returns {String} Primary distribution section
+ */
+function generatePrimaryDistributionAnalysis(buses, analytics) {
+    let report = `${'-'.repeat(100)}
+2.2.1 PRIMARY DISTRIBUTION (Medium Voltage Feeders >= 1kV)
+${'-'.repeat(100)}
+
+`;
+
+    // Filter buses >= 1000V
+    const primaryBuses = buses.filter(b => b.voltage >= 1000 && b.results);
+    
+    if (primaryBuses.length === 0) {
+        report += 'No primary distribution buses (>= 1kV) found in system.\n\n';
+        return report;
+    }
+
+    report += `Total Primary Buses: ${primaryBuses.length}\n\n`;
+    report += `${'Bus Name'.padEnd(25)}${'Voltage'.padEnd(12)}${'Load (A)'.padEnd(12)}${'Power (kVA)'.padEnd(15)}${'Status'.padEnd(15)}\n`;
+    report += `${'-'.repeat(100)}\n`;
+
+    primaryBuses.forEach(bus => {
+        const voltage = bus.voltage;
+        const loadCurrent = bus.results?.loadFlow?.summary?.totalCurrent || 0;
+        const loadKVA = bus.results?.loadFlow?.summary?.totalKVA || 0;
+        
+        let status = '✓ Normal';
+        if (loadCurrent > 1000) {
+            status = '⚠️ High Load';
+        } else if (loadCurrent < 10) {
+            status = 'ℹ️ Light Load';
+        }
+
+        report += `${bus.name.padEnd(25)}${(voltage + ' V').padEnd(12)}${loadCurrent.toFixed(2).padEnd(12)}${loadKVA.toFixed(2).padEnd(15)}${status.padEnd(15)}\n`;
+    });
+
+    // Calculate totals
+    const totalPrimaryLoad = primaryBuses.reduce((sum, b) => 
+        sum + (b.results?.loadFlow?.summary?.totalCurrent || 0), 0);
+    const totalPrimaryKVA = primaryBuses.reduce((sum, b) => 
+        sum + (b.results?.loadFlow?.summary?.totalKVA || 0), 0);
+
+    report += `${'-'.repeat(100)}\n`;
+    report += `${'TOTAL PRIMARY'.padEnd(25)}${' '.padEnd(12)}${totalPrimaryLoad.toFixed(2).padEnd(12)}${totalPrimaryKVA.toFixed(2).padEnd(15)}\n`;
+    report += `\n`;
+
+    return report;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2.2.2 TRANSFORMER LOADING ANALYSIS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate Transformer Loading analysis with severity levels
+ * 
+ * @param {Array} buses - Array of all buses
+ * @returns {String} Transformer loading section
+ */
+function generateTransformerLoadingAnalysis(buses) {
+    let report = `${'-'.repeat(100)}
+2.2.2 TRANSFORMER LOADING ANALYSIS
+${'-'.repeat(100)}
+
+`;
+
+    // Get all transformers from components
+    const transformers = (typeof components !== 'undefined' && Array.isArray(components)) 
+        ? components.filter(c => c.type === 'transformer') 
+        : [];
+
+    if (transformers.length === 0) {
+        report += 'No transformers found in system.\n\n';
+        return report;
+    }
+
+    report += `Total Transformers: ${transformers.length}\n\n`;
+    report += `${'Transformer'.padEnd(20)}${'Rating'.padEnd(15)}${'Load'.padEnd(15)}${'Loading %'.padEnd(15)}${'Severity'.padEnd(20)}\n`;
+    report += `${'-'.repeat(100)}\n`;
+
+    transformers.forEach(xfmr => {
+        const rating = xfmr.rating || xfmr.kva || 1000;
+        const toBus = buses.find(b => b.id === xfmr.toBus || b.name === xfmr.toBusName);
+        const loadKVA = toBus?.results?.loadFlow?.summary?.totalKVA || 0;
+        const loadingPercent = (loadKVA / rating) * 100;
+
+        let severity = '';
+        if (loadingPercent > 150) {
+            severity = '🔴 CRITICAL >150%';
+        } else if (loadingPercent > 120) {
+            severity = '🟠 HIGH 120-150%';
+        } else if (loadingPercent > 110) {
+            severity = '🟡 MODERATE 110-120%';
+        } else if (loadingPercent > 100) {
+            severity = '🔵 MINOR 100-110%';
+        } else {
+            severity = '✓ Normal <100%';
+        }
+
+        const tag = xfmr.tag || xfmr.name || xfmr.id;
+        report += `${tag.padEnd(20)}${(rating + ' kVA').padEnd(15)}${loadKVA.toFixed(2).padEnd(15)}${loadingPercent.toFixed(1).padEnd(15)}${severity}\n`;
+    });
+
+    report += `\n`;
+
+    return report;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2.2.3 SECONDARY DISTRIBUTION (440V/480V)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate Secondary Distribution analysis for low voltage loads
+ * Shows top 10 load points
+ * 
+ * @param {Array} buses - Array of all buses
+ * @returns {String} Secondary distribution section
+ */
+function generateSecondaryDistributionAnalysis(buses) {
+    let report = `${'-'.repeat(100)}
+2.2.3 SECONDARY DISTRIBUTION (Low Voltage <= 1kV) - Top 10 Load Points
+${'-'.repeat(100)}
+
+`;
+
+    // Filter buses < 1000V
+    const secondaryBuses = buses.filter(b => b.voltage < 1000 && b.results);
+    
+    if (secondaryBuses.length === 0) {
+        report += 'No secondary distribution buses (< 1kV) found in system.\n\n';
+        return report;
+    }
+
+    // Sort by load current descending and take top 10
+    const topLoads = secondaryBuses
+        .map(bus => ({
+            bus,
+            loadCurrent: bus.results?.loadFlow?.summary?.totalCurrent || 0
+        }))
+        .sort((a, b) => b.loadCurrent - a.loadCurrent)
+        .slice(0, 10);
+
+    report += `Total Secondary Buses: ${secondaryBuses.length}\n`;
+    report += `Showing Top 10 Heaviest Loaded Buses:\n\n`;
+    report += `${'Rank'.padEnd(8)}${'Bus Name'.padEnd(25)}${'Voltage'.padEnd(12)}${'Load (A)'.padEnd(12)}${'Power (kVA)'.padEnd(15)}\n`;
+    report += `${'-'.repeat(100)}\n`;
+
+    topLoads.forEach((item, index) => {
+        const bus = item.bus;
+        const voltage = bus.voltage;
+        const loadCurrent = item.loadCurrent;
+        const loadKVA = bus.results?.loadFlow?.summary?.totalKVA || 0;
+
+        report += `${(index + 1).toString().padEnd(8)}${bus.name.padEnd(25)}${(voltage + ' V').padEnd(12)}${loadCurrent.toFixed(2).padEnd(12)}${loadKVA.toFixed(2).padEnd(15)}\n`;
+    });
+
+    report += `\n`;
+
+    return report;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2.2.4 LOAD BALANCE ANALYSIS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate Load Balance analysis for parallel feeders
+ * 
+ * @param {Array} buses - Array of all buses
+ * @returns {String} Load balance section
+ */
+function generateLoadBalanceAnalysis(buses) {
+    let report = `${'-'.repeat(100)}
+2.2.4 LOAD BALANCE ANALYSIS (Parallel Feeder Imbalance)
+${'-'.repeat(100)}
+
+`;
+
+    // Group buses by voltage level to find parallel feeders
+    const voltageGroups = {};
+    buses.forEach(bus => {
+        if (!bus.results) return;
+        const voltage = bus.voltage;
+        if (!voltageGroups[voltage]) {
+            voltageGroups[voltage] = [];
+        }
+        voltageGroups[voltage].push(bus);
+    });
+
+    let foundParallelFeeders = false;
+
+    Object.keys(voltageGroups).forEach(voltage => {
+        const busesAtVoltage = voltageGroups[voltage];
+        
+        // Only analyze if there are 2+ buses at this voltage (potential parallel feeders)
+        if (busesAtVoltage.length >= 2) {
+            foundParallelFeeders = true;
+            
+            const loads = busesAtVoltage.map(b => b.results?.loadFlow?.summary?.totalCurrent || 0);
+            const avgLoad = loads.reduce((sum, l) => sum + l, 0) / loads.length;
+            const maxLoad = Math.max(...loads);
+            const minLoad = Math.min(...loads);
+            const imbalance = avgLoad > 0 ? ((maxLoad - minLoad) / avgLoad) * 100 : 0;
+
+            report += `Voltage Level: ${voltage} V (${busesAtVoltage.length} buses)\n`;
+            report += `  Average Load: ${avgLoad.toFixed(2)} A\n`;
+            report += `  Maximum Load: ${maxLoad.toFixed(2)} A\n`;
+            report += `  Minimum Load: ${minLoad.toFixed(2)} A\n`;
+            report += `  Imbalance: ${imbalance.toFixed(1)}%`;
+            
+            if (imbalance > 20) {
+                report += ` 🔴 HIGH - Rebalancing recommended\n`;
+            } else if (imbalance > 10) {
+                report += ` 🟡 MODERATE - Monitor\n`;
+            } else {
+                report += ` ✓ Acceptable\n`;
+            }
+            report += `\n`;
+        }
+    });
+
+    if (!foundParallelFeeders) {
+        report += 'No parallel feeders detected at same voltage level.\n';
+        report += 'Load balancing analysis requires 2+ buses at the same voltage level.\n';
+    }
+
+    report += `\n`;
+
+    return report;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2.2.5 LOAD FLOW SUMMARY
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate Load Flow Summary with top 3 issues and recommended actions
+ * 
+ * @param {Array} buses - Array of all buses
+ * @returns {String} Load flow summary section
+ */
+function generateLoadFlowSummary(buses) {
+    let report = `${'-'.repeat(100)}
+2.2.5 LOAD FLOW SUMMARY - Top 3 Issues & Recommended Actions
+${'-'.repeat(100)}
+
+`;
+
+    // Collect all issues
+    const issues = [];
+
+    // Check for overloaded transformers
+    const transformers = (typeof components !== 'undefined' && Array.isArray(components)) 
+        ? components.filter(c => c.type === 'transformer') 
+        : [];
+
+    transformers.forEach(xfmr => {
+        const rating = xfmr.rating || xfmr.kva || 1000;
+        const toBus = buses.find(b => b.id === xfmr.toBus || b.name === xfmr.toBusName);
+        const loadKVA = toBus?.results?.loadFlow?.summary?.totalKVA || 0;
+        const loadingPercent = (loadKVA / rating) * 100;
+
+        if (loadingPercent > 100) {
+            const tag = xfmr.tag || xfmr.name || xfmr.id;
+            issues.push({
+                priority: loadingPercent > 150 ? 1 : loadingPercent > 120 ? 2 : 3,
+                severity: loadingPercent > 150 ? 'CRITICAL' : loadingPercent > 120 ? 'HIGH' : 'MODERATE',
+                description: `Transformer ${tag} overloaded at ${loadingPercent.toFixed(1)}%`,
+                action: loadingPercent > 150 
+                    ? 'Emergency replacement required immediately'
+                    : loadingPercent > 120 
+                    ? 'Upgrade or rebalance within 30 days'
+                    : 'Monitor and plan upgrade or accept with reduced life'
+            });
+        }
+    });
+
+    // Check for high voltage drop
+    buses.forEach(bus => {
+        const vdPercent = bus.results?.loadFlow?.voltageDrop?.designPercent || 
+                         bus.results?.voltageDrop?.cumulativeDropPercent || 0;
+        if (vdPercent > 7) {
+            issues.push({
+                priority: vdPercent > 10 ? 1 : 2,
+                severity: vdPercent > 10 ? 'CRITICAL' : 'HIGH',
+                description: `Bus ${bus.name} has ${vdPercent.toFixed(2)}% voltage drop (exceeds IEEE 141 7% limit)`,
+                action: 'Increase conductor size or reduce load to meet compliance'
+            });
+        }
+    });
+
+    // Check for load imbalance
+    const voltageGroups = {};
+    buses.forEach(bus => {
+        if (!bus.results) return;
+        const voltage = bus.voltage;
+        if (!voltageGroups[voltage]) {
+            voltageGroups[voltage] = [];
+        }
+        voltageGroups[voltage].push(bus);
+    });
+
+    Object.keys(voltageGroups).forEach(voltage => {
+        const busesAtVoltage = voltageGroups[voltage];
+        if (busesAtVoltage.length >= 2) {
+            const loads = busesAtVoltage.map(b => b.results?.loadFlow?.summary?.totalCurrent || 0);
+            const avgLoad = loads.reduce((sum, l) => sum + l, 0) / loads.length;
+            const maxLoad = Math.max(...loads);
+            const minLoad = Math.min(...loads);
+            const imbalance = avgLoad > 0 ? ((maxLoad - minLoad) / avgLoad) * 100 : 0;
+
+            if (imbalance > 20) {
+                issues.push({
+                    priority: 3,
+                    severity: 'MODERATE',
+                    description: `Load imbalance ${imbalance.toFixed(1)}% at ${voltage}V level`,
+                    action: 'Rebalance loads across parallel feeders for better utilization'
+                });
+            }
+        }
+    });
+
+    // Sort by priority and take top 3
+    issues.sort((a, b) => a.priority - b.priority);
+    const top3Issues = issues.slice(0, 3);
+
+    if (top3Issues.length === 0) {
+        report += '✅ NO CRITICAL ISSUES DETECTED\n\n';
+        report += 'Load flow analysis shows system operating within acceptable parameters:\n';
+        report += '  • All transformers loaded below 100% capacity\n';
+        report += '  • Voltage drops within IEEE 141 limits (< 7%)\n';
+        report += '  • Load balance acceptable across parallel feeders\n';
+        report += '\nRecommendation: Continue regular monitoring and maintenance.\n';
+    } else {
+        report += `DETECTED ${issues.length} ISSUE(S) - Showing Top 3:\n\n`;
+        
+        top3Issues.forEach((issue, index) => {
+            report += `${index + 1}. [${issue.severity}] ${issue.description}\n`;
+            report += `   → Action: ${issue.action}\n\n`;
+        });
+
+        if (issues.length > 3) {
+            report += `Note: ${issues.length - 3} additional issue(s) detected. See detailed sections above.\n`;
+        }
+    }
+
+    report += `\n`;
+
+    return report;
+}
+
+console.log('✅ Load Flow Analysis Module loaded successfully');
+
 // ═══════════════════════════════════════════════════════════════════════════
 // EXPORT FUNCTIONS TO GLOBAL SCOPE
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1735,7 +2083,9 @@ if (typeof window !== 'undefined') {
     window.applyDemandFactorsToLoadFlow = applyDemandFactorsToLoadFlow;
     window.getDiversityFactorForBus = getDiversityFactorForBus;
     window.calculateLoadFlowWithDemand = calculateLoadFlowWithDemand;
+    window.calculateDownstreamLoad = calculateDownstreamLoad;
     window.calculateSystemMaximumDemand = calculateSystemMaximumDemand;
+    window.generateLoadFlowAnalysis = generateLoadFlowAnalysis;
     window.LOAD_FLOW_CONFIG = LOAD_FLOW_CONFIG;
 }
 
