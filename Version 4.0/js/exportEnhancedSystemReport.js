@@ -3662,27 +3662,29 @@ function exportEnhancedSystemReport() {
         return;
     }
 
-    try {
-        const projectName = document.getElementById('projectName')?.value || 'Untitled';
-        const timestamp = typeof window.getExportFileTimestamp === 'function'
-            ? window.getExportFileTimestamp()
-            : new Date().toISOString().replace(/[:.]/g, '-');
-        const fileName = `${projectName.replace(/\s+/g, '_')}_EnhancedSystemReport_NonRedundant_${scenarioId}_${mode}_${timestamp}.txt`;
-        
-        downloadTextFile(report, fileName);
-        
-        console.log(`✅ Enhanced system report exported: ${fileName}`);
-        alert(`✅ Enhanced System Report Generated!
+    const projectName = document.getElementById('projectName')?.value || 'Untitled';
+    const timestamp = typeof window.getExportFileTimestamp === 'function'
+        ? window.getExportFileTimestamp()
+        : new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `${projectName.replace(/\s+/g, '_')}_EnhancedSystemReport_NonRedundant_${scenarioId}_${mode}_${timestamp}.txt`;
 
-Scenario: ${scenarioId}
-Mode: ${mode}
-
-Report length: ${report.length.toLocaleString()} characters
-File: ${fileName}`);
-    } catch (error) {
-        console.error('❌ Error exporting enhanced report:', error);
-        alert(`❌ Error generating report: ${error.message}`);
+    if (typeof window.downloadTextFile === 'function') {
+        window.downloadTextFile(report, fileName);
+    } else if (typeof window.downloadFileContent === 'function') {
+        window.downloadFileContent(report, fileName, 'text/plain;charset=utf-8');
+    } else {
+        const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
     }
+
+    return report;
 }
 
 // Export functions to global scope
