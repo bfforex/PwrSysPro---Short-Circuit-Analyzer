@@ -2,61 +2,6 @@
 // Revised: 2025-10-31 12:09:53 UTC by copilot (defensive hardening, safer modal handling)
 
 /**
- * Toggle theme (dark/light mode)
- * Non-destructive: only defines if not already present to avoid duplicate definitions.
- */
-if (typeof window.toggleTheme !== 'function') {
-  function toggleTheme() {
-    try {
-      document.body.classList.toggle('dark-mode');
-      // keep a single canonical storage key; tolerate both keys if present
-      const key = 'theme';
-      const value = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-      try { localStorage.setItem(key, value); } catch (e) { /* ignore storage errors */ }
-    } catch (e) {
-      console.error('toggleTheme error:', e);
-    }
-  }
-  window.toggleTheme = toggleTheme;
-}
-
-/**
- * Switch between tabs
- * Accepts event being null; avoids throwing if elements missing.
- */
-if (typeof window.switchTab !== 'function') {
-  function switchTab(event, tabName) {
-    try {
-      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-      if (event && event.target) {
-        event.target.classList.add('active');
-      } else {
-        // try to activate a tab button by id or by matching text
-        const btnById = document.getElementById(tabName + 'TabButton') || document.getElementById(tabName + 'Tab');
-        if (btnById) btnById.classList.add('active');
-        else {
-          const guessed = Array.from(document.querySelectorAll('.tab')).find(t => t.textContent && t.textContent.toLowerCase().includes(tabName.toLowerCase()));
-          if (guessed) guessed.classList.add('active');
-        }
-      }
-
-      const contentEl = document.getElementById(tabName + 'Tab') || document.getElementById(tabName + 'TabContent') || document.getElementById(tabName);
-      if (contentEl) contentEl.classList.add('active');
-
-      // If diagram tab activated, try to refresh diagram conservatively
-      if (tabName && tabName.toLowerCase().includes('diagram') && typeof window.refreshDiagramIfNeeded === 'function') {
-        try { window.refreshDiagramIfNeeded(true); } catch (e) { console.warn('refreshDiagramIfNeeded failed:', e); }
-      }
-    } catch (e) {
-      console.error('switchTab error:', e);
-    }
-  }
-  window.switchTab = switchTab;
-}
-
-/**
  * Display bus calculation results
  * Enhanced: Complete recommendations integration with defensive checks
  */
@@ -565,41 +510,6 @@ function promptBusExport() {
   }
 }
 window.promptBusExport = promptBusExport;
-
-/**
- * Initialize theme from localStorage (non-destructive)
- */
-if (typeof window.initTheme !== 'function') {
-  function initTheme() {
-    try {
-      const theme = (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) || null;
-      if (theme === 'dark') document.body.classList.add('dark-mode');
-    } catch (e) { /* ignore localStorage errors */ }
-  }
-  window.initTheme = initTheme;
-}
-
-/**
- * Close modal when clicking outside -- improved: do not overwrite window.onclick
- * Instead, provide a helper to initialize existing modals if any
- */
-if (typeof window.initModalClickOutside !== 'function') {
-  function initModalClickOutside() {
-    // Attach a delegated listener to body to close modals if click target has class 'modal'
-    document.body.addEventListener('click', function (event) {
-      const el = event.target;
-      if (el && el.classList && el.classList.contains('modal')) {
-        // hide the modal but do not remove JS-managed modals created by promptBusExport
-        try {
-          el.style.display = 'none';
-        } catch (e) {
-          console.warn('initModalClickOutside hide failed:', e);
-        }
-      }
-    }, true);
-  }
-  window.initModalClickOutside = initModalClickOutside;
-}
 
 // Ensure exports to global scope (do not overwrite existing desired implementations)
 window.displayBusResults = window.displayBusResults || displayBusResults;

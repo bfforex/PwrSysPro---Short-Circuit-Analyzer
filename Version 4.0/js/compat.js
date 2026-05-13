@@ -12,14 +12,6 @@
 (function () {
   'use strict';
 
-  // Warn if duplicate top-level functions detected (helps find conflicts)
-  function warnIfDuplicate(name) {
-    const occurrences = typeof window[name] === 'function' ? 1 : 0;
-    if (occurrences > 0) {
-      // no-op: keep quiet if only one definition exists
-    }
-  }
-
   // getCalculationTimestamp: safe fallback
   if (typeof window.getCalculationTimestamp !== 'function') {
     window.getCalculationTimestamp = function () {
@@ -41,18 +33,6 @@
       } catch (e) {
         console.warn('refreshDiagramIfNeeded error:', e);
       }
-    };
-  }
-
-  // viewCalculationSteps alias -> showCalculationSteps (if present)
-  if (typeof window.viewCalculationSteps !== 'function' && typeof window.showCalculationSteps === 'function') {
-    window.viewCalculationSteps = window.showCalculationSteps;
-  }
-
-  // exportBusRecommendations alias -> exportRecommendationsCSV (if present)
-  if (typeof window.exportBusRecommendations !== 'function' && typeof window.exportRecommendationsCSV === 'function') {
-    window.exportBusRecommendations = function (busId) {
-      return window.exportRecommendationsCSV(busId);
     };
   }
 

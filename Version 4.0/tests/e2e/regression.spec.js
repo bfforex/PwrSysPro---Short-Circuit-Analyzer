@@ -136,6 +136,52 @@ test('theme toggle — dark mode applies without errors', async ({ page }) => {
   expect(themes.lightTheme).toBe('light');
 });
 
+test('tab switching — switchTab resolves as global and activates tab content', async ({ page }) => {
+  await openApp(page);
+
+  const result = await page.evaluate(() => {
+    // switchTab must be a global function (inline HTML handlers rely on it)
+    if (typeof window.switchTab !== 'function') return { error: 'switchTab not a function' };
+
+    window.switchTab(null, 'results');
+    const resultsActive = document.getElementById('resultsTab')?.classList.contains('active');
+
+    window.switchTab(null, 'buses');
+    const busesActive = document.getElementById('busesTab')?.classList.contains('active');
+
+    return { resultsActive, busesActive };
+  });
+
+  expect(result.error).toBeUndefined();
+  expect(result.resultsActive).toBe(true);
+  expect(result.busesActive).toBe(true);
+});
+
+test('golden snapshot — GoldenSnapshot module available and compare returns structure', async ({ page }) => {
+  await openApp(page);
+
+  const result = await page.evaluate(() => {
+    if (typeof window.GoldenSnapshot !== 'object' || window.GoldenSnapshot === null) {
+      return { error: 'GoldenSnapshot not available' };
+    }
+    if (typeof window.GoldenSnapshot.compare !== 'function') {
+      return { error: 'GoldenSnapshot.compare not a function' };
+    }
+    // Compare against an empty snapshot — should return the standard result shape
+    const outcome = window.GoldenSnapshot.compare({ buses: [] });
+    return {
+      hasPassed: typeof outcome.passed === 'boolean',
+      hasFailed: typeof outcome.failed === 'number',
+      hasMismatches: Array.isArray(outcome.mismatches)
+    };
+  });
+
+  expect(result.error).toBeUndefined();
+  expect(result.hasPassed).toBe(true);
+  expect(result.hasFailed).toBe(true);
+  expect(result.hasMismatches).toBe(true);
+});
+
 test.skip('TC01 reference — 3-phase fault current sanity check', async () => {
   // Placeholder only: requires stable test-data loading API to seed full network model.
   // TODO: Enable once standard test project loading API is finalized. Expected range: 19.1–21.1 kA.
