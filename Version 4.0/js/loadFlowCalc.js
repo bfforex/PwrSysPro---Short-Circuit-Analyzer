@@ -476,8 +476,9 @@ function calculateLoadFlow(busId) {
     loadData.summary.totalPowerKVA = loadFlowCurrentToKVA(loadData.totalLoad, targetBus.voltage);
     loadData.summary.totalPowerKW = loadData.summary.totalPowerKVA * pf;
 
-    const motorTotal = loadData.breakdown.motors.filter(m => m.voltage === targetBus.voltage).reduce((sum, m) => sum + m.current, 0);
-    const motorPower = loadData.breakdown.motors.filter(m => m.voltage === targetBus.voltage).reduce((sum, m) => sum + m.powerKVA, 0);
+    const motorsAtLevel = loadData.breakdown.motors.filter(m => m.voltage === targetBus.voltage);
+    const motorTotal = motorsAtLevel.reduce((sum, m) => sum + m.current, 0);
+    const motorPower = motorsAtLevel.reduce((sum, m) => sum + m.powerKVA, 0);
     const directLoadsAtThisBus = loadData.breakdown.directLoads.filter(d => d.bus === targetBus.name || d.toBus === targetBus.name);
     const directTotal = directLoadsAtThisBus.reduce((sum, d) => sum + d.current, 0);
     const directPower = directLoadsAtThisBus.reduce((sum, d) => sum + d.powerKVA, 0);
@@ -512,7 +513,6 @@ function calculateLoadFlow(busId) {
     }
 
     if (motorTotal > 0) {
-        const motorsAtLevel = loadData.breakdown.motors.filter(m => m.voltage === targetBus.voltage);
         const pct = totalAtThisLevel > 0 ? motorTotal / totalAtThisLevel * 100 : 0;
         steps += `Motors (${targetBus.voltage}V) ${String(motorsAtLevel.length).padStart(2)} ${motorTotal.toFixed(2).padStart(11)} ${motorPower.toFixed(2).padStart(11)} ${pct.toFixed(1).padStart(10)}% At this level\n`;
     }
@@ -908,7 +908,7 @@ function calculateDownstreamLoad(busId) {
         const lf = calculateLoadFlow(busId);
         return lf?.summary?.totalCurrent || 0;
     } catch (error) {
-        console.warn('⚠️ calculateDownstreamLoad pass-through fix failed:', error?.message || error);
+        console.warn('⚠️ calculateDownstreamLoad failed:', error?.message || error);
         return 0;
     }
 }
