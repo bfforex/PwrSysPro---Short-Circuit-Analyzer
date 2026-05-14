@@ -518,6 +518,369 @@ function addVoltageDropFormulaDetails(result, path, options = {}) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// VOLTAGE DROP ENGINE API (CONSOLIDATED FROM voltageDropEngine.js)
+// ════════════════════════════════════════════════════════════════════════════════
+
+const VOLTAGE_DROP_ENGINE_CONFIG = {
+    MODES: {
+        DESIGN: 'design',
+        OPER_DEMAND: 'oper_demand',
+        OPER_DEMAND_DF: 'oper_demand_df'
+    },
+    LIMITS: {
+        FEEDER: 3,
+        BRANCH: 5,
+        COMBINED: 7
+    },
+    DEFAULTS: {
+        POWER_FACTOR: 0.85,
+        TEMPERATURE: 75
+    }
+};
+
+function computeVoltageDrop(bus, mode = 'oper_demand_df', options = {}) {
+    const SQRT3 = Math.sqrt(3);
+
+    if (!bus) {
+        throw new Error('Bus is required for voltage drop calculation');
+    }
+
+    const validModes = Object.values(VOLTAGE_DROP_ENGINE_CONFIG.MODES);
+    if (!validModes.includes(mode)) {
+        console.warn(`⚠️ Invalid mode '${mode}', defaulting to 'oper_demand_df'`);
+        mode = 'oper_demand_df';
+    }
+
+    const powerFactor = options.powerFactor ||
+        parseFloat(document.getElementById('powerFactor')?.value) ||
+        VOLTAGE_DROP_ENGINE_CONFIG.DEFAULTS.POWER_FACTOR;
+
+    const temperature = options.temperature ||
+        parseFloat(document.getElementById('temperature')?.value) ||
+        VOLTAGE_DROP_ENGINE_CONFIG.DEFAULTS.TEMPERATURE;
+
+    let loadCurrent;
+    let currentDescription;
+
+    switch (mode) {
+        case 'design':
+            loadCurrent = getConnectedLoadCurrent(bus);
+            currentDescription = '100% FLC (Design)';
+            break;
+        case 'oper_demand':
+            loadCurrent = getDemandLoadCurrent(bus);
+            currentDescription = 'Demand Factor Applied';
+            break;
+        case 'oper_demand_df':
+            loadCurrent = getDiversifiedLoadCurrent(bus);
+            currentDescription = 'Demand + Diversity Applied';
+            break;
+        default:
+            loadCurrent = getDiversifiedLoadCurrent(bus);
+            currentDescription = 'Demand + Diversity Applied (Default)';
+    }
+
+    const path = getPathToBus(bus);
+
+    if (!path || path.length === 0) {
+        return createEmptyVoltageDropResult(bus, mode);
+    }
+
+    let totalDropVolts = 0;
+    let totalDropPercent = 0;
+    const componentBreakdown = [];
+
+    let currentVoltage = path[0]?.bus?.voltage || bus.voltage;
+    const sourceVoltage = currentVoltage;
+    let voltageLevel = currentVoltage;
+
+    for (let i = 1; i < path.length; i++) {
+        const segment = path[i];
+        const comp = segment?.component;
+
+        if (!comp) continue;
+
+        if (comp.type === 'cable') {
+            const cableResult = calculateCableVoltageDrop(
+                comp,
+                loadCurrent,
+                powerFactor,
+                temperature,
+                voltageLevel
+            );
+
+            totalDropVolts += cableResult.dropVolts;
+            currentVoltage -= cableResult.dropVolts;
+
+            componentBreakdown.push({
+                type: 'cable',
+                tag: comp.tag || comp.size,
+                dropVolts: cableResult.dropVolts,
+                dropPercent: cableResult.dropPercent,
+                current: loadCurrent,
+                voltageLevel: voltageLevel
+            });
+        } else if (comp.type === 'transformer') {
+            let secondaryCurrent = loadCurrent;
+            const turnsRatio = comp.primary / comp.secondary;
+            if (turnsRatio > 0 && voltageLevel !== comp.secondary) {
+                secondaryCurrent = loadCurrent;
+            }
+
+            const xfmrResult = calculateTransformerVoltageDrop(
+                comp,
+                secondaryCurrent,
+                powerFactor
+            );
+
+            const voltageAtSecondaryNoLoad = currentVoltage / turnsRatio;
+            const tapAdjust = comp.tapSetting ? (1 + comp.tapSetting / 100) : 1;
+            const voltageAtSecondaryWithTap = voltageAtSecondaryNoLoad * tapAdjust;
+
+            currentVoltage = voltageAtSecondaryWithTap - xfmrResult.dropVolts;
+            voltageLevel = comp.secondary;
+            totalDropVolts += xfmrResult.dropVolts;
+
+            componentBreakdown.push({
+                type: 'transformer',
+                tag: comp.tag || `${comp.rating}kVA`,
+                dropVolts: xfmrResult.dropVolts,
+                dropPercent: xfmrResult.dropPercent,
+                current: secondaryCurrent,
+                voltageLevel: comp.secondary,
+                tapSetting: comp.tapSetting || 0
+            });
+        }
+    }
+
+    const nominalLoadVoltage = bus.voltage;
+    let baselineVoltage = nominalLoadVoltage;
+    const lastTransformer = componentBreakdown.find(c => c.type === 'transformer' && c.tapSetting !== 0);
+    if (lastTransformer) {
+        baselineVoltage = nominalLoadVoltage * (1 + lastTransformer.tapSetting / 100);
+    }
+
+    totalDropPercent = baselineVoltage > 0 ?
+        ((baselineVoltage - currentVoltage) / baselineVoltage) * 100 : 0;
+
+    let complianceStatus = 'N/A';
+    let complianceNote = '';
+
+    if (mode === 'design') {
+        const limits = VOLTAGE_DROP_ENGINE_CONFIG.LIMITS;
+
+        if (totalDropPercent <= limits.FEEDER) {
+            complianceStatus = 'EXCELLENT';
+            complianceNote = `VD ${totalDropPercent.toFixed(2)}% ≤ ${limits.FEEDER}% (Feeder limit)`;
+        } else if (totalDropPercent <= limits.BRANCH) {
+            complianceStatus = 'COMPLIANT';
+            complianceNote = `VD ${totalDropPercent.toFixed(2)}% ≤ ${limits.BRANCH}% (Branch limit)`;
+        } else if (totalDropPercent <= limits.COMBINED) {
+            complianceStatus = 'WARNING';
+            complianceNote = `VD ${totalDropPercent.toFixed(2)}% ≤ ${limits.COMBINED}% (Combined limit)`;
+        } else {
+            complianceStatus = 'NON-COMPLIANT';
+            complianceNote = `VD ${totalDropPercent.toFixed(2)}% > ${limits.COMBINED}% (Exceeds limit)`;
+        }
+    } else {
+        complianceNote = 'Operating VD - for informational purposes only. Compliance is based on design VD.';
+    }
+
+    return {
+        busId: bus.id,
+        busName: bus.name,
+        busVoltage: bus.voltage,
+        mode: mode,
+        modeDescription: currentDescription,
+        loadCurrent: loadCurrent,
+        sourceVoltage: sourceVoltage,
+        nominalLoadVoltage: nominalLoadVoltage,
+        baselineVoltage: baselineVoltage,
+        actualVoltageAtLoad: currentVoltage,
+        totalDropVolts: baselineVoltage - currentVoltage,
+        totalDropPercent: totalDropPercent,
+        components: componentBreakdown,
+        compliance: {
+            status: complianceStatus,
+            note: complianceNote,
+            limits: VOLTAGE_DROP_ENGINE_CONFIG.LIMITS,
+            isDesignMode: mode === 'design'
+        },
+        powerFactor: powerFactor,
+        temperature: temperature,
+        calculationDate: new Date().toISOString()
+    };
+}
+
+function getConnectedLoadCurrent(bus) {
+    if (bus.results?.loadFlow?.demandSummary?.connectedCurrent) {
+        return bus.results.loadFlow.demandSummary.connectedCurrent;
+    }
+
+    if (bus.results?.loadFlow?.summary?.totalCurrent) {
+        return bus.results.loadFlow.summary.totalCurrent;
+    }
+
+    if (typeof calculateDownstreamLoad === 'function') {
+        const downstream = calculateDownstreamLoad(bus.id);
+        if (downstream > 0) return downstream;
+    }
+
+    return parseFloat(bus.loadCurrent) || 100;
+}
+
+function getDemandLoadCurrent(bus) {
+    if (bus.results?.loadFlow?.demandSummary?.demandCurrent) {
+        return bus.results.loadFlow.demandSummary.demandCurrent;
+    }
+
+    const connected = getConnectedLoadCurrent(bus);
+    const demandFactor = bus.demandFactor || 1.0;
+
+    return connected * demandFactor;
+}
+
+function getDiversifiedLoadCurrent(bus) {
+    if (bus.results?.loadFlow?.demandSummary?.diversityCurrent) {
+        return bus.results.loadFlow.demandSummary.diversityCurrent;
+    }
+
+    if (typeof calculateLoadFlowWithDemand === 'function') {
+        try {
+            const result = calculateLoadFlowWithDemand(bus.id);
+            const current = Number(result?.demandSummary?.diversityCurrent || result?.diversityLoad || result?.diversifiedLoad || 0);
+            if (current > 0) return current;
+        } catch (error) {
+            console.warn('[VD Engine] calculateLoadFlowWithDemand failed:', error?.message || error);
+        }
+    }
+
+    if (typeof calculateDownstreamLoadWithDiversity === 'function') {
+        const result = calculateDownstreamLoadWithDiversity(bus.id, { applyDiversity: true });
+        if (result?.diversifiedLoad > 0) {
+            return result.diversifiedLoad;
+        }
+    }
+
+    const demandCurrent = getDemandLoadCurrent(bus);
+    const diversityFactor = bus.diversityFactor || 1.0;
+
+    return demandCurrent / diversityFactor;
+}
+
+function getPathToBus(bus) {
+    if (bus.pathComponents && bus.pathComponents.length > 0) {
+        return bus.pathComponents;
+    }
+
+    if (typeof findPathToBus === 'function') {
+        return findPathToBus(bus.id);
+    }
+
+    return [];
+}
+
+function calculateCableVoltageDrop(cable, current, powerFactor, temperature, voltageLevel) {
+    const SQRT3 = Math.sqrt(3);
+
+    const cableData = (typeof CABLE_IMPEDANCE_DATA !== 'undefined' && cable.size) ?
+        CABLE_IMPEDANCE_DATA[cable.size] : null;
+
+    const material = (cable.material || 'copper').toLowerCase();
+    const parallel = cable.parallel || 1;
+    const length = parseFloat(cable.length) || 0;
+
+    let rBase = cableData?.[material]?.r || 0.05;
+    let xBase = cableData?.[material]?.x || 0.04;
+
+    if (typeof temperatureCorrection === 'function') {
+        rBase = temperatureCorrection(rBase, temperature, material);
+    }
+
+    const R = (rBase * length) / parallel;
+    const X = (xBase * length) / parallel;
+
+    const cosTheta = powerFactor;
+    const sinTheta = Math.sqrt(1 - powerFactor * powerFactor);
+    const dropVolts = SQRT3 * current * (R * cosTheta + X * sinTheta);
+    const dropPercent = voltageLevel > 0 ? (dropVolts / voltageLevel) * 100 : 0;
+
+    return {
+        dropVolts: dropVolts,
+        dropPercent: dropPercent,
+        resistance: R,
+        reactance: X
+    };
+}
+
+function calculateTransformerVoltageDrop(transformer, secondaryCurrent, powerFactor) {
+    const SQRT3 = Math.sqrt(3);
+
+    const rating = parseFloat(transformer.rating) || 1000;
+    const secondary = parseFloat(transformer.secondary) || 480;
+    const impedancePercent = parseFloat(transformer.impedance) || 5.75;
+    const xr = parseFloat(transformer.xr) || 7;
+
+    const zBase = (secondary * secondary) / (rating * 1000);
+    const z = (impedancePercent / 100) * zBase;
+    const x = z * xr / Math.sqrt(1 + xr * xr);
+    const r = z / Math.sqrt(1 + xr * xr);
+
+    const cosTheta = powerFactor;
+    const sinTheta = Math.sqrt(1 - powerFactor * powerFactor);
+    const dropVolts = SQRT3 * secondaryCurrent * (r * cosTheta + x * sinTheta);
+
+    const tapAdjust = transformer.tapSetting ? (1 + transformer.tapSetting / 100) : 1;
+    const adjustedSecondary = secondary * tapAdjust;
+    const dropPercent = adjustedSecondary > 0 ? (dropVolts / adjustedSecondary) * 100 : 0;
+
+    return {
+        dropVolts: dropVolts,
+        dropPercent: dropPercent,
+        resistance: r,
+        reactance: x
+    };
+}
+
+function createEmptyVoltageDropResult(bus, mode) {
+    return {
+        busId: bus?.id || '',
+        busName: bus?.name || '',
+        busVoltage: bus?.voltage || 0,
+        mode: mode,
+        modeDescription: 'No path found',
+        loadCurrent: 0,
+        sourceVoltage: 0,
+        nominalLoadVoltage: bus?.voltage || 0,
+        baselineVoltage: bus?.voltage || 0,
+        actualVoltageAtLoad: bus?.voltage || 0,
+        totalDropVolts: 0,
+        totalDropPercent: 0,
+        components: [],
+        compliance: {
+            status: 'UNKNOWN',
+            note: 'Unable to calculate - no path found',
+            limits: VOLTAGE_DROP_ENGINE_CONFIG.LIMITS,
+            isDesignMode: mode === 'design'
+        },
+        calculationDate: new Date().toISOString()
+    };
+}
+
+function computeAllVoltageDropModes(bus) {
+    return {
+        design: computeVoltageDrop(bus, 'design'),
+        operDemand: computeVoltageDrop(bus, 'oper_demand'),
+        operDemandDF: computeVoltageDrop(bus, 'oper_demand_df')
+    };
+}
+
+function isVoltageDropCompliant(bus) {
+    const result = computeVoltageDrop(bus, 'design');
+    return result.compliance.status !== 'NON-COMPLIANT';
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // MAIN VOLTAGE DROP CALCULATION FUNCTION (ENHANCED)
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -1419,11 +1782,18 @@ function calculateVoltageDrop(busId, path, loadFlowData = null) {
 
 if (typeof window !== 'undefined') {
     window.calculateVoltageDrop = calculateVoltageDrop;
+    window.computeVoltageDrop = computeVoltageDrop;
+    window.computeAllVoltageDropModes = computeAllVoltageDropModes;
+    window.isVoltageDropCompliant = isVoltageDropCompliant;
+    window.getConnectedLoadCurrent = getConnectedLoadCurrent;
+    window.getDemandLoadCurrent = getDemandLoadCurrent;
+    window.getDiversifiedLoadCurrent = getDiversifiedLoadCurrent;
     window.calculateLoadCurrentFromKVA = calculateLoadCurrentFromKVA;
     window.calculateLoadCurrentFromKW = calculateLoadCurrentFromKW;
     window.calculateMotorLoadCurrent = calculateMotorLoadCurrent;
     window.addVoltageDropFormulaDetails = addVoltageDropFormulaDetails;
     window.VOLTAGE_DROP_CONFIG = VOLTAGE_DROP_CONFIG;
+    window.VOLTAGE_DROP_ENGINE_CONFIG = VOLTAGE_DROP_ENGINE_CONFIG;
 }
 
 console.log('✅ Voltage Drop Calculation module v2.3.0 loaded');
