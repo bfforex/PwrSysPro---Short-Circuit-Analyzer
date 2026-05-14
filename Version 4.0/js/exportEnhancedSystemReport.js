@@ -62,6 +62,183 @@ const ENERGY_CALCULATION_CONSTANTS = {
     DEFAULT_ENERGY_RATE: 0.12
 };
 
+function safeNum(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+}
+
+function vdBreakdown(bus) {
+    const vd = bus?.results?.voltageDrop || {};
+    const components = Array.isArray(vd.components) ? vd.components : [];
+    const basisVoltage = safeNum(vd?.conductorVoltageDrop?.basisVoltage, safeNum(vd?.tapAdjustment?.tapAdjustedNominal, safeNum(vd?.nominalLoadVoltage, safeNum(bus?.voltage, 0))));
+    const conductorComponents = vd?.conductorVoltageDrop?.components || components.filter(c => String(c.type || '').toLowerCase() !== 'transformer');
+    const transformerComponents = vd?.transformerRegulation?.transformers || components.filter(c => String(c.type || '').toLowerCase() === 'transformer');
+    let conductorDropVolts = safeNum(vd?.conductorVoltageDrop?.totalDropVolts, NaN);
+    if (!Number.isFinite(conductorDropVolts)) {
+        conductorDropVolts = conductorComponents.reduce((sum, c) => {
+            const componentVoltage = safeNum(c.voltageLevel || c.nominalVoltage, basisVoltage);
+            const drop = safeNum(c.dropVolts, 0);
+            return sum + ((componentVoltage > 0 && basisVoltage > 0) ? drop * (basisVoltage / componentVoltage) : drop);
+        }, 0);
+    }
+    const conductorDropPercent = safeNum(vd?.conductorVoltageDrop?.totalDropPercent, basisVoltage > 0 ? conductorDropVolts / basisVoltage * 100 : 0);
+    const transformerDropVolts = safeNum(vd?.transformerRegulation?.totalDropVolts, transformerComponents.reduce((sum, c) => sum + safeNum(c.dropVolts, 0), 0));
+    const transformerDropPercent = safeNum(vd?.transformerRegulation?.totalDropPercent, transformerComponents.reduce((sum, c) => sum + safeNum(c.dropPercent, 0), 0));
+    const systemDropVolts = safeNum(vd?.systemVoltageProfile?.totalDropVolts, safeNum(vd?.totalDropVolts, safeNum(vd?.cumulativeDropVolts, 0)));
+    const systemDropPercent = safeNum(vd?.systemVoltageProfile?.totalDropPercent, safeNum(vd?.totalDropPercent, safeNum(vd?.cumulativeDropPercent, 0)));
+    const voltageAtLoad = safeNum(vd?.systemVoltageProfile?.voltageAtLoad, safeNum(vd?.loadVoltage, safeNum(bus?.voltage, 0) - systemDropVolts));
+    return { conductorDropVolts, conductorDropPercent, transformerDropVolts, transformerDropPercent, systemDropVolts, systemDropPercent, voltageAtLoad };
+}
+
+function getVdRows(buses) {
+    return (Array.isArray(buses) ? buses : []).filter(b => b?.results?.voltageDrop).map(bus => ({ bus, name: bus.name || bus.tag || bus.id, voltage: safeNum(bus.voltage, 0), breakdown: vdBreakdown(bus) }));
+}
+
+function reportLine(char = '=', count = 100) {
+    return char.repeat(count) + '\n';
+}
+
+function worstVoltageFormat(row) {
+    return row ? `${row.breakdown.voltageAtLoad.toFixed(2)} V` : 'N/A';
+}
+
+function buildCorrectedVDComplianceSection(buses) {
+    const rows = getVdRows(buses);
+    if (rows.length === 0) return '';
+    const worstConductor = rows.reduce((m, r) => !m || r.breakdown.conductorDropPercent > m.breakdown.conductorDropPercent ? r : m, null);
+    const worstTransformer = rows.reduce((m, r) => !m || r.breakdown.transformerDropPercent > m.breakdown.transformerDropPercent ? r : m, null);
+    const worstSystem = rows.reduce((m, r) => !m || r.breakdown.systemDropPercent > m.breakdown.systemDropPercent ? r : m, null);
+    const lowestVoltage = rows.reduce((m, r) => !m || r.breakdown.voltageAtLoad < m.breakdown.voltageAtLoad ? r : m, null);
+    const conductorViolations = rows.filter(r => r.breakdown.conductorDropPercent > 5);
+    let report = '';
+    report += reportLine('=');
+    report += 'VOLTAGE DROP COMPLIANCE ANALYSIS - CORRECTED REPORTING BASIS\n';
+    report += reportLine('=');
+    report += 'REPORTING BASIS:\n';
+    report += reportLine('-');
+    report += 'Conductor Voltage Drop:\n';
+    report += '  Used for NEC/PEC/IEEE voltage-drop guidance and conductor compliance checks.\n\n';
+    report += 'Transformer Regulation / Loading:\n';
+    report += '  Shown separately as equipment voltage-regulation/loading effect.\n';
+    report += '  Excluded from conductor voltage-drop compliance.\n\n';
+    report += 'System Voltage Profile:\n';
+    report += '  Complete voltage result including conductor VD and transformer regulation.\n';
+    report += '  Used to review actual voltage available at each load bus.\n\n';
+    report += 'SYSTEM RESULTS:\n';
+    report += reportLine('-');
+    report += `Worst Conductor VD: ${worstConductor.breakdown.conductorDropPercent.toFixed(3)}% at ${worstConductor.name}\n`;
+    report += `Worst Transformer Regulation: ${worstTransformer.breakdown.transformerDropPercent.toFixed(3)}% at ${worstTransformer.name}\n`;
+    report += `Worst System Voltage Profile: ${worstSystem.breakdown.systemDropPercent.toFixed(3)}% at ${worstSystem.name}\n`;
+    report += `Lowest Voltage at Load: ${worstVoltageFormat(lowestVoltage)} at ${lowestVoltage.name}\n\n`;
+    report += 'COMPLIANCE INTERPRETATION:\n';
+    report += reportLine('-');
+    if (conductorViolations.length === 0) {
+        report += '✅ CONDUCTOR VD COMPLIANCE: COMPLIANT\n';
+        report += 'No bus exceeds the conductor voltage-drop review threshold.\n';
+        report += 'Voltage-profile review items, if any, are primarily related to transformer regulation/loading and actual load-bus voltage.\n';
+    } else {
+        report += `⚠️ CONDUCTOR VD REVIEW REQUIRED: ${conductorViolations.length} bus(es) exceed conductor voltage-drop threshold.\n`;
+        conductorViolations.slice(0, 10).forEach(r => {
+            report += `  - ${r.name}: ${r.breakdown.conductorDropPercent.toFixed(3)}% conductor VD\n`;
+        });
+    }
+    report += '\nTOP SYSTEM VOLTAGE PROFILE REVIEW ITEMS:\n';
+    report += reportLine('-');
+    rows.slice().sort((a, b) => b.breakdown.systemDropPercent - a.breakdown.systemDropPercent).slice(0, 10).forEach(r => {
+        report += `${r.name.padEnd(24)} Conductor: ${r.breakdown.conductorDropPercent.toFixed(3).padStart(7)}%  Transformer: ${r.breakdown.transformerDropPercent.toFixed(3).padStart(7)}%  Profile: ${r.breakdown.systemDropPercent.toFixed(3).padStart(7)}%  Vload: ${r.breakdown.voltageAtLoad.toFixed(2)} V\n`;
+    });
+    report += '\n';
+    return report;
+}
+
+function buildCorrectedVDSystemSummary(buses) {
+    const rows = getVdRows(buses);
+    if (rows.length === 0) return '';
+    const avgConductor = rows.reduce((s, r) => s + r.breakdown.conductorDropPercent, 0) / rows.length;
+    const avgTransformer = rows.reduce((s, r) => s + r.breakdown.transformerDropPercent, 0) / rows.length;
+    const avgSystem = rows.reduce((s, r) => s + r.breakdown.systemDropPercent, 0) / rows.length;
+    let report = '';
+    report += reportLine('=');
+    report += 'VOLTAGE DROP ANALYSIS - SYSTEM SUMMARY\n';
+    report += reportLine('=');
+    report += 'METHODOLOGY UPDATE:\n';
+    report += reportLine('-');
+    report += '• Conductor VD is used for compliance checking.\n';
+    report += '• Transformer regulation/loading is shown separately.\n';
+    report += '• System voltage profile shows the complete actual voltage outcome.\n\n';
+    report += 'AVERAGE SYSTEM VALUES:\n';
+    report += reportLine('-');
+    report += `Average Conductor VD: ${avgConductor.toFixed(3)}%\n`;
+    report += `Average Transformer Regulation: ${avgTransformer.toFixed(3)}%\n`;
+    report += `Average System Voltage Profile: ${avgSystem.toFixed(3)}%\n\n`;
+    report += 'BUS VOLTAGE PROFILE SUMMARY:\n';
+    report += reportLine('-');
+    report += 'Bus'.padEnd(24) + 'Voltage'.padEnd(12) + 'Cond VD'.padEnd(12) + 'Xfmr Reg'.padEnd(12) + 'Profile'.padEnd(12) + 'Vload\n';
+    report += reportLine('-');
+    rows.forEach(r => {
+        report += String(r.name).substring(0, 23).padEnd(24);
+        report += String(`${r.voltage.toFixed(0)} V`).padEnd(12);
+        report += String(`${r.breakdown.conductorDropPercent.toFixed(3)}%`).padEnd(12);
+        report += String(`${r.breakdown.transformerDropPercent.toFixed(3)}%`).padEnd(12);
+        report += String(`${r.breakdown.systemDropPercent.toFixed(3)}%`).padEnd(12);
+        report += `${r.breakdown.voltageAtLoad.toFixed(2)} V\n`;
+    });
+    report += '\n';
+    return report;
+}
+
+function buildCorrectedBusSummaryTable(buses) {
+    let report = '';
+    report += reportLine('=');
+    report += 'SUMMARY OF ALL BUSES\n';
+    report += reportLine('=');
+    report += 'Bus Name'.padEnd(22) + 'Voltage'.padEnd(10) + 'Fault(kA)'.padEnd(11) + 'X/R'.padEnd(8) + 'CondVD'.padEnd(10) + 'XfmrReg'.padEnd(10) + 'Profile'.padEnd(10) + 'Vload'.padEnd(12) + 'Status\n';
+    report += '-'.repeat(120) + '\n';
+    (Array.isArray(buses) ? buses : []).forEach(bus => {
+        const sc = bus.results?.shortCircuit || {};
+        const fc = sc.faultCurrents || {};
+        const imp = sc.impedance || {};
+        const b = vdBreakdown(bus);
+        const status = b.conductorDropPercent <= 5 ? 'VD OK' : 'VD REVIEW';
+        report += String(bus.name || bus.tag || bus.id).substring(0, 21).padEnd(22);
+        report += String(`${safeNum(bus.voltage, 0).toFixed(0)} V`).padEnd(10);
+        report += String(safeNum(fc.threePhaseSym, safeNum(sc.faultCurrentKA, 0)).toFixed(2)).padEnd(11);
+        report += String(safeNum(imp.xrRatio, safeNum(sc.xrRatio, 0)).toFixed(2)).padEnd(8);
+        report += String(`${b.conductorDropPercent.toFixed(3)}%`).padEnd(10);
+        report += String(`${b.transformerDropPercent.toFixed(3)}%`).padEnd(10);
+        report += String(`${b.systemDropPercent.toFixed(3)}%`).padEnd(10);
+        report += String(`${b.voltageAtLoad.toFixed(2)} V`).padEnd(12);
+        report += `${status}\n`;
+    });
+    report += '\nCOLUMN DEFINITIONS:\n';
+    report += reportLine('-');
+    report += 'CondVD: Conductor voltage drop only; compliance basis.\n';
+    report += 'XfmrReg: Transformer regulation/loading; excluded from conductor compliance.\n';
+    report += 'Profile: Complete system voltage profile including conductor VD and transformer regulation.\n';
+    report += 'Vload: Actual voltage available at the bus/load.\n\n';
+    return report;
+}
+
+function replaceReportSection(report, startTitle, nextTitle, replacement) {
+    const start = report.indexOf(startTitle);
+    if (start < 0) return report;
+    const next = report.indexOf(nextTitle, start + startTitle.length);
+    if (next < 0) return report.slice(0, start) + replacement;
+    return report.slice(0, start) + replacement + report.slice(next);
+}
+
+function postProcessEnhancedSystemReport(report, buses) {
+    let out = String(report || '');
+    out = replaceReportSection(out, 'VOLTAGE DROP COMPLIANCE ANALYSIS', 'VOLTAGE DROP ANALYSIS - SYSTEM SUMMARY', buildCorrectedVDComplianceSection(buses));
+    out = replaceReportSection(out, 'VOLTAGE DROP ANALYSIS - SYSTEM SUMMARY', 'SHORT CIRCUIT ANALYSIS - SYSTEM SUMMARY', buildCorrectedVDSystemSummary(buses));
+    out = replaceReportSection(out, 'SUMMARY OF ALL BUSES', 'CABLE TAG DIRECTORY', buildCorrectedBusSummaryTable(buses));
+    out = out.replace(/Critical Voltage Drop Violation/g, 'Voltage Profile Review');
+    out = out.replace(/Voltage drop exceeds recomended maximum \(5%\)/g, 'System voltage profile exceeds 5% review threshold; conductor VD is reported separately');
+    out = out.replace(/IMMEDIATE: Resize conductors or install voltage regulation equipment\. System may not operate properly\./g, 'Review transformer regulation/tap settings and verify actual load-bus voltage. Upsize conductors only where conductor VD exceeds limits.');
+    out = out.replace(/Voltage Drop Limits: IEEE 141 recommended \(2\.5% feeder, 5% branch, 7% combined max\)/g, 'Voltage Drop Basis: conductor VD is checked separately from transformer regulation; system voltage profile is reported for actual load-bus voltage.');
+    return out;
+}
+
 /**
  * Generate comprehensive system report with all analysis sections
  * @param {Array} buses - Array of all buses with calculation results
@@ -143,7 +320,7 @@ function generateEnhancedSystemReport(buses, options = {}) {
     report += generateRecommendationsByBus(systemReport, calculatedBuses);
     report += generateReportFooter();
 
-    return report;
+    return postProcessEnhancedSystemReport(report, calculatedBuses);
 }
 
 /**
@@ -3468,8 +3645,7 @@ ${'═'.repeat(100)}
  * Export enhanced system report
  */
 function exportEnhancedSystemReport() {
-    console.log('📊 Generating enhanced system report v2.0.0...');
-    console.log('   ✅ ALL CONFUSION POINTS FIXED! ');
+    console.log('📊 Generating enhanced system report with corrected voltage-drop basis...');
     
     const scenarioId = (typeof window.currentScenarioId !== 'undefined') 
         ? window.currentScenarioId 
@@ -3486,40 +3662,29 @@ function exportEnhancedSystemReport() {
         return;
     }
 
-    try {
-        const projectName = document.getElementById('projectName')?.value || 'Untitled';
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const fileName = `${projectName.replace(/\s+/g, '_')}_EnhancedSystemReport_v2.0.0_${scenarioId}_${mode}_${timestamp}.txt`;
-        
-        downloadTextFile(report, fileName);
-        
-        console.log(`✅ Enhanced system report exported: ${fileName}`);
-        console.log('   ✅ De-duplicated transformer recommendations');
-        console.log('   ✅ Separated DESIGN vs OPERATING modes');
-        console.log('   ✅ Fixed column naming (Design/Operating)');
-        console.log('   ✅ Added motor FLC display');
-        console.log('   ✅ Clarified cost breakdowns');
-        console.log('   ✅ Added comparison table');
-        
-        alert(`✅ Enhanced System Report v2.0.0 Generated! 
+    const projectName = document.getElementById('projectName')?.value || 'Untitled';
+    const timestamp = typeof window.getExportFileTimestamp === 'function'
+        ? window.getExportFileTimestamp()
+        : new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `${projectName.replace(/\s+/g, '_')}_EnhancedSystemReport_NonRedundant_${scenarioId}_${mode}_${timestamp}.txt`;
 
-Scenario: ${scenarioId}
-Mode: ${mode}
-
-🎯 ALL CONFUSION POINTS FIXED:
-✅ Transformer recommendations de-duplicated
-✅ DESIGN vs OPERATING separated
-✅ Bus summary shows Design + Operating currents
-✅ Motors show FLC (not N/A)
-✅ Cost breakdown itemized by category
-✅ Comprehensive comparison table added
-
-Report length: ${report.length.toLocaleString()} characters
-File: ${fileName}`);
-    } catch (error) {
-        console.error('❌ Error exporting enhanced report:', error);
-        alert(`❌ Error generating report: ${error.message}`);
+    if (typeof window.downloadTextFile === 'function') {
+        window.downloadTextFile(report, fileName);
+    } else if (typeof window.downloadFileContent === 'function') {
+        window.downloadFileContent(report, fileName, 'text/plain;charset=utf-8');
+    } else {
+        const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
     }
+
+    return report;
 }
 
 // Export functions to global scope
