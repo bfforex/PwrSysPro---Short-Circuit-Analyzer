@@ -535,314 +535,314 @@
   const INSTALL_RETRY_INTERVAL_MS = 100;
   const INSTALL_TIMEOUT_MS = 5000;
 
- function getPowerFactor() {
-  return Math.min(
-   1,
-   Math.max(
-    0,
-    _num(
-     typeof document !== 'undefined'
-      ? document.getElementById('powerFactor') && document.getElementById('powerFactor').value
-      : undefined,
-     0.90
+  function getPowerFactor() {
+   return Math.min(
+    1,
+    Math.max(
+     0,
+     _num(
+      typeof document !== 'undefined'
+       ? document.getElementById('powerFactor') && document.getElementById('powerFactor').value
+       : undefined,
+      0.90
+     )
     )
-   )
-  );
- }
+   );
+  }
 
- function getTemperature() {
-  return _num(
-   typeof document !== 'undefined'
-    ? document.getElementById('temperature') && document.getElementById('temperature').value
-    : undefined,
-   75
-  );
- }
+  function getTemperature() {
+   return _num(
+    typeof document !== 'undefined'
+     ? document.getElementById('temperature') && document.getElementById('temperature').value
+     : undefined,
+    75
+   );
+  }
 
- function isCable(component) {
-  return String(component && component.type || '').toLowerCase() === 'cable';
- }
+  function isCable(component) {
+   return String(component && component.type || '').toLowerCase() === 'cable';
+  }
 
- function isCopper(component) {
-  return String(
-   (component && component.material) ||
-   (component && component.conductorMaterial) ||
-   ''
-  ).toLowerCase().includes('copper');
- }
+  function isCopper(component) {
+   return String(
+    (component && component.material) ||
+    (component && component.conductorMaterial) ||
+    ''
+   ).toLowerCase().includes('copper');
+  }
 
- function getVoltageLevel(component, resultComponent, result) {
-  return _num(
-   (resultComponent && (resultComponent.voltageLevel != null ? resultComponent.voltageLevel
-    : resultComponent.nominalVoltage)) ||
-   (component && (component.voltage != null ? component.voltage : component.voltageLevel)) ||
-   (result && (result.busVoltage != null ? result.busVoltage : result.loadVoltage)),
-   0
-  );
- }
+  function getVoltageLevel(component, resultComponent, result) {
+   return _num(
+    (resultComponent && (resultComponent.voltageLevel != null ? resultComponent.voltageLevel
+     : resultComponent.nominalVoltage)) ||
+    (component && (component.voltage != null ? component.voltage : component.voltageLevel)) ||
+    (result && (result.busVoltage != null ? result.busVoltage : result.loadVoltage)),
+    0
+   );
+  }
 
- function isMediumVoltageCable(component, resultComponent, result) {
-  const voltageLevel = getVoltageLevel(component, resultComponent, result);
-  return voltageLevel >= 1000 ||
-   String((component && component.voltageClass) || '').includes('12/20') ||
-   String((component && component.cableType) || '').toLowerCase().includes('mxlp');
- }
+  function isMediumVoltageCable(component, resultComponent, result) {
+   const voltageLevel = getVoltageLevel(component, resultComponent, result);
+   return voltageLevel >= 1000 ||
+    String((component && component.voltageClass) || '').includes('12/20') ||
+    String((component && component.cableType) || '').toLowerCase().includes('mxlp');
+  }
 
- function manufacturerSizeExists(component) {
-  const sizeKey = normalizeCableSizeKey(component && component.size);
-  const info = getManufacturerCableSizeData(MANUFACTURER_KEY, sizeKey);
-  return !!info;
- }
+  function manufacturerSizeExists(component) {
+   const sizeKey = normalizeCableSizeKey(component && component.size);
+   const info = getManufacturerCableSizeData(MANUFACTURER_KEY, sizeKey);
+   return !!info;
+  }
 
- function ensureManufacturerCableKey(component, resultComponent, result) {
-  if (!component || !isCable(component)) return false;
+  function ensureManufacturerCableKey(component, resultComponent, result) {
+   if (!component || !isCable(component)) return false;
 
-  if (component.manufacturerCableDataKey || component.cableDataKey) {
+   if (component.manufacturerCableDataKey || component.cableDataKey) {
+    return true;
+   }
+
+   if (!isCopper(component)) return false;
+   if (!isMediumVoltageCable(component, resultComponent, result)) return false;
+   if (!manufacturerSizeExists(component)) return false;
+
+   component.manufacturerCableDataKey = MANUFACTURER_KEY;
+   component.cableDataKey = MANUFACTURER_KEY;
+
    return true;
   }
 
-  if (!isCopper(component)) return false;
-  if (!isMediumVoltageCable(component, resultComponent, result)) return false;
-  if (!manufacturerSizeExists(component)) return false;
+  function getComponentLabel(component) {
+   return (component && (component.tag || component.name || component.id)) || 'Cable';
+  }
 
-  component.manufacturerCableDataKey = MANUFACTURER_KEY;
-  component.cableDataKey = MANUFACTURER_KEY;
+  function getCurrent(component, resultComponent, result) {
+   return _num(
+    (resultComponent && (
+     resultComponent.current != null ? resultComponent.current :
+     resultComponent.currentA != null ? resultComponent.currentA : undefined
+    )) ||
+    (component && (
+     component.current != null ? component.current :
+     component.loadCurrent != null ? component.loadCurrent :
+     component.designCurrent != null ? component.designCurrent : undefined
+    )) ||
+    (result && result.loadCurrent != null ? result.loadCurrent : undefined),
+    0
+   );
+  }
 
-  return true;
- }
-
- function getComponentLabel(component) {
-  return (component && (component.tag || component.name || component.id)) || 'Cable';
- }
-
- function getCurrent(component, resultComponent, result) {
-  return _num(
-   (resultComponent && (
-    resultComponent.current != null ? resultComponent.current :
-    resultComponent.currentA != null ? resultComponent.currentA : undefined
-   )) ||
-   (component && (
-    component.current != null ? component.current :
-    component.loadCurrent != null ? component.loadCurrent :
-    component.designCurrent != null ? component.designCurrent : undefined
-   )) ||
-   (result && result.loadCurrent != null ? result.loadCurrent : undefined),
-   0
-  );
- }
-
- function getComponentPowerFactor(component, resultComponent) {
-  return Math.min(
-   1,
-   Math.max(
-    0,
-    _num(
-     (resultComponent && resultComponent.powerFactor != null ? resultComponent.powerFactor : undefined) ||
-     (component && (component.powerFactor != null ? component.powerFactor : component.pf)),
-     getPowerFactor()
+  function getComponentPowerFactor(component, resultComponent) {
+   return Math.min(
+    1,
+    Math.max(
+     0,
+     _num(
+      (resultComponent && resultComponent.powerFactor != null ? resultComponent.powerFactor : undefined) ||
+      (component && (component.powerFactor != null ? component.powerFactor : component.pf)),
+      getPowerFactor()
+     )
     )
-   )
-  );
- }
-
- function calculateDropVolts(currentA, rOhms, xOhms, powerFactor) {
-  const sinTheta = Math.sqrt(Math.max(0, 1 - powerFactor * powerFactor));
-  return SQRT3 * currentA * ((rOhms * powerFactor) + (xOhms * sinTheta));
- }
-
- function findMatchingResultComponent(component, resultComponents, fallbackIndex) {
-  if (!component || !Array.isArray(resultComponents)) return {};
-
-  const label = getComponentLabel(component);
-
-  const matched = resultComponents.find(function (candidate) {
-   return candidate === component ||
-    (candidate && component.tag && candidate.tag === component.tag) ||
-    (candidate && component.name && candidate.name === component.name) ||
-    (candidate && component.id && candidate.id === component.id) ||
-    (candidate && candidate.tag === label) ||
-    (candidate && candidate.name === label);
-  });
-
-  return matched ||
-   resultComponents[fallbackIndex - 1] ||
-   resultComponents[fallbackIndex] ||
-   {};
- }
-
- function _calculateManufacturerImpedance(component) {
-  try {
-   return calculateManufacturerCableImpedance(component, {
-    temperatureC: getTemperature()
-   });
-  } catch (error) {
-   console.warn('[Manufacturer Cable Data] Failed to calculate manufacturer impedance:', error);
-   return null;
-  }
- }
-
- function updateCalculationStepsText(result, componentLabel, impedance, dropVolts) {
-  if (!result || typeof result.calculationSteps !== 'string') return;
-
-  const note = [
-   '',
-   'Manufacturer Cable Data Applied',
-   '────────────────────────────────────────────────────────────────────────────────',
-   'Component: ' + componentLabel,
-   'Data Source: Phelps Dodge MXLP-CWS 12/20 kV via manufacturerCableData.js',
-   'Rdc20 corrected to selected conductor temperature.',
-   'R = ' + impedance.rOhms.toFixed(6) + ' Ω',
-   'X = ' + impedance.xOhms.toFixed(6) + ' Ω',
-   'Manufacturer-based VD = ' + dropVolts.toFixed(3) + ' V',
-   ''
-  ].join('\n');
-
-  if (!result.calculationSteps.includes('Manufacturer Cable Data Applied')) {
-   result.calculationSteps += '\n' + note;
-  }
- }
-
- function applyManufacturerCableDataToResult(result, path) {
-  if (!result || !Array.isArray(path)) return result;
-
-  const resultComponents = Array.isArray(result.components)
-   ? result.components
-   : [];
-
-  const formulaDetails = Array.isArray(result.voltageDropFormulaDetails)
-   ? result.voltageDropFormulaDetails
-   : [];
-
-  path.forEach(function (segment, index) {
-   const component = segment && segment.component;
-
-   if (!component || !isCable(component)) return;
-
-   const resultComponent = findMatchingResultComponent(
-    component,
-    resultComponents,
-    index
    );
+  }
 
-   const keyReady = ensureManufacturerCableKey(
-    component,
-    resultComponent,
-    result
-   );
-
-   if (!keyReady) return;
-
-   const impedance = _calculateManufacturerImpedance(component);
-
-   if (!impedance) return;
-
-   const currentA = getCurrent(component, resultComponent, result);
-   const powerFactor = getComponentPowerFactor(component, resultComponent);
+  function calculateDropVolts(currentA, rOhms, xOhms, powerFactor) {
    const sinTheta = Math.sqrt(Math.max(0, 1 - powerFactor * powerFactor));
-   const dropVolts = calculateDropVolts(
-    currentA,
-    impedance.rOhms,
-    impedance.xOhms,
-    powerFactor
-   );
+   return SQRT3 * currentA * ((rOhms * powerFactor) + (xOhms * sinTheta));
+  }
 
-   const voltageLevel = getVoltageLevel(
-    component,
-    resultComponent,
-    result
-   );
-
-   const dropPercent = voltageLevel > 0
-    ? dropVolts / voltageLevel * 100
-    : 0;
-
-   resultComponent.rOhms = impedance.rOhms;
-   resultComponent.xOhms = impedance.xOhms;
-   resultComponent.resistanceOhms = impedance.rOhms;
-   resultComponent.reactanceOhms = impedance.xOhms;
-   resultComponent.dropVolts = dropVolts;
-   resultComponent.dropPercent = dropPercent;
-   resultComponent.impedanceSource = 'manufacturerCableData.js';
-   resultComponent.manufacturerCableDataKey = MANUFACTURER_KEY;
+  function findMatchingResultComponent(component, resultComponents, fallbackIndex) {
+   if (!component || !Array.isArray(resultComponents)) return {};
 
    const label = getComponentLabel(component);
 
-   formulaDetails.push({
-    step: index,
-    type: 'cable',
-    component: label,
-    currentA: currentA,
-    rOhms: impedance.rOhms,
-    xOhms: impedance.xOhms,
-    powerFactor: powerFactor,
-    sinTheta: sinTheta,
-    calculatedDropVolts: dropVolts,
-    usedDropVolts: dropVolts,
-    voltageLevel: voltageLevel,
-    dropPercent: dropPercent,
-    impedanceSource: 'manufacturerCableData.js',
-    formula: 'VD = √3 × I × (R cosθ + X sinθ)'
+   const matched = resultComponents.find(function (candidate) {
+    return candidate === component ||
+     (candidate && component.tag && candidate.tag === component.tag) ||
+     (candidate && component.name && candidate.name === component.name) ||
+     (candidate && component.id && candidate.id === component.id) ||
+     (candidate && candidate.tag === label) ||
+     (candidate && candidate.name === label);
    });
 
-   updateCalculationStepsText(
-    result,
-    label,
-    impedance,
-    dropVolts
-   );
-  });
+   return matched ||
+    resultComponents[fallbackIndex - 1] ||
+    resultComponents[fallbackIndex] ||
+    {};
+  }
 
-  result.voltageDropFormulaDetails = formulaDetails;
+  function _calculateManufacturerImpedance(component) {
+   try {
+    return calculateManufacturerCableImpedance(component, {
+     temperatureC: getTemperature()
+    });
+   } catch (error) {
+    console.warn('[Manufacturer Cable Data] Failed to calculate manufacturer impedance:', error);
+    return null;
+   }
+  }
 
-  return result;
- }
+  function updateCalculationStepsText(result, componentLabel, impedance, dropVolts) {
+   if (!result || typeof result.calculationSteps !== 'string') return;
 
- function preTagManufacturerCables(path) {
-  if (!Array.isArray(path)) return;
+   const note = [
+    '',
+    'Manufacturer Cable Data Applied',
+    '────────────────────────────────────────────────────────────────────────────────',
+    'Component: ' + componentLabel,
+    'Data Source: Phelps Dodge MXLP-CWS 12/20 kV via manufacturerCableData.js',
+    'Rdc20 corrected to selected conductor temperature.',
+    'R = ' + impedance.rOhms.toFixed(6) + ' Ω',
+    'X = ' + impedance.xOhms.toFixed(6) + ' Ω',
+    'Manufacturer-based VD = ' + dropVolts.toFixed(3) + ' V',
+    ''
+   ].join('\n');
 
-  path.forEach(function (segment) {
-   const component = segment && segment.component;
+   if (!result.calculationSteps.includes('Manufacturer Cable Data Applied')) {
+    result.calculationSteps += '\n' + note;
+   }
+  }
 
-   if (!component || !isCable(component)) return;
+  function applyManufacturerCableDataToResult(result, path) {
+   if (!result || !Array.isArray(path)) return result;
 
-   ensureManufacturerCableKey(component, {}, {});
-  });
- }
+   const resultComponents = Array.isArray(result.components)
+    ? result.components
+    : [];
 
- function installManufacturerCableUse() {
-  if (typeof global.calculateVoltageDrop !== 'function') return false;
-  if (global.calculateVoltageDrop.__manufacturerCableUsePatchApplied) return true;
+   const formulaDetails = Array.isArray(result.voltageDropFormulaDetails)
+    ? result.voltageDropFormulaDetails
+    : [];
 
-  const originalCalculateVoltageDrop = global.calculateVoltageDrop;
+   path.forEach(function (segment, index) {
+    const component = segment && segment.component;
 
-  const patchedCalculateVoltageDrop = function patchedCalculateVoltageDrop(busId, path, loadFlowData) {
-   preTagManufacturerCables(path);
-   const result = originalCalculateVoltageDrop.apply(this, arguments);
-   return applyManufacturerCableDataToResult(result, path);
-  };
+    if (!component || !isCable(component)) return;
 
-  patchedCalculateVoltageDrop.__manufacturerCableUsePatchApplied = true;
+    const resultComponent = findMatchingResultComponent(
+     component,
+     resultComponents,
+     index
+    );
 
-  global.calculateVoltageDrop = patchedCalculateVoltageDrop;
+    const keyReady = ensureManufacturerCableKey(
+     component,
+     resultComponent,
+     result
+    );
 
-  try {
-   calculateVoltageDrop = patchedCalculateVoltageDrop;
-  } catch (_) {}
+    if (!keyReady) return;
 
-  return true;
- }
+    const impedance = _calculateManufacturerImpedance(component);
+
+    if (!impedance) return;
+
+    const currentA = getCurrent(component, resultComponent, result);
+    const powerFactor = getComponentPowerFactor(component, resultComponent);
+    const sinTheta = Math.sqrt(Math.max(0, 1 - powerFactor * powerFactor));
+    const dropVolts = calculateDropVolts(
+     currentA,
+     impedance.rOhms,
+     impedance.xOhms,
+     powerFactor
+    );
+
+    const voltageLevel = getVoltageLevel(
+     component,
+     resultComponent,
+     result
+    );
+
+    const dropPercent = voltageLevel > 0
+     ? dropVolts / voltageLevel * 100
+     : 0;
+
+    resultComponent.rOhms = impedance.rOhms;
+    resultComponent.xOhms = impedance.xOhms;
+    resultComponent.resistanceOhms = impedance.rOhms;
+    resultComponent.reactanceOhms = impedance.xOhms;
+    resultComponent.dropVolts = dropVolts;
+    resultComponent.dropPercent = dropPercent;
+    resultComponent.impedanceSource = 'manufacturerCableData.js';
+    resultComponent.manufacturerCableDataKey = MANUFACTURER_KEY;
+
+    const label = getComponentLabel(component);
+
+    formulaDetails.push({
+     step: index,
+     type: 'cable',
+     component: label,
+     currentA: currentA,
+     rOhms: impedance.rOhms,
+     xOhms: impedance.xOhms,
+     powerFactor: powerFactor,
+     sinTheta: sinTheta,
+     calculatedDropVolts: dropVolts,
+     usedDropVolts: dropVolts,
+     voltageLevel: voltageLevel,
+     dropPercent: dropPercent,
+     impedanceSource: 'manufacturerCableData.js',
+     formula: 'VD = √3 × I × (R cosθ + X sinθ)'
+    });
+
+    updateCalculationStepsText(
+     result,
+     label,
+     impedance,
+     dropVolts
+    );
+   });
+
+   result.voltageDropFormulaDetails = formulaDetails;
+
+   return result;
+  }
+
+  function preTagManufacturerCables(path) {
+   if (!Array.isArray(path)) return;
+
+   path.forEach(function (segment) {
+    const component = segment && segment.component;
+
+    if (!component || !isCable(component)) return;
+
+    ensureManufacturerCableKey(component, {}, {});
+   });
+  }
+
+  function installManufacturerCableUse() {
+   if (typeof global.calculateVoltageDrop !== 'function') return false;
+   if (global.calculateVoltageDrop.__manufacturerCableUsePatchApplied) return true;
+
+   const originalCalculateVoltageDrop = global.calculateVoltageDrop;
+
+   const patchedCalculateVoltageDrop = function patchedCalculateVoltageDrop(busId, path, loadFlowData) {
+    preTagManufacturerCables(path);
+    const result = originalCalculateVoltageDrop.apply(this, arguments);
+    return applyManufacturerCableDataToResult(result, path);
+   };
+
+   patchedCalculateVoltageDrop.__manufacturerCableUsePatchApplied = true;
+
+   global.calculateVoltageDrop = patchedCalculateVoltageDrop;
+
+   try {
+    calculateVoltageDrop = patchedCalculateVoltageDrop;
+   } catch (_) {}
+
+   return true;
+  }
 
   global.applyManufacturerCableDataToVoltageDropResult = applyManufacturerCableDataToResult;
 
   if (!installManufacturerCableUse()) {
-   const _mcTimer = setInterval(function () {
+   const installRetryTimer = setInterval(function () {
     if (installManufacturerCableUse()) {
-     clearInterval(_mcTimer);
+     clearInterval(installRetryTimer);
     }
    }, INSTALL_RETRY_INTERVAL_MS);
 
    setTimeout(function () {
-    clearInterval(_mcTimer);
+    clearInterval(installRetryTimer);
    }, INSTALL_TIMEOUT_MS);
   }
 
