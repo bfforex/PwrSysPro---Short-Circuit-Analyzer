@@ -949,7 +949,7 @@ function calculateArcFlashHazard(bus, options = {}) {
 
     const clearingTimeCycles = options.clearingTimeCycles ||
         getClearingTimeForBus(bus) ||
-        config.CLEARING_TIMES && ARC_FLASH_ENGINE_CONFIG.CLEARING_TIMES.INSTANTANEOUS;
+        ARC_FLASH_ENGINE_CONFIG.CLEARING_TIMES.INSTANTANEOUS;
     const clearingTimeSec = clearingTimeCycles / 60;
 
     console.log(`   Working Distance: ${workingDistance} inches`);
@@ -992,7 +992,7 @@ function calculateArcFlashHazard(bus, options = {}) {
     console.log(`   Arc Flash Boundary: ${boundaryFeet.toFixed(1)} feet`);
 
     // PPE category
-    let ppeCategory;
+    let ppeCategory = 0;
     const ppeConfig = ARC_FLASH_ENGINE_CONFIG.PPE_CATEGORIES;
 
     if (incidentEnergy < 1.2) {
