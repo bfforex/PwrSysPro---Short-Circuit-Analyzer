@@ -526,12 +526,14 @@
  // Automatically assigns the Phelps Dodge MXLP-CWS 12/20 kV data key to
  // matching MV copper cable components and wraps calculateVoltageDrop() so
  // that manufacturer impedance values are applied to the result.
+ (function installManufacturerCableUseBehavior() {
+  if (global.__manufacturerCableUsePatchInstalled) return;
+  global.__manufacturerCableUsePatchInstalled = true;
 
- if (global.__manufacturerCableUsePatchInstalled) return;
- global.__manufacturerCableUsePatchInstalled = true;
-
- const MANUFACTURER_KEY = 'phelps-dodge-mxlp-cws-12-20kv';
- const SQRT3 = Math.sqrt(3);
+  const MANUFACTURER_KEY = 'phelps-dodge-mxlp-cws-12-20kv';
+  const SQRT3 = Math.sqrt(3);
+  const INSTALL_RETRY_INTERVAL_MS = 100;
+  const INSTALL_TIMEOUT_MS = 5000;
 
  function getPowerFactor() {
   return Math.min(
@@ -830,19 +832,20 @@
   return true;
  }
 
- global.applyManufacturerCableDataToVoltageDropResult = applyManufacturerCableDataToResult;
+  global.applyManufacturerCableDataToVoltageDropResult = applyManufacturerCableDataToResult;
 
- if (!installManufacturerCableUse()) {
-  const _mcTimer = setInterval(function () {
-   if (installManufacturerCableUse()) {
+  if (!installManufacturerCableUse()) {
+   const _mcTimer = setInterval(function () {
+    if (installManufacturerCableUse()) {
+     clearInterval(_mcTimer);
+    }
+   }, INSTALL_RETRY_INTERVAL_MS);
+
+   setTimeout(function () {
     clearInterval(_mcTimer);
-   }
-  }, 100);
+   }, INSTALL_TIMEOUT_MS);
+  }
 
-  setTimeout(function () {
-   clearInterval(_mcTimer);
-  }, 5000);
- }
-
- console.log('✅ Manufacturer Cable Use integrated: voltage drop wrapper active');
+  console.log('✅ Manufacturer Cable Use integrated: voltage drop wrapper active');
+ }());
 })(typeof window !== 'undefined' ? window : globalThis);
