@@ -422,64 +422,6 @@ function expandBreakerType(type) {
     return types[type] || type;
 }
 
-function calculateBusTieAnalysisData(busTie) {
-    console.log(`📊 Calculating bus tie analysis data for ${busTie.tag}...`);
-    
-    const fromBus = buses.find(b => b.id === busTie.fromBus);
-    const toBus = buses.find(b => b.id === busTie.toBus);
-    
-    // Calculate short circuit for both buses
-    const scFrom = calculateShortCircuitWithBusTie(fromBus.id);
-    const scTo = calculateShortCircuitWithBusTie(toBus.id);
-    
-    // Estimate voltage drop (simplified - would use actual load flow data)
-    const vdFromOpen = 2.5; // Placeholder %
-    const vdFromClosed = 2.0;
-    const vdToOpen = 2.5;
-    const vdToClosed = 2.0;
-    
-    // Estimate load flow
-    const loadFlowData = {
-        [fromBus.id]: { totalLoad: 900 },
-        [toBus.id]: { totalLoad: 850 }
-    };
-    const tieAnalysis = calculateBusTieCurrent(busTie, loadFlowData) || {
-        fromBusLoad: 900,
-        toBusLoad: 850,
-        loadImbalance: 50,
-        tieCurrent: 25,
-        direction: `${fromBus.name} → ${toBus.name}`,
-        loadSharing: 'Balanced load sharing',
-        utilizationPercent: 1.56
-    };
-    
-    // Calculate arc flash (simplified - would use actual calculations)
-    const afFrom = {
-        tieOpen: { incidentEnergy: 4.2, ppeCategory: 2 },
-        tieClosed: { incidentEnergy: 6.8, ppeCategory: 3 }
-    };
-    const afTo = {
-        tieOpen: { incidentEnergy: 5.1, ppeCategory: 2 },
-        tieClosed: { incidentEnergy: 7.9, ppeCategory: 3 }
-    };
-    
-    return {
-        shortCircuit: {
-            fromBus: scFrom,
-            toBus: scTo
-        },
-        voltageDrop: {
-            fromBus: { tieOpen: vdFromOpen, tieClosed: vdFromClosed },
-            toBus: { tieOpen: vdToOpen, tieClosed: vdToClosed }
-        },
-        tieAnalysis: tieAnalysis,
-        arcFlash: {
-            fromBus: afFrom,
-            toBus: afTo
-        }
-    };
-}
-
 /**
  * Generate comparison report for all bus ties in system
  * @returns {string} Combined report for all bus ties
@@ -607,7 +549,6 @@ function exportAllBusTiesReport() {
 
 window.generateBusTieReport = generateBusTieReport;
 window.generateAllBusTiesReport = generateAllBusTiesReport;
-window.calculateBusTieAnalysisData = calculateBusTieAnalysisData;
 window.exportBusTieReport = exportBusTieReport;
 window.exportAllBusTiesReport = exportAllBusTiesReport;
 
