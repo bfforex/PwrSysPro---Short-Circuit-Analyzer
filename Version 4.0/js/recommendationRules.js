@@ -18,6 +18,14 @@ const RECOMMENDATION_CONSTANTS = {
     LOW_IMPEDANCE_THRESHOLD: 4  // % impedance considered low
 };
 
+// Numeric weights for severity levels used by engine sorting and UI sorting
+const SEVERITY_WEIGHTS = {
+    'CRITICAL': 1,
+    'HIGH': 2,
+    'MEDIUM': 3,
+    'LOW': 4
+};
+
 const RecommendationRules = {
     /**
      * CATEGORY A: HIGH FAULT CURRENT RULES
