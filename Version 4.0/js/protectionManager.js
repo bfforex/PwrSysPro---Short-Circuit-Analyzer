@@ -530,38 +530,12 @@ ${buildOptions(getAssociationTypeOptions(), asset?.associationType || 'protects-
 }
 
 function buildProtectionDeviceBase(type) {
- if (typeof createProtectionDevice === 'function') {
-  return createProtectionDevice(type, {});
- }
- return {
-  id: `prot-${Date.now()}`,
-  tag: '',
-  name: '',
-  type,
-  status: 'active',
-  voltage: 0,
-  frequencyHz: 60,
-  phases: 3,
-  fromBus: null,
-  toBus: null,
-  locationBusId: null,
-  mountedOnComponentId: null,
-  description: '',
-  manufacturer: '',
-  model: '',
-  standard: '',
-  notes: '',
-  metadata: {
-   createdDate: new Date().toISOString(),
-   modifiedDate: new Date().toISOString(),
-   source: 'user'
-  }
- };
+ return createProtectionDevice(type, {});
 }
 
 function createProtectionAssetObject(assetType) {
  if (assetType === 'relay') {
-  const base = typeof createRelay === 'function' ? createRelay() : buildProtectionDeviceBase('relay');
+  const base = createRelay();
   return {
    ...base,
    tag: getTextValue('protRelayTag'),
@@ -583,7 +557,7 @@ function createProtectionAssetObject(assetType) {
  }
 
  if (assetType === 'ct') {
-  const base = typeof createCT === 'function' ? createCT() : buildProtectionDeviceBase('ct');
+  const base = createCT();
   return {
    ...base,
    tag: getTextValue('protCTTag'),
@@ -605,7 +579,7 @@ function createProtectionAssetObject(assetType) {
  }
 
  if (assetType === 'vt') {
-  const base = typeof createVT === 'function' ? createVT() : buildProtectionDeviceBase('vt');
+  const base = createVT();
   return {
    ...base,
    tag: getTextValue('protVTTag'),
@@ -626,21 +600,7 @@ function createProtectionAssetObject(assetType) {
  }
 
  if (assetType === 'zone') {
-  const base = typeof createProtectionZone === 'function' ? createProtectionZone() : {
-   id: `pzone-${Date.now()}`,
-   tag: '',
-   name: '',
-   zoneType: 'feeder',
-   primaryDeviceId: null,
-   backupDeviceIds: [],
-   protectedBusIds: [],
-   protectedComponentIds: [],
-   relayIds: [],
-   ctSetIds: [],
-   vtSetIds: [],
-   parentZoneId: null,
-   description: ''
-  };
+  const base = createProtectionZone();
   return {
    ...base,
    tag: getTextValue('protZoneTag'),
@@ -657,16 +617,7 @@ function createProtectionAssetObject(assetType) {
   };
  }
 
- const base = typeof createProtectionAssociation === 'function' ? createProtectionAssociation() : {
-  id: `passoc-${Date.now()}`,
-  primaryDeviceId: null,
-  backupDeviceIds: [],
-  busId: null,
-  componentId: null,
-  relayId: null,
-  associationType: 'protects-feeder',
-  notes: ''
- };
+ const base = createProtectionAssociation();
  return {
   ...base,
   primaryDeviceId: getSingleValue('protAssociationPrimaryDevice'),

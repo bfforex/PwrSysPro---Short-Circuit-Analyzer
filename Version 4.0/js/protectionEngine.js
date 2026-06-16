@@ -155,158 +155,20 @@ return false;
 }
 
 function _isSeriesProtectionDevice(component) {
- const t = String(component?.type || '').toLowerCase();
- if (typeof isSeriesProtectionDevice === 'function') {
-  try { return isSeriesProtectionDevice(component); } catch (_) {}
- }
- return t === 'breaker' || t === 'fuse';
+ return isSeriesProtectionDevice(component);
 }
 
 function _getProtectionResultsContainer(bus) {
  if (!bus || typeof bus !== 'object') return null;
- if (typeof ensureBusProtectionResults === 'function') {
-  try { return ensureBusProtectionResults(bus); } catch (_) {}
- }
- if (!bus.results) bus.results = {};
- if (!bus.results.protection) {
-  if (typeof createProtectionResults === 'function') {
-   bus.results.protection = createProtectionResults();
-  } else {
-   bus.results.protection = {
-    adequacy: {
-     evaluated: false,
-     primaryDeviceId: null,
-     primaryDeviceLabel: null,
-     devices: []
-    },
-    coordination: { evaluated: false, coordinationPairs: [], selectivityStatus: 'UNKNOWN' },
-    relayOperation: { evaluated: false, operations: [] },
-    clearing: {
-     clearingDeviceId: null,
-     clearingDeviceType: null,
-     clearingDeviceLabel: null,
-     clearingDeviceTag: null,
-     clearingDeviceName: null,
-     clearingTimeSec: null,
-     clearingTimeCycles: null,
-     reason: '',
-     basis: ''
-    },
-    duties: {
-     threePhaseSymKA: 0,
-     threePhaseAsymKA: 0,
-     peakKA: 0,
-     lineToGroundKA: 0,
-     lineToLineKA: 0,
-     doubleLineToGroundKA: 0
-    },
-    loadCurrentA: 0,
-    overallStatus: 'UNKNOWN',
-    linkedAssets: {
-     primaryRelayId: null,
-     primaryRelayLabel: null,
-     ctIds: [],
-     vtIds: [],
-     zoneIds: []
-    },
-    recommendations: [],
-    calculationDate: _nowIso(),
-    calculationMethod: 'MVP adequacy',
-    calculationSteps: ''
-   };
-  }
- }
- return bus.results.protection;
+ return ensureBusProtectionResults(bus);
 }
 
 function _createAdequacyResult(overrides = {}) {
- if (typeof createProtectionDeviceAdequacyResult === 'function') {
-  try { return createProtectionDeviceAdequacyResult(overrides); } catch (_) {}
- }
- return {
-  deviceId: '',
-  deviceType: '',
-  deviceLabel: '',
-  deviceTag: '',
-  deviceName: '',
-  fromBusName: '',
-  toBusName: '',
-  evaluatedAtBusId: '',
-  voltage: 0,
-  duties: {
-   threePhaseSymKA: 0,
-   threePhaseAsymKA: 0,
-   peakKA: 0,
-   lineToGroundKA: 0,
-   lineToLineKA: 0,
-   doubleLineToGroundKA: 0
-  },
-  ratings: {
-   interruptingSymKA: null,
-   interruptingAsymKA: null,
-   momentaryKA: null,
-   closeLatchKA: null,
-   continuousA: null
-  },
-  utilizationPercent: {
-   interrupting: null,
-   momentary: null,
-   continuous: null
-  },
-  status: 'UNKNOWN',
-  limitingCriterion: '',
-  notes: '',
-  ..._clone(overrides)
- };
+ return createProtectionDeviceAdequacyResult(overrides);
 }
 
 function _createProtectionResults(overrides = {}) {
- if (typeof createProtectionResults === 'function') {
-  try { return createProtectionResults(overrides); } catch (_) {}
- }
- return {
-  adequacy: {
-   evaluated: false,
-   primaryDeviceId: null,
-   primaryDeviceLabel: null,
-   devices: []
-  },
-  coordination: { evaluated: false, coordinationPairs: [], selectivityStatus: 'UNKNOWN' },
-  relayOperation: { evaluated: false, operations: [] },
-  clearing: {
-   clearingDeviceId: null,
-   clearingDeviceType: null,
-   clearingDeviceLabel: null,
-   clearingDeviceTag: null,
-   clearingDeviceName: null,
-   clearingTimeSec: null,
-   clearingTimeCycles: null,
-   reason: '',
-   basis: ''
-  },
-  duties: {
-   threePhaseSymKA: 0,
-   threePhaseAsymKA: 0,
-   peakKA: 0,
-   lineToGroundKA: 0,
-   lineToLineKA: 0,
-   doubleLineToGroundKA: 0
-  },
-  loadCurrentA: 0,
-  overallStatus: 'UNKNOWN',
-  linkedAssets: {
-   primaryRelayId: null,
-   primaryRelayLabel: null,
-   ctIds: [],
-   vtIds: [],
-   zoneIds: []
-  },
-  recommendations: [],
-  calculationDate: _nowIso(),
-  calculationMethod: 'MVP adequacy',
-  calculationSteps: '',
-  ..._clone(overrides)
- };
+ return createProtectionResults(overrides);
 }
 
 function _statusWeight(status) {
