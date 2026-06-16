@@ -448,8 +448,7 @@ class RecommendationUI {
      * @private
      */
     _getSeverityWeight(severity) {
-        const weights = { 'CRITICAL': 1, 'HIGH': 2, 'MEDIUM': 3, 'LOW': 4 };
-        return weights[severity] || 5;
+        return SEVERITY_WEIGHTS[severity] || 5;
     }
 
     /**
