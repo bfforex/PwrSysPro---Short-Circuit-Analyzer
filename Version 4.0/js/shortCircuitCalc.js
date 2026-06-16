@@ -1287,7 +1287,11 @@ function calculateShortCircuit(busId, method = 'point-to-point', options = {}) {
     bus.results = bus.results || {};
     bus.results.shortCircuit = normalized;
 
-    // 5) Store centralized state (display/export consistency)
+    // 5) Store centralized state (display/export consistency).
+    //    CalculationState is defined in calculationState.js (loaded before this
+    //    file in index.html).  It is an external dependency — NOT a duplicate of
+    //    any logic here — and must remain a separate module (see audit note in
+    //    calculationState.js, PR-20).
     if (typeof CalculationState !== 'undefined' && CalculationState?.store) {
       CalculationState.store('shortCircuit', normalized, busId);
     }

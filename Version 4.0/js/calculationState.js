@@ -1,23 +1,42 @@
 /**
  * Calculation State Module
  * Centralized state management for calculation results
- * 
+ *
  * @author bfforex
  * @date 2025-12-01
  * @version 1.0.0
- * 
+ *
  * Issue 4: MEDIUM - Export Content Does Not Match Display
- * 
+ *
  * PURPOSE:
  * - Single source of truth for calculation results
  * - Ensures display and export use the same data
  * - Provides verification mechanism to confirm data integrity
- * 
+ *
  * USAGE:
  * 1. After calculation, store results: CalculationState.store('shortCircuit', results, busId)
  * 2. For display: const data = CalculationState.get('shortCircuit')
  * 3. For export: const data = CalculationState.get('shortCircuit') // SAME function
  * 4. Verify integrity: CalculationState.verify('shortCircuit', previousHash)
+ *
+ * AUDIT NOTE (PR-20):
+ * This file is INDEPENDENT of shortCircuitCalc.js and must NOT be absorbed
+ * into it.  Reasons:
+ *   1. shortCircuitCalc.js *calls* CalculationState.store() — the dependency
+ *      arrow points from shortCircuitCalc.js → calculationState.js, not the
+ *      reverse.  Absorbing this module would create a circular dependency.
+ *   2. CalculationState manages five distinct calculation types
+ *      (shortCircuit, voltageDrop, loadFlow, arcFlash, demandDiversity);
+ *      none of the other four belong inside shortCircuitCalc.js.
+ *   3. The hash-integrity helpers (generateHash, verify, getHash) and the
+ *      centralized get/set API are infrastructure concerns shared by every
+ *      calc module and the export layer — they have no overlap with the
+ *      IEC 60909 / NEC calculation math in shortCircuitCalc.js.
+ *   4. Playwright regression test 'CalculationState module — store and
+ *      retrieve integrity' exercises window.CalculationState directly and
+ *      must continue to pass.
+ * Result: leave as a separate script; index.html include is correct and
+ * must load BEFORE shortCircuitCalc.js.
  */
 
 console.log('🔧 Loading Calculation State Module v1.0.0...');

@@ -1,18 +1,33 @@
 /**
  * Calculation Verifier Module
  * Cross-calculation consistency checking
- * 
+ *
  * @author bfforex
  * @date 2025-12-01
  * @version 1.0.0
- * 
+ *
  * Issue 6: LOW - Discrepancy Verification System
- * 
+ *
  * PURPOSE:
  * - Verify that same parameters show same values across outputs
  * - Automated verification of calculation consistency
  * - Add discrepancy warnings to exported reports
  * - Configurable tolerance threshold
+ *
+ * AUDIT NOTE (PR-20):
+ * This file is INDEPENDENT of shortCircuitCalc.js and must NOT be absorbed
+ * into it.  Reasons:
+ *   1. shortCircuitCalc.js contains no consistency-checking or discrepancy-
+ *      detection logic — there is zero functional overlap.
+ *   2. CalculationVerifier is a general-purpose utility applicable to any
+ *      calculation module (voltage drop, load flow, arc flash, etc.), not
+ *      just short-circuit analysis.
+ *   3. shortCircuitCalc.js does not reference CalculationVerifier at all;
+ *      the dependency graph runs in the opposite direction (this module may
+ *      be used *on top of* shortCircuitCalc.js outputs by other modules).
+ *   4. Merging would bloat shortCircuitCalc.js (~2 900 lines) with unrelated
+ *      cross-module infrastructure, violating single-responsibility.
+ * Result: leave as a separate script; index.html include is correct.
  */
 
 console.log('🔧 Loading Calculation Verifier Module v1.0.0...');
