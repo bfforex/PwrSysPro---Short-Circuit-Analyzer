@@ -112,12 +112,12 @@
         'getLoadCurrent'
     ];
 
-    const missingUtils = requiredUtils.filter(function(name) {
+    const missing = requiredUtils.filter(function(name) {
         return typeof global[name] === 'undefined';
     });
 
-    if (missingUtils.length > 0) {
-        console.warn('⚠️ Some utility functions are missing:', missingUtils);
+    if (missing.length > 0) {
+        console.warn('⚠️ Some utility functions are missing:', missing);
     } else {
         console.log('✅ All utility functions available');
     }
