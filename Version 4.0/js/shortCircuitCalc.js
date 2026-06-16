@@ -683,6 +683,404 @@ function simplifyPathTrace(path) {
   }));
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+// IEC 60909-0:2016 CALCULATION ENGINE
+// Absorbed from calculations/iec60909.js (v1.0.0) to eliminate the separate
+// script include.  All public globals are preserved unchanged.
+// ════════════════════════════════════════════════════════════════════════════════
+
+const IEC60909_CONFIG = {
+    // Voltage Factors (c) per IEC 60909-0:2016 Section 3.2
+    VOLTAGE_FACTORS: {
+        // c_max for maximum fault currents (equipment rating)
+        MAX: {
+            LV_230_400: 1.05,      // LV 230/400V systems
+            LV_OTHER: 1.10,        // Other LV systems
+            MV: 1.10,              // MV (1kV-35kV)
+            HV: 1.10               // HV (>35kV)
+        },
+        // c_min for minimum fault currents (protection coordination)
+        MIN: {
+            LV: 0.95,              // All LV systems
+            MV_HV: 1.00            // MV and HV systems
+        }
+    },
+
+    // Standard frequency
+    FREQUENCY: 60,
+
+    // Time constants for breaking current calculation
+    BREAKING_TIME: 0.1,            // seconds (typically)
+
+    // Motor contribution factors per IEC 60909-0 Section 7
+    MOTOR_FACTORS: {
+        CONTRIBUTION_RATIO: 0.35,   // Motors contribute to initial current
+        DECAY_TIME: 0.05            // seconds
+    }
+};
+
+/**
+ * Get voltage factor (c) based on voltage level and calculation type
+ * Per IEC 60909-0:2016 Section 3.2
+ */
+function getVoltageFactor(voltage, calcType = 'max') {
+    if (calcType === 'max') {
+        if (voltage <= 400 && (voltage === 230 || voltage === 400)) {
+            return IEC60909_CONFIG.VOLTAGE_FACTORS.MAX.LV_230_400;
+        } else if (voltage < 1000) {
+            return IEC60909_CONFIG.VOLTAGE_FACTORS.MAX.LV_OTHER;
+        } else if (voltage >= 1000 && voltage <= 35000) {
+            return IEC60909_CONFIG.VOLTAGE_FACTORS.MAX.MV;
+        } else {
+            return IEC60909_CONFIG.VOLTAGE_FACTORS.MAX.HV;
+        }
+    } else {
+        if (voltage < 1000) {
+            return IEC60909_CONFIG.VOLTAGE_FACTORS.MIN.LV;
+        } else {
+            return IEC60909_CONFIG.VOLTAGE_FACTORS.MIN.MV_HV;
+        }
+    }
+}
+
+/**
+ * Calculate transformer correction factor KT
+ * Per IEC 60909-0:2016 Section 3.3.1
+ * KT = 0.95 × cmax / (1 + 0.6 × xT)
+ */
+function calculateTransformerCorrectionFactor(cmax, xT) {
+    return (0.95 * cmax) / (1 + 0.6 * xT);
+}
+
+/**
+ * Calculate peak current factor (κ)
+ * Per IEC 60909-0:2016 Section 4.3
+ * κ = 1.02 + 0.98 × e^(-3R/X)
+ */
+function calculatePeakFactor(rOhms, xOhms) {
+    if (xOhms === 0) return 1.02;
+    const ratio = rOhms / xOhms;
+    return 1.02 + 0.98 * Math.exp(-3 * ratio);
+}
+
+/** Helper: source impedance for IEC 60909 (simplified, per-ohm basis) */
+function calculateSourceImpedance(sourceBus) {
+    const voltage = sourceBus.voltage;
+    const faultMVA = sourceBus.faultMVA || 100;
+    const baseZ = (voltage * voltage) / (faultMVA * 1000000);
+    const xrRatio = sourceBus.xrRatio || 10;
+    const x = baseZ * xrRatio / Math.sqrt(1 + xrRatio * xrRatio);
+    const r = baseZ / Math.sqrt(1 + xrRatio * xrRatio);
+    return { r, x };
+}
+
+/** Helper: transformer impedance for IEC 60909 */
+function calculateTransformerImpedance(transformer, voltage) {
+    const zPercent = transformer.impedance / 100;
+    const ratingKVA = transformer.rating;
+    const secondaryV = transformer.secondary;
+    const baseZ = (secondaryV * secondaryV) / (ratingKVA * 1000);
+    const z = zPercent * baseZ;
+    const xrRatio = transformer.xrRatio || 6;
+    const x = z * xrRatio / Math.sqrt(1 + xrRatio * xrRatio);
+    const r = z / Math.sqrt(1 + xrRatio * xrRatio);
+    return { r, x };
+}
+
+/** Helper: cable impedance for IEC 60909 */
+function calculateCableImpedance(cable, voltage) {
+    const lengthFeet = cable.length;
+    const rPerFoot = cable.rPerFoot || 0.001;
+    const xPerFoot = cable.xPerFoot || 0.0004;
+    return { r: rPerFoot * lengthFeet, x: xPerFoot * lengthFeet };
+}
+
+/** Helper: generator impedance for IEC 60909 */
+function calculateGeneratorImpedance(generator, voltage) {
+    const ratingKW = generator.rating;
+    const xdPercent = (generator.subtransientReactance || 15) / 100;
+    const baseZ = (voltage * voltage) / (ratingKW * 1000);
+    const x = xdPercent * baseZ;
+    const r = x / 15;
+    return { r, x };
+}
+
+/**
+ * Calculate IEC 60909 short circuit for a given path
+ *
+ * @param {Array} path - Array of {fromBusId, toBusId, component} segments
+ * @param {String} calcType - 'max' or 'min'
+ * @returns {Object} IEC 60909 calculation results
+ */
+function calculateShortCircuitIEC60909(path, calcType = 'max') {
+    console.log('\n' + '═'.repeat(80));
+    console.log('IEC 60909-0:2016 SHORT CIRCUIT CALCULATION');
+    console.log('═'.repeat(80));
+    console.log(`Calculation Type: ${calcType === 'max' ? 'Maximum (Equipment Rating)' : 'Minimum (Protection Coordination)'}`);
+    console.log('═'.repeat(80) + '\n');
+
+    const faultBus = buses.find(b => b.id === path[path.length - 1].toBusId);
+    const voltage = faultBus.voltage;
+
+    const cFactor = getVoltageFactor(voltage, calcType);
+    console.log(`Voltage Level: ${voltage}V`);
+    console.log(`Voltage Factor (c): ${cFactor.toFixed(3)}`);
+
+    let totalR = 0;
+    let totalX = 0;
+    const steps = [];
+
+    const sourceBus = buses.find(b => b.id === path[0].fromBusId);
+    if (sourceBus && sourceBus.type === 'source') {
+        const sourceZ = calculateSourceImpedance(sourceBus);
+        totalR += sourceZ.r;
+        totalX += sourceZ.x;
+        steps.push({ component: 'Source', description: `${sourceBus.name}`, r: sourceZ.r, x: sourceZ.x, cumulativeR: totalR, cumulativeX: totalX });
+        console.log(`\nSource: ${sourceBus.name}`);
+        console.log(`  R = ${sourceZ.r.toFixed(6)} Ω`);
+        console.log(`  X = ${sourceZ.x.toFixed(6)} Ω`);
+    }
+
+    for (let i = 0; i < path.length; i++) {
+        const connection = path[i];
+        const comp = connection.component;
+        if (!comp) continue;
+
+        let compZ = { r: 0, x: 0 };
+        let description = '';
+
+        if (comp.type === 'transformer') {
+            compZ = calculateTransformerImpedance(comp, voltage);
+            description = `${comp.rating} kVA, ${comp.impedance}% Z`;
+            if (calcType === 'max') {
+                const xT = compZ.x / Math.sqrt(compZ.r * compZ.r + compZ.x * compZ.x);
+                const kt = calculateTransformerCorrectionFactor(cFactor, xT);
+                console.log(`  Transformer Correction Factor KT: ${kt.toFixed(4)}`);
+            }
+        } else if (comp.type === 'cable') {
+            compZ = calculateCableImpedance(comp, voltage);
+            description = `${comp.size} AWG, ${comp.length} ft`;
+        } else if (comp.type === 'generator') {
+            compZ = calculateGeneratorImpedance(comp, voltage);
+            description = `${comp.rating} kW`;
+        }
+
+        totalR += compZ.r;
+        totalX += compZ.x;
+        steps.push({ component: comp.type, description: description, r: compZ.r, x: compZ.x, cumulativeR: totalR, cumulativeX: totalX });
+        console.log(`\n${comp.type}: ${description}`);
+        console.log(`  R = ${compZ.r.toFixed(6)} Ω`);
+        console.log(`  X = ${compZ.x.toFixed(6)} Ω`);
+    }
+
+    const totalZ = Math.sqrt(totalR * totalR + totalX * totalX);
+
+    console.log('\n' + '─'.repeat(80));
+    console.log('TOTAL IMPEDANCE:');
+    console.log(`  R_total = ${totalR.toFixed(6)} Ω`);
+    console.log(`  X_total = ${totalX.toFixed(6)} Ω`);
+    console.log(`  Z_total = ${totalZ.toFixed(6)} Ω`);
+    console.log(`  X/R Ratio = ${(totalX / totalR).toFixed(2)}`);
+    console.log('─'.repeat(80));
+
+    const Un = voltage;
+    const ikDoublePrime = (cFactor * Un) / (Math.sqrt(3) * totalZ);
+    const ikDoublePrimeKA = ikDoublePrime / 1000;
+
+    console.log('\nINITIAL SYMMETRICAL SHORT-CIRCUIT CURRENT (I"k):');
+    console.log(`  I"k = (c × Un) / (√3 × Zk)`);
+    console.log(`  I"k = (${cFactor} × ${Un}V) / (√3 × ${totalZ.toFixed(6)}Ω)`);
+    console.log(`  I"k = ${ikDoublePrimeKA.toFixed(3)} kA`);
+
+    const kappa = calculatePeakFactor(totalR, totalX);
+    const ip = kappa * Math.sqrt(2) * ikDoublePrime;
+    const ipKA = ip / 1000;
+
+    console.log('\nPEAK SHORT-CIRCUIT CURRENT (ip):');
+    console.log(`  κ = 1.02 + 0.98 × e^(-3R/X) = ${kappa.toFixed(4)}`);
+    console.log(`  ip = κ × √2 × I"k = ${ipKA.toFixed(3)} kA`);
+
+    const ib = ikDoublePrime;
+    const ibKA = ib / 1000;
+    console.log('\nBREAKING CURRENT (Ib):');
+    console.log(`  Ib ≈ I"k (far-from-generator fault) = ${ibKA.toFixed(3)} kA`);
+
+    const ik = ikDoublePrime;
+    const ikKA = ik / 1000;
+    console.log('\nSTEADY-STATE SHORT-CIRCUIT CURRENT (Ik):');
+    console.log(`  Ik ≈ I"k (no sustained generator contribution) = ${ikKA.toFixed(3)} kA`);
+
+    // Zero-sequence / sequence-network fault currents (IEC 60909-0:2016 §4.6–§4.8)
+    let iecZ0R = totalR, iecZ0X = totalX, iecZ0Note = 'Z0 = Z1 (Dyn11 default)';
+    let iecZ0Blocked = false;
+
+    for (const seg of path) {
+        const xfmrComp = seg && (seg.component || seg);
+        if (xfmrComp && xfmrComp.type === 'transformer') {
+            const vgKey = xfmrComp.vectorGroup || 'Dyn11';
+            const vgData = (typeof getTransformerVectorGroupZ0 === 'function')
+                ? getTransformerVectorGroupZ0(vgKey)
+                : { z0_multiplier: 1.0, blocks_upstream_z0: true, ground_path_on_lv: true, note: 'Dyn11 default' };
+            if (vgData.z0_multiplier >= 999 || !vgData.ground_path_on_lv) {
+                iecZ0Blocked = true;
+                iecZ0R = totalR * 100;
+                iecZ0X = totalX * 100;
+                iecZ0Note = `Z0 blocked — ${vgKey} (no LG fault path on LV bus)`;
+            } else {
+                iecZ0R = totalR * vgData.z0_multiplier;
+                iecZ0X = totalX * vgData.z0_multiplier;
+                iecZ0Note = `Z0/Z1 = ${vgData.z0_multiplier.toFixed(2)} — ${vgKey} (IEC 60909-0 §3.3)`;
+            }
+            break;
+        }
+    }
+
+    for (const seg of path) {
+        const xfmrComp = seg && (seg.component || seg);
+        if (xfmrComp && xfmrComp.type === 'transformer' && xfmrComp.neutralR > 0) {
+            iecZ0R += 3 * xfmrComp.neutralR;
+            iecZ0Note += `; +3×Rn = ${(3 * xfmrComp.neutralR).toFixed(3)} Ω (${xfmrComp.groundingMode || 'resistance grounded'})`;
+            break;
+        }
+    }
+
+    const iecZ0 = Math.sqrt(iecZ0R * iecZ0R + iecZ0X * iecZ0X) || 1e-9;
+    const iecZ2 = totalZ;
+
+    const Z_LG_total = Math.sqrt(
+        (totalR + totalR + iecZ0R) ** 2 + (totalX + totalX + iecZ0X) ** 2
+    ) || 1e-9;
+    const ikLG = iecZ0Blocked ? 0 : (cFactor * Math.sqrt(3) * Un) / Z_LG_total;
+    const ikLGKA = ikLG / 1000;
+
+    const den2E_r = totalR + iecZ0R, den2E_x = totalX + iecZ0X;
+    const den2E_mag2 = den2E_r*den2E_r + den2E_x*den2E_x || 1e-18;
+    const num2E_r = totalR*iecZ0R - totalX*iecZ0X;
+    const num2E_x = totalR*iecZ0X + totalX*iecZ0R;
+    const Zpar2E_r = (num2E_r*den2E_r + num2E_x*den2E_x) / den2E_mag2;
+    const Zpar2E_x = (num2E_x*den2E_r - num2E_r*den2E_x) / den2E_mag2;
+    const Zllg_r2E = totalR + Zpar2E_r, Zllg_x2E = totalX + Zpar2E_x;
+    const Zllg2E = Math.sqrt(Zllg_r2E*Zllg_r2E + Zllg_x2E*Zllg_x2E) || 1e-9;
+    const ikLLG = iecZ0Blocked ? 0 : (cFactor * Un) / (Math.sqrt(3) * Zllg2E);
+    const ikLLGKA = ikLLG / 1000;
+
+    console.log('\nLINE-TO-GROUND FAULT CURRENT I"k1 (IEC 60909-0 Eq.29):');
+    console.log(`  Z0 basis: ${iecZ0Note}`);
+    console.log(`  I"k1 = ${ikLGKA.toFixed(3)} kA`);
+    console.log(`\nDOUBLE EARTH FAULT I"k2E (IEC 60909-0 §4.8):`);
+    console.log(`  I"k2E = ${ikLLGKA.toFixed(3)} kA`);
+
+    console.log('\n' + '═'.repeat(80));
+    console.log('IEC 60909 CALCULATION COMPLETE');
+    console.log('═'.repeat(80) + '\n');
+
+    return {
+        method: 'iec-60909',
+        calculationType: calcType,
+        voltageFactor: cFactor,
+        voltage: voltage,
+        impedance: {
+            r: totalR,
+            x: totalX,
+            z: totalZ,
+            r0: iecZ0R,
+            x0: iecZ0X,
+            z0: iecZ0,
+            xrRatio: totalX / totalR,
+            z0Basis: iecZ0Note
+        },
+        peakFactor: kappa,
+        initialSymmetricalCurrentKA: ikDoublePrimeKA,
+        peakCurrentKA: ipKA,
+        breakingCurrentKA: ibKA,
+        steadyStateCurrentKA: ikKA,
+        lineToGroundCurrentKA: ikLGKA,
+        doubleEarthFaultCurrentKA: ikLLGKA,
+        z0Note: iecZ0Note,
+        steps: steps,
+        standard: 'IEC 60909-0:2016'
+    };
+}
+
+/**
+ * Adapter — converts busId to the path format expected by calculateShortCircuitIEC60909.
+ * calculateIEC60909FaultCurrent(busId, {calculationType:'max'|'min'})
+ */
+function calculateIEC60909FaultCurrent(busId, options = {}) {
+    const calcType = (options.calculationType || options.calcType || 'max').toLowerCase();
+    const trace = traceBusPath(busId);
+    if (!Array.isArray(trace) || trace.length < 2) {
+        throw new Error('IEC 60909 requires a valid path to a SOURCE bus. traceBusPath() returned null/short path.');
+    }
+    const iecPath = trace.map((seg, idx) => {
+        const prevBusId = idx > 0 ? trace[idx - 1]?.bus?.id : trace[0]?.bus?.id;
+        const thisBusId = seg?.bus?.id;
+        return {
+            fromBusId: prevBusId,
+            toBusId: thisBusId,
+            component: seg?.component || null
+        };
+    });
+    return calculateShortCircuitIEC60909(iecPath, calcType);
+}
+
+/**
+ * Compare all three calculation methods side-by-side
+ */
+function compareAllMethods(busId) {
+    console.log('\n' + '═'.repeat(80));
+    console.log('METHOD COMPARISON: IEEE vs IEC 60909');
+    console.log('═'.repeat(80));
+
+    const path = traceBusPath(busId);
+
+    const ptpResult = calculateShortCircuitPointToPoint(path);
+    const puResult = calculateShortCircuitPerUnit(path);
+    const iecMaxResult = calculateShortCircuitIEC60909(path, 'max');
+    const iecMinResult = calculateShortCircuitIEC60909(path, 'min');
+
+    const comparison = {
+        busId: busId,
+        busName: buses.find(b => b.id === busId)?.name,
+        methods: {
+            'point-to-point': {
+                symmetrical: ptpResult.faultCurrents?.threePhaseSym || 0,
+                asymmetrical: ptpResult.faultCurrents?.threePhaseAsym || 0
+            },
+            'per-unit': {
+                symmetrical: puResult.faultCurrents?.threePhaseSym || 0,
+                asymmetrical: puResult.faultCurrents?.threePhaseAsym || 0
+            },
+            'iec-60909-max': {
+                initialSymmetrical: iecMaxResult.initialSymmetricalCurrentKA,
+                peak: iecMaxResult.peakCurrentKA,
+                breaking: iecMaxResult.breakingCurrentKA
+            },
+            'iec-60909-min': {
+                initialSymmetrical: iecMinResult.initialSymmetricalCurrentKA,
+                peak: iecMinResult.peakCurrentKA,
+                breaking: iecMinResult.breakingCurrentKA
+            }
+        }
+    };
+
+    console.log('\nCOMPARISON TABLE:');
+    console.log('─'.repeat(80));
+    console.log('Method              | Symmetrical | Asymmetrical/Peak | Notes');
+    console.log('─'.repeat(80));
+    console.log(`Point-to-Point      | ${comparison.methods['point-to-point'].symmetrical.toFixed(3)} kA  | ${comparison.methods['point-to-point'].asymmetrical.toFixed(3)} kA      | IEEE`);
+    console.log(`Per-Unit            | ${comparison.methods['per-unit'].symmetrical.toFixed(3)} kA  | ${comparison.methods['per-unit'].asymmetrical.toFixed(3)} kA      | IEEE`);
+    console.log(`IEC 60909 (Max)     | ${comparison.methods['iec-60909-max'].initialSymmetrical.toFixed(3)} kA  | ${comparison.methods['iec-60909-max'].peak.toFixed(3)} kA      | Equipment`);
+    console.log(`IEC 60909 (Min)     | ${comparison.methods['iec-60909-min'].initialSymmetrical.toFixed(3)} kA  | ${comparison.methods['iec-60909-min'].peak.toFixed(3)} kA      | Protection`);
+    console.log('─'.repeat(80));
+
+    return comparison;
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// END OF IEC 60909 ENGINE
+// ════════════════════════════════════════════════════════════════════════════════
+
 /**
  * Resolve IEC 60909 engine function from global scope and adapt call signature.
  * Supports: 
@@ -2446,6 +2844,14 @@ window.generateReferredThroughFaultSupplement = generatePathOnlyReferredThroughF
 window.patchShortCircuitFollowupTextV3 = patchShortCircuitFollowupTextV32;
 window.patchShortCircuitResultFollowupV3 = applyShortCircuitFollowupFixesV32;
 window.SHORT_CIRCUIT_CONFIG = SHORT_CIRCUIT_CONFIG;
+
+// IEC 60909 engine exports (absorbed from calculations/iec60909.js)
+window.calculateShortCircuitIEC60909 = calculateShortCircuitIEC60909;
+window.calculateIEC60909FaultCurrent = calculateIEC60909FaultCurrent;
+window.compareAllMethods = compareAllMethods;
+window.getVoltageFactor = getVoltageFactor;
+window.calculatePeakFactor = calculatePeakFactor;
+window.calculateTransformerCorrectionFactor = calculateTransformerCorrectionFactor;
 
 console.log('✅ Short Circuit Calculation module v1.6.0 loaded');
 console.log('   FIXES v1.6.0: asymmetric exponent (-2t/τ), first-cycle duty, peak crest, lineToLineKA explicit, boilerplate flag, Z0 deprecation note');
