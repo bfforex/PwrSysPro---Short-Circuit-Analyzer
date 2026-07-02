@@ -93,4 +93,32 @@
     global.getLoadCurrent = getLoadCurrent;
 
     console.log('✅ pathUtils loaded');
+
+    // Utility compatibility check (absorbed from utils.js stub)
+    const requiredUtils = [
+        'temperatureCorrection',
+        'calculateParallelImpedance',
+        'calculateComponentVoltageDrop',
+        'referCurrentAcrossTransformer',
+        'calculateTransformerCurrent',
+        'calculateMotorCurrent',
+        'getCalculationTimestamp',
+        'safeToFixed',
+        'getBusIcon',
+        'updateSessionTime',
+        'generateBusId',
+        'generateComponentId',
+        'traceBusPath',
+        'getLoadCurrent'
+    ];
+
+    const missing = requiredUtils.filter(function(name) {
+        return typeof global[name] === 'undefined';
+    });
+
+    if (missing.length > 0) {
+        console.warn('⚠️ Some utility functions are missing:', missing);
+    } else {
+        console.log('✅ All utility functions available');
+    }
 })(window);
