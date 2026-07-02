@@ -1807,3 +1807,455 @@ console.log('   - Standards: NEC 2023, IEEE 141-1993');
 console.log('   - Date: 2025-12-01');
 console.log('   - Author: bfforex');
 console.log('');
+
+// ════════════════════════════════════════════════════════════════════════════════
+// ABSORBED: systemWideVdHtmlButtonsPatch.js
+// Replaced showSystemVoltageDropSteps with a version where
+// Open A4 HTML and Download A4 HTML buttons are wired reliably.
+// Deferred via DOMContentLoaded so it applies after calculationDisplay.js.
+// ════════════════════════════════════════════════════════════════════════════════
+
+(function installSystemWideVdHtmlButtonsPatch(global) {
+    'use strict';
+
+    if (global.__systemWideVdHtmlButtonsPatchInstalled) return;
+    global.__systemWideVdHtmlButtonsPatchInstalled = true;
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function openA4HtmlReport() {
+        if (typeof global.showAllBusVoltageDropReportHTML === 'function') {
+            global.showAllBusVoltageDropReportHTML();
+            return;
+        }
+
+        alert('Voltage Drop A4 HTML report function is not loaded.');
+    }
+
+    function downloadA4HtmlReport() {
+        if (typeof global.exportAllBusVoltageDropReportHTML === 'function') {
+            global.exportAllBusVoltageDropReportHTML();
+            return;
+        }
+
+        alert('Voltage Drop A4 HTML export function is not loaded.');
+    }
+
+    function getSystemVoltageDropText() {
+        if (typeof global.generateSystemVoltageDropCalculationText === 'function') {
+            return global.generateSystemVoltageDropCalculationText();
+        }
+
+        if (typeof generateSystemVoltageDropCalculationText === 'function') {
+            return generateSystemVoltageDropCalculationText();
+        }
+
+        return 'System-wide voltage drop calculation text function is not available.';
+    }
+
+    function exportSystemVoltageDropText() {
+        if (typeof global.exportSystemVoltageDropCalculation === 'function') {
+            global.exportSystemVoltageDropCalculation();
+            return;
+        }
+
+        if (typeof exportSystemVoltageDropCalculation === 'function') {
+            exportSystemVoltageDropCalculation();
+            return;
+        }
+
+        const text = getSystemVoltageDropText();
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+
+        anchor.href = url;
+        anchor.download = 'System_Voltage_Drop_Calculation.txt';
+
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+
+        URL.revokeObjectURL(url);
+    }
+
+    function patchedShowSystemVoltageDropSteps() {
+        const steps = getSystemVoltageDropText();
+
+        document.getElementById('calcStepsOverlay')?.remove();
+
+        const overlay = document.createElement('div');
+
+        overlay.id = 'calcStepsOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.inset = '0';
+        overlay.style.background = 'rgba(0,0,0,0.55)';
+        overlay.style.zIndex = '99999';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.padding = '20px';
+
+        overlay.innerHTML = `
+            <div style="background:#fff;color:#111;width:min(1000px,95vw);max-height:90vh;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #ddd;">
+                    <h3 style="margin:0;">System-Wide Voltage Drop Calculation</h3>
+                    <button id="calcStepsClose" class="btn btn-secondary">Close</button>
+                </div>
+
+                <pre style="margin:0;padding:18px;overflow:auto;white-space:pre-wrap;font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.45;flex:1;">${escapeHtml(steps)}</pre>
+
+                <div style="display:flex;justify-content:flex-end;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid #ddd;background:#f6f7f9;">
+                    <button id="systemVdA4HtmlOpen" style="padding:14px 28px;border:none;border-radius:10px;background:linear-gradient(135deg,#6610f2,#7b2ff7);color:#ffffff;font-size:16px;font-weight:600;cursor:pointer;">
+                        🌐 Open A4 HTML
+                    </button>
+
+                    <button id="systemVdA4HtmlDownload" style="padding:14px 28px;border:none;border-radius:10px;background:#495057;color:#ffffff;font-size:16px;font-weight:600;cursor:pointer;">
+                        📄 Download A4 HTML
+                    </button>
+
+                    <button id="systemVdExport" class="btn btn-success">
+                        Export TXT
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        overlay.querySelector('#calcStepsClose')?.addEventListener('click', function () {
+            overlay.remove();
+        });
+
+        overlay.querySelector('#systemVdA4HtmlOpen')?.addEventListener('click', function () {
+            openA4HtmlReport();
+        });
+
+        overlay.querySelector('#systemVdA4HtmlDownload')?.addEventListener('click', function () {
+            downloadA4HtmlReport();
+        });
+
+        overlay.querySelector('#systemVdExport')?.addEventListener('click', function () {
+            exportSystemVoltageDropText();
+        });
+
+        overlay.addEventListener('click', function (event) {
+            if (event.target === overlay) {
+                overlay.remove();
+            }
+        });
+    }
+
+    function applyPatch() {
+        global.showSystemVoltageDropSteps = patchedShowSystemVoltageDropSteps;
+        try {
+            showSystemVoltageDropSteps = patchedShowSystemVoltageDropSteps;
+        } catch (_) {}
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyPatch);
+    } else {
+        applyPatch();
+    }
+
+    console.log('✅ System-Wide VD HTML Buttons Patch loaded');
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ════════════════════════════════════════════════════════════════════════════════
+// ABSORBED: voltageDropDisplaySummaryPatch.js
+// Fixes voltage-drop UI display basis so the final load bus nominal voltage
+// is used for the system voltage profile (not the upstream source voltage).
+// ════════════════════════════════════════════════════════════════════════════════
+
+(function installVoltageDropDisplaySummaryPatch(global) {
+    'use strict';
+
+    if (global.__voltageDropDisplaySummaryPatchInstalled) return;
+    global.__voltageDropDisplaySummaryPatchInstalled = true;
+
+    function vdNumber(value, fallback = 0) {
+        const n = Number(value);
+        return Number.isFinite(n) ? n : fallback;
+    }
+
+    function getFinalNominalLoadVoltage(results) {
+        return vdNumber(
+            results?.nominalLoadVoltage,
+            vdNumber(
+                results?.nominalVoltage,
+                vdNumber(
+                    results?.busVoltage,
+                    vdNumber(
+                        results?.targetBusVoltage,
+                        vdNumber(
+                            results?.systemVoltageProfile?.basisVoltage,
+                            0
+                        )
+                    )
+                )
+            )
+        );
+    }
+
+    function getTapAdjustedVoltage(results) {
+        return vdNumber(
+            results?.tapAdjustedNominal,
+            vdNumber(
+                results?.tapAdjustment?.tapAdjustedNominal,
+                0
+            )
+        );
+    }
+
+    function getConductorComponents(results, components) {
+        if (Array.isArray(results?.conductorVoltageDrop?.components)) {
+            return results.conductorVoltageDrop.components;
+        }
+
+        return components.filter(function (component) {
+            return String(component.type || '').toLowerCase() !== 'transformer';
+        });
+    }
+
+    function getTransformerComponents(results, components) {
+        if (Array.isArray(results?.transformerRegulation?.transformers)) {
+            return results.transformerRegulation.transformers;
+        }
+
+        return components.filter(function (component) {
+            return String(component.type || '').toLowerCase() === 'transformer';
+        });
+    }
+
+    function getConductorDropVolts(results, conductorComponents) {
+        const direct = vdNumber(
+            results?.conductorVoltageDrop?.totalDropVolts,
+            NaN
+        );
+
+        if (Number.isFinite(direct)) {
+            return direct;
+        }
+
+        return conductorComponents.reduce(function (sum, component) {
+            return sum + vdNumber(component.dropVolts, 0);
+        }, 0);
+    }
+
+    function getConductorDropPercent(results, conductorDropVolts, basisVoltage) {
+        const direct = vdNumber(
+            results?.conductorVoltageDrop?.totalDropPercent,
+            NaN
+        );
+
+        if (Number.isFinite(direct)) {
+            return direct;
+        }
+
+        return basisVoltage > 0
+            ? conductorDropVolts / basisVoltage * 100
+            : 0;
+    }
+
+    function getTransformerDropVolts(results, transformerComponents) {
+        return vdNumber(
+            results?.transformerRegulation?.totalDropVolts,
+            transformerComponents.reduce(function (sum, component) {
+                return sum + vdNumber(component.dropVolts, 0);
+            }, 0)
+        );
+    }
+
+    function getTransformerDropPercent(results, transformerComponents) {
+        return vdNumber(
+            results?.transformerRegulation?.totalDropPercent,
+            transformerComponents.reduce(function (sum, component) {
+                return sum + vdNumber(component.dropPercent, 0);
+            }, 0)
+        );
+    }
+
+    function getHighestTransformerLoading(results, transformerComponents) {
+        return vdNumber(
+            results?.transformerRegulation?.highestLoading,
+            transformerComponents.reduce(function (max, component) {
+                return Math.max(max, vdNumber(component.loading, 0));
+            }, 0)
+        );
+    }
+
+    function fixedGetVoltageDropDisplayBreakdown(results) {
+        const components = Array.isArray(results?.components)
+            ? results.components
+            : [];
+
+        const nominalLoadVoltage = getFinalNominalLoadVoltage(results);
+        const tapAdjustedNominal = getTapAdjustedVoltage(results);
+
+        const conductorBasisVoltage = vdNumber(
+            results?.conductorVoltageDrop?.basisVoltage,
+            tapAdjustedNominal > 0 ? tapAdjustedNominal : nominalLoadVoltage
+        );
+
+        const conductorComponents = getConductorComponents(results, components);
+        const transformerComponents = getTransformerComponents(results, components);
+
+        const conductorDropVolts = getConductorDropVolts(
+            results,
+            conductorComponents
+        );
+
+        const conductorDropPercent = getConductorDropPercent(
+            results,
+            conductorDropVolts,
+            conductorBasisVoltage
+        );
+
+        const transformerDropVolts = getTransformerDropVolts(
+            results,
+            transformerComponents
+        );
+
+        const transformerDropPercent = getTransformerDropPercent(
+            results,
+            transformerComponents
+        );
+
+        const highestTransformerLoading = getHighestTransformerLoading(
+            results,
+            transformerComponents
+        );
+
+        const voltageAtLoad = vdNumber(
+            results?.actualVoltageAtLoad,
+            vdNumber(
+                results?.loadVoltage,
+                vdNumber(
+                    results?.systemVoltageProfile?.voltageAtLoad,
+                    nominalLoadVoltage - conductorDropVolts
+                )
+            )
+        );
+
+        const profileBasisVoltage = nominalLoadVoltage > 0
+            ? nominalLoadVoltage
+            : conductorBasisVoltage;
+
+        const systemDropVolts = profileBasisVoltage > 0
+            ? profileBasisVoltage - voltageAtLoad
+            : 0;
+
+        const systemDropPercent = profileBasisVoltage > 0
+            ? systemDropVolts / profileBasisVoltage * 100
+            : 0;
+
+        return {
+            basisVoltage: conductorBasisVoltage,
+            nominalLoadVoltage: nominalLoadVoltage,
+            tapAdjustedNominal: tapAdjustedNominal,
+            profileBasisVoltage: profileBasisVoltage,
+            components: components,
+            conductorComponents: conductorComponents,
+            transformerComponents: transformerComponents,
+            conductorDropVolts: conductorDropVolts,
+            conductorDropPercent: conductorDropPercent,
+            transformerDropVolts: transformerDropVolts,
+            transformerDropPercent: transformerDropPercent,
+            highestTransformerLoading: highestTransformerLoading,
+            systemDropVolts: systemDropVolts,
+            systemDropPercent: systemDropPercent,
+            voltageAtLoad: voltageAtLoad
+        };
+    }
+
+    function fixedGenerateVoltageAnalysisSection(sourceVoltage, breakdown) {
+        const profileBasisVoltage = vdNumber(
+            breakdown.profileBasisVoltage,
+            vdNumber(sourceVoltage, 0)
+        );
+
+        if (!profileBasisVoltage || profileBasisVoltage === 0) {
+            return '';
+        }
+
+        const loadPercent = profileBasisVoltage > 0
+            ? breakdown.voltageAtLoad / profileBasisVoltage * 100
+            : 0;
+
+        return `
+            <div class="result-section voltage-profile-section">
+                <h5>⚡ System Voltage Profile</h5>
+
+                <div class="voltage-profile-grid">
+                    <div class="profile-item">
+                        <strong>Nominal Load Voltage:</strong><br>
+                        <span class="voltage-value">${profileBasisVoltage.toFixed(2)} V</span><br>
+                        <small>(100.00%)</small>
+                    </div>
+
+                    <div class="profile-item">
+                        <strong>Voltage at Load:</strong><br>
+                        <span class="voltage-value ${loadPercent < 95 ? 'warning' : 'success'}">${breakdown.voltageAtLoad.toFixed(2)} V</span><br>
+                        <small>(${loadPercent.toFixed(2)}%)</small>
+                    </div>
+
+                    <div class="profile-item">
+                        <strong>System Profile Deviation:</strong><br>
+                        <span class="voltage-value">${breakdown.systemDropVolts.toFixed(2)} V</span><br>
+                        <small>(${breakdown.systemDropPercent.toFixed(3)}%) at final bus voltage level</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function installPatch() {
+        let patched = false;
+
+        try {
+            global.getVoltageDropDisplayBreakdown = fixedGetVoltageDropDisplayBreakdown;
+            getVoltageDropDisplayBreakdown = fixedGetVoltageDropDisplayBreakdown;
+            patched = true;
+        } catch (_) {
+            global.getVoltageDropDisplayBreakdown = fixedGetVoltageDropDisplayBreakdown;
+        }
+
+        try {
+            global.generateVoltageAnalysisSection = fixedGenerateVoltageAnalysisSection;
+            generateVoltageAnalysisSection = fixedGenerateVoltageAnalysisSection;
+            patched = true;
+        } catch (_) {
+            global.generateVoltageAnalysisSection = fixedGenerateVoltageAnalysisSection;
+        }
+
+        return patched;
+    }
+
+    function startPatch() {
+        installPatch();
+
+        let attempts = 0;
+        const timer = setInterval(function () {
+            installPatch();
+            attempts += 1;
+
+            if (attempts >= 20) {
+                clearInterval(timer);
+            }
+        }, 250);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startPatch);
+    } else {
+        startPatch();
+    }
+
+    console.log('✅ Voltage Drop Display Summary Patch loaded');
+})(typeof window !== 'undefined' ? window : globalThis);
